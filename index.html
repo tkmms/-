@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-title" content="★お絵描き">
   <meta name="theme-color" content="#020617">
   
-  <!-- PWA Web App Manifest (Data URI形式で直接埋め込み) -->
+  <!-- PWA Web App Manifest -->
   <link rel="manifest" href='data:application/manifest+json,{"name":"★お絵描き","short_name":"★お絵描き","start_url":".","display":"standalone","background_color":"#020617","theme_color":"#020617"}'>
 
   <script src="https://cdn.tailwindcss.com"></script>
@@ -52,10 +52,11 @@
 <body class="h-[100dvh] w-vw flex flex-col justify-between font-sans overflow-hidden">
 
   <!-- ========================================== -->
-  <!-- 1. テレビに映るメイン領域（Top 3.9% 〜 Bottom 18.1%） -->
+  <!-- 1. テレビに映るメイン領域 -->
+  <!-- 上・左右に安全余白（Padding）を設定し、テレビの切れを防止 -->
   <!-- ========================================== -->
-  <div class="flex-1 flex flex-col pt-[3.9dvh] px-[0.7vw] pb-1 min-h-0 relative">
-    <div class="w-full h-full flex flex-row gap-2 min-h-0">
+  <div class="flex-1 flex flex-col pt-[5.5dvh] px-[2.5vw] pb-[1dvh] min-h-0 relative">
+    <div class="w-full h-full flex flex-row gap-2.5 min-h-0">
       
       <!-- テレビ左側：プレイヤーランキング縦並び（リアルタイム順位ソート＆高さ自動フィット） -->
       <aside id="tv-rankings-container" class="w-44 md:w-56 h-full flex flex-col gap-1.5 shrink-0">
@@ -66,7 +67,7 @@
       <main class="flex-1 h-full flex flex-col gap-1.5 min-h-0 min-w-0">
         
         <!-- YouTube風 タイマープログレスバー -->
-        <div class="w-full bg-slate-800/80 rounded-full h-4 overflow-hidden border border-slate-700 relative shrink-0 shadow-inner">
+        <div class="w-full bg-slate-800/90 rounded-full h-4 overflow-hidden border border-slate-700 relative shrink-0 shadow-inner">
           <div id="timer-progress-bar" class="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-500 rounded-full transition-all duration-200 ease-linear w-full"></div>
           <span id="timer-text-overlay" class="absolute inset-0 flex items-center justify-center text-[11px] font-black text-white drop-shadow font-mono">
             01:00
@@ -84,9 +85,9 @@
 
 
   <!-- ========================================== -->
-  <!-- 2. テレビには絶対映らない秘密の領域（画面最下部 18.1%固定） -->
+  <!-- 2. テレビには絶対映らない秘密の領域（画面最下部 21dvhに少し拡大して押し下げる） -->
   <!-- ========================================== -->
-  <footer class="h-[18.1dvh] w-full bg-slate-900 border-t-2 border-slate-700 px-3 py-1.5 flex items-center justify-between gap-2 shrink-0 z-20 shadow-2xl overflow-hidden">
+  <footer class="h-[21dvh] w-full bg-slate-900 border-t-4 border-slate-800 px-4 py-2 flex items-center justify-between gap-3 shrink-0 z-20 shadow-2xl overflow-hidden">
     
     <!-- お題表示（テレビ非表示・描き手用） -->
     <div class="flex-1 bg-amber-500/10 border-2 border-amber-500/50 rounded-xl px-3 py-1 flex flex-col justify-between relative shadow-inner h-full overflow-hidden">
