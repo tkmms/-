@@ -34,8 +34,8 @@
       left: 0.7%;
       right: 0.7%;
       display: flex;
-      flex-direction: column;
-      justify-content: space-between;
+      flex-direction: row;
+      gap: 10px;
       z-index: 10;
     }
 
@@ -47,7 +47,7 @@
       right: 0;
       height: 18.1%;
       background-color: #0f172a;
-      border-t: 2px solid #334155;
+      border-top: 2px solid #334155;
       z-index: 20;
     }
 
@@ -56,6 +56,11 @@
       touch-action: pan-y;
       -webkit-overflow-scrolling: touch;
     }
+
+    /* ランキングリストのアニメーション移動効果 */
+    .player-card {
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
   </style>
 </head>
 <body class="h-screen w-screen relative font-sans overflow-hidden">
@@ -63,79 +68,74 @@
   <!-- ========================================== -->
   <!-- 1. テレビに映るメイン領域（Top 3.9% 〜 Bottom 18.1%） -->
   <!-- ========================================== -->
-  <div class="visible-tv-area p-2 space-y-2">
+  <div class="visible-tv-area p-1">
     
-    <!-- テレビ上部：プレイヤー一覧 & 現在のアーティスト/タイマー（テレビに表示） -->
-    <header class="bg-slate-900/90 border border-slate-700/80 rounded-xl p-2 shrink-0 flex items-center justify-between shadow-lg">
+    <!-- テレビ左側：プレイヤーランキング縦並び（高さ自動調整＆リアルタイム自動ソート） -->
+    <aside id="tv-rankings-container" class="w-48 md:w-56 h-full flex flex-col gap-1.5 shrink-0">
+      <!-- JavaScriptで動的生成されます -->
+    </aside>
+
+    <!-- テレビ中央〜右側：タイマーバー ＆ お絵描きキャンバス -->
+    <main class="flex-1 h-full flex flex-col space-y-1.5 overflow-hidden">
       
-      <!-- タイマー & アーティスト -->
-      <div class="flex items-center space-x-3 shrink-0">
-        <div class="bg-indigo-950 border border-indigo-500/60 px-3 py-1 rounded-lg">
-          <span class="text-[10px] text-indigo-300 block leading-none">描き手</span>
-          <span id="current-artist-name" class="text-sm font-bold text-indigo-100">----</span>
-        </div>
-
-        <div class="bg-slate-950 border border-slate-700 px-3 py-1 rounded-lg flex items-center space-x-1.5">
-          <span class="text-[10px] text-slate-400">残り</span>
-          <span id="timer-display" class="text-xl font-black text-amber-400 font-mono">01:00</span>
-        </div>
+      <!-- YouTube風 タイマープログレスバー -->
+      <div class="w-full bg-slate-800/80 rounded-full h-3.5 overflow-hidden border border-slate-700/80 p-0.5 relative shrink-0 shadow-inner">
+        <div id="timer-progress-bar" class="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-500 rounded-full transition-all duration-200 ease-linear w-full"></div>
+        <span id="timer-text-overlay" class="absolute inset-0 flex items-center justify-center text-[10px] font-black text-white drop-shadow font-mono">
+          01:00
+        </span>
       </div>
 
-      <!-- プレイヤー一覧＆正解ボタン（テレビにバッチリ表示！） -->
-      <div id="tv-players-grid" class="flex-1 flex items-center justify-end space-x-2 overflow-x-auto px-2">
-        <!-- JavaScriptで動的生成 -->
-      </div>
-    </header>
-
-    <!-- テレビ中央：お絵描きキャンバス（高さを最大限確保） -->
-    <main class="flex-1 relative bg-slate-950 rounded-2xl overflow-hidden shadow-2xl border-2 border-slate-800 flex items-center justify-center">
-      <div id="canvas-container" class="w-full h-full relative bg-white">
+      <!-- キャンバス容器（テレビ領域いっぱいに拡大） -->
+      <div id="canvas-container" class="flex-1 w-full relative bg-white rounded-2xl overflow-hidden shadow-2xl border-2 border-slate-800">
         <canvas id="paint-canvas" class="w-full h-full"></canvas>
       </div>
     </main>
+
   </div>
 
 
   <!-- ========================================== -->
-  <!-- 2. テレビには映らない秘密の領域（画面最下部 18.1%） -->
+  <!-- 2. テレビには絶対映らない秘密の領域（画面最下部 18.1%） -->
+  <!-- ここに操作用・非表示要素をすべて集約 -->
   <!-- ========================================== -->
-  <footer class="bottom-hidden-area px-4 py-2 flex items-center justify-between space-x-3">
+  <footer class="bottom-hidden-area px-3 py-1.5 flex items-center justify-between gap-3">
     
     <!-- お題表示（描き手だけにしか見えない） -->
-    <div class="flex-1 bg-amber-500/10 border-2 border-amber-500/50 rounded-xl px-4 py-2 flex flex-col justify-center relative shadow-inner h-full">
+    <div class="flex-1 bg-amber-500/10 border-2 border-amber-500/50 rounded-xl px-3 py-1 flex flex-col justify-center relative shadow-inner h-full overflow-hidden">
       <div class="flex items-center justify-between">
-        <span class="bg-amber-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+        <span class="bg-amber-600 text-white text-[9px] font-bold px-1.5 py-0.2 rounded">
           テレビ非表示（お題）
         </span>
-        <span class="text-[10px] text-slate-400">正解したら画面上の該当プレイヤーをタップ！</span>
+        <span class="text-[9px] text-slate-400">正解したら画面左の該当プレイヤーをタップ！</span>
       </div>
-      <div id="word-display" class="text-2xl font-black tracking-wider text-amber-300 truncate text-center my-auto">
+      <div id="word-display" class="text-xl md:text-2xl font-black tracking-wider text-amber-300 truncate text-center my-auto">
         「スタート」を押してね！
       </div>
     </div>
 
-    <!-- 描き手用 隠しコントロール（消しゴム、全消去、設定、ゲーム開始/パス） -->
+    <!-- 描き手用 ツール＆コントロール（テレビ非表示） -->
     <div class="h-full flex flex-col justify-between py-0.5 space-y-1 shrink-0">
       
-      <!-- 描画ツール（テレビ非表示） -->
+      <!-- 描画ツール -->
       <div class="flex items-center space-x-1.5 bg-slate-900 border border-slate-700 p-1 rounded-lg">
-        <button id="tool-pen" onclick="setTool('pen')" class="px-3 py-1.5 rounded font-bold text-xs bg-indigo-600 text-white border border-indigo-400 shadow">
+        <button id="tool-pen" onclick="setTool('pen')" class="px-2.5 py-1 rounded font-bold text-xs bg-indigo-600 text-white border border-indigo-400 shadow">
           ✏️ ペン
         </button>
-        <button id="tool-eraser" onclick="setTool('eraser')" class="px-3 py-1.5 rounded font-bold text-xs bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700">
+        <button id="tool-eraser" onclick="setTool('eraser')" class="px-2.5 py-1 rounded font-bold text-xs bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700">
           🧹 消しゴム
         </button>
-        <button onclick="clearCanvas()" class="px-2.5 py-1.5 rounded font-bold text-xs bg-rose-900/80 hover:bg-rose-800 text-rose-200 border border-rose-700">
+        <button onclick="clearCanvas()" class="px-2 py-1 rounded font-bold text-xs bg-rose-900/80 hover:bg-rose-800 text-rose-200 border border-rose-700">
           🗑️ 全消し
         </button>
       </div>
 
-      <!-- ゲーム進行＆設定ボタン（テレビ非表示） -->
+      <!-- ゲーム進行＆設定ボタン -->
       <div class="flex items-center justify-end space-x-1.5">
         <button id="btn-skip" onclick="skipWord()" disabled class="bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white font-bold py-1 px-3 rounded text-xs border border-slate-600">
           パス
         </button>
-        <button id="btn-start" onclick="toggleGame()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1 px-4 rounded text-sm border border-emerald-400 shadow">
+        <button id="btn-start" onclick="toggleGame()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1 px-4 rounded text-xs md:text-sm border border-emerald-400 shadow">
           スタート
         </button>
         <button onclick="openSettings()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded border border-slate-700 text-xs">
@@ -222,7 +222,7 @@
       <p class="text-slate-300 text-sm">1分間の挑戦が終了しました！</p>
 
       <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
-        <h3 class="text-xs font-bold text-slate-400 border-b border-slate-800 pb-1">🏆 現在のランキング</h3>
+        <h3 class="text-xs font-bold text-slate-400 border-b border-slate-800 pb-1">🏆 最終ランキング</h3>
         <div id="result-ranking-list" class="space-y-2 max-h-48 scrollable-content overflow-y-auto pr-1">
           <!-- 動的生成 -->
         </div>
@@ -245,15 +245,15 @@
     ];
 
     const PLAYER_COLORS = [
-      { bg: "bg-red-600", border: "border-red-400" },
-      { bg: "bg-blue-600", border: "border-blue-400" },
-      { bg: "bg-emerald-600", border: "border-emerald-400" },
-      { bg: "bg-amber-600", border: "border-amber-400" },
-      { bg: "bg-purple-600", border: "border-purple-400" },
-      { bg: "bg-pink-600", border: "border-pink-400" },
-      { bg: "bg-teal-600", border: "border-teal-400" },
-      { bg: "bg-indigo-600", border: "border-indigo-400" },
-      { bg: "bg-orange-600", border: "border-orange-400" },
+      { bg: "bg-red-600", border: "border-red-400", badge: "bg-red-950 text-red-200 border-red-500" },
+      { bg: "bg-blue-600", border: "border-blue-400", badge: "bg-blue-950 text-blue-200 border-blue-500" },
+      { bg: "bg-emerald-600", border: "border-emerald-400", badge: "bg-emerald-950 text-emerald-200 border-emerald-500" },
+      { bg: "bg-amber-600", border: "border-amber-400", badge: "bg-amber-950 text-amber-200 border-amber-500" },
+      { bg: "bg-purple-600", border: "border-purple-400", badge: "bg-purple-950 text-purple-200 border-purple-500" },
+      { bg: "bg-pink-600", border: "border-pink-400", badge: "bg-pink-950 text-pink-200 border-pink-500" },
+      { bg: "bg-teal-600", border: "border-teal-400", badge: "bg-teal-950 text-teal-200 border-teal-500" },
+      { bg: "bg-indigo-600", border: "border-indigo-400", badge: "bg-indigo-950 text-indigo-200 border-indigo-500" },
+      { bg: "bg-orange-600", border: "border-orange-400", badge: "bg-orange-950 text-orange-200 border-orange-500" },
     ];
 
     let players = [
@@ -323,8 +323,7 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       initCanvas();
-      renderTvPlayers();
-      updateArtistDisplay();
+      renderTvRankings();
       window.addEventListener('resize', resizeCanvas);
     });
 
@@ -409,11 +408,11 @@
       const eraserBtn = document.getElementById('tool-eraser');
 
       if (tool === 'pen') {
-        penBtn.className = "px-3 py-1.5 rounded font-bold text-xs bg-indigo-600 text-white border border-indigo-400 shadow";
-        eraserBtn.className = "px-3 py-1.5 rounded font-bold text-xs bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700";
+        penBtn.className = "px-2.5 py-1 rounded font-bold text-xs bg-indigo-600 text-white border border-indigo-400 shadow";
+        eraserBtn.className = "px-2.5 py-1 rounded font-bold text-xs bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700";
       } else {
-        eraserBtn.className = "px-3 py-1.5 rounded font-bold text-xs bg-indigo-600 text-white border border-indigo-400 shadow";
-        penBtn.className = "px-3 py-1.5 rounded font-bold text-xs bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700";
+        eraserBtn.className = "px-2.5 py-1 rounded font-bold text-xs bg-indigo-600 text-white border border-indigo-400 shadow";
+        penBtn.className = "px-2.5 py-1 rounded font-bold text-xs bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700";
       }
     }
 
@@ -448,7 +447,7 @@
       usedWordIndices.clear();
 
       document.getElementById('btn-start').innerText = "中断";
-      document.getElementById('btn-start').className = "bg-rose-600 hover:bg-rose-500 text-white font-bold py-1 px-4 rounded text-sm border border-rose-400 shadow";
+      document.getElementById('btn-start').className = "bg-rose-600 hover:bg-rose-500 text-white font-bold py-1 px-4 rounded text-xs md:text-sm border border-rose-400 shadow";
       document.getElementById('btn-skip').disabled = false;
 
       clearCanvas();
@@ -470,7 +469,7 @@
       clearInterval(timerInterval);
       
       document.getElementById('btn-start').innerText = "スタート";
-      document.getElementById('btn-start').className = "bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1 px-4 rounded text-sm border border-emerald-400 shadow";
+      document.getElementById('btn-start').className = "bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1 px-4 rounded text-xs md:text-sm border border-emerald-400 shadow";
       document.getElementById('btn-skip').disabled = true;
       document.getElementById('word-display').innerText = "「スタート」を押してね！";
       updateTimerDisplay(60);
@@ -486,7 +485,13 @@
       const sec = overrideSec !== undefined ? overrideSec : timerSeconds;
       const mm = String(Math.floor(sec / 60)).padStart(2, '0');
       const ss = String(sec % 60).padStart(2, '0');
-      document.getElementById('timer-display').innerText = `${mm}:${ss}`;
+      
+      // テキスト表示の更新
+      document.getElementById('timer-text-overlay').innerText = `${mm}:${ss}`;
+
+      // プログレスバーの割合（幅％）更新
+      const percentage = (sec / 60) * 100;
+      document.getElementById('timer-progress-bar').style.width = `${percentage}%`;
     }
 
     function nextWord() {
@@ -525,42 +530,50 @@
         winner.score += 1;
       }
 
-      renderTvPlayers();
+      renderTvRankings();
       nextWord();
     }
 
-    function updateArtistDisplay() {
-      const activePlayers = players.filter(p => p.active);
-      if (activePlayers.length === 0) {
-        document.getElementById('current-artist-name').innerText = "----";
-        return;
-      }
-      const artist = activePlayers[currentArtistIndex % activePlayers.length];
-      document.getElementById('current-artist-name').innerText = artist ? artist.name : "----";
-    }
-
-    function renderTvPlayers() {
-      const container = document.getElementById('tv-players-grid');
+    // テレビ画面左側：縦型ランキングのレンダリング
+    function renderTvRankings() {
+      const container = document.getElementById('tv-rankings-container');
       container.innerHTML = '';
 
       const activePlayers = players.filter(p => p.active);
+      if (activePlayers.length === 0) return;
+
       const currentArtist = activePlayers[currentArtistIndex % activePlayers.length];
 
-      players.forEach((player) => {
-        if (!player.active) return;
+      // 元のインデックス位置を保持してランキング順にソート
+      const sorted = activePlayers.map((p, originalIndex) => ({
+        ...p,
+        originalIndex
+      })).sort((a, b) => b.score - a.score || a.id - b.id);
 
+      sorted.forEach((player, rank) => {
         const colorStyle = PLAYER_COLORS[player.id % PLAYER_COLORS.length];
         const isArtist = currentArtist && currentArtist.id === player.id;
 
         const btn = document.createElement('button');
         btn.onclick = () => handleCorrectAnswer(player.id);
         
-        btn.className = `px-2.5 py-1 rounded-lg border flex items-center space-x-2 shrink-0 transition active:scale-95 relative ${colorStyle.bg} ${colorStyle.border} ${isArtist ? 'ring-2 ring-amber-400 font-black' : 'opacity-90'}`;
+        // 人数に応じて縦幅を均等分配 (h-full flex-1)
+        btn.className = `player-card w-full flex-1 rounded-xl p-2 flex items-center justify-between border-2 transition active:scale-95 relative overflow-hidden shadow-md ${colorStyle.bg} ${colorStyle.border} ${isArtist ? 'ring-4 ring-amber-400 font-black' : 'opacity-90'}`;
+
+        let rankBadge = `<span class="text-xs font-black w-6 text-center text-white/80">#${rank + 1}</span>`;
+        if (rank === 0) rankBadge = `<span class="text-base font-black w-6 text-center">🥇</span>`;
+        if (rank === 1) rankBadge = `<span class="text-base font-black w-6 text-center">🥈</span>`;
+        if (rank === 2) rankBadge = `<span class="text-base font-black w-6 text-center">🥉</span>`;
 
         btn.innerHTML = `
-          ${isArtist ? '<span class="absolute -top-2 -left-1 bg-amber-400 text-black text-[8px] font-black px-1 rounded shadow">描き手</span>' : ''}
-          <span class="text-xs font-bold text-white max-w-[80px] truncate">${player.name}</span>
-          <span class="text-sm font-black text-white font-mono bg-black/30 px-1.5 py-0.5 rounded">${player.score}</span>
+          ${isArtist ? '<span class="absolute top-0 right-0 bg-amber-400 text-black text-[9px] font-black px-1.5 py-0.2 rounded-bl-lg shadow z-10">描き手</span>' : ''}
+          <div class="flex items-center space-x-1.5 truncate flex-1 min-w-0 pr-1">
+            ${rankBadge}
+            <span class="text-xs md:text-sm font-extrabold text-white truncate">${player.name}</span>
+          </div>
+          <div class="text-right shrink-0">
+            <span class="text-base md:text-lg font-black text-white font-mono bg-black/30 px-2 py-0.5 rounded-lg border border-white/20">${player.score} <span class="text-[9px]">pt</span></span>
+          </div>
         `;
 
         container.appendChild(btn);
@@ -597,8 +610,7 @@
         currentArtistIndex = 0;
       }
 
-      updateArtistDisplay();
-      renderTvPlayers();
+      renderTvRankings();
       closeSettings();
     }
 
@@ -685,7 +697,6 @@
       if (idx !== -1) {
         currentArtistIndex = idx;
         renderPlayersSettingsList();
-        updateArtistDisplay();
       }
     }
 
@@ -693,7 +704,7 @@
       if (confirm("全員のスコアを 0 pt にリセットしますか？")) {
         players.forEach(p => p.score = 0);
         renderPlayersSettingsList();
-        renderTvPlayers();
+        renderTvRankings();
       }
     }
 
@@ -740,8 +751,7 @@
       const activePlayers = players.filter(p => p.active);
       if (activePlayers.length > 0) {
         currentArtistIndex = (currentArtistIndex + 1) % activePlayers.length;
-        updateArtistDisplay();
-        renderTvPlayers();
+        renderTvRankings();
       }
 
       document.getElementById('result-modal').classList.remove('hidden');
