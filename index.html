@@ -13,8 +13,8 @@
       -webkit-user-select: none;
       user-select: none;
       overflow: hidden;
-      background-color: #111827;
-      color: #f3f4f6;
+      background-color: #0f172a;
+      color: #f8fafc;
     }
 
     /* キャンバス領域のタッチ操作最適化 */
@@ -23,15 +23,15 @@
       cursor: crosshair;
     }
 
-    /* 上下見切れ防止用レイアウト設定 */
+    /* 画面レイアウト固定高さ設定 */
     .top-secret-area {
-      height: 120px;
-      background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+      height: 70px;
+      background: #1e293b;
     }
 
     .bottom-secret-area {
-      height: 150px;
-      background: linear-gradient(0deg, #1f2937 0%, #111827 100%);
+      height: 190px;
+      background: #1e293b;
     }
 
     /* スクロール可能なエリア設定（モーダル内用） */
@@ -44,64 +44,55 @@
 <body class="h-screen flex flex-col justify-between font-sans">
 
   <!-- ========================================== -->
-  <!-- 1. 上部エリア（テレビには映らない秘密のエリア） -->
+  <!-- 1. 上部エリア（テレビからは見切れる領域） -->
   <!-- ========================================== -->
-  <header class="top-secret-area px-4 py-2 flex items-center justify-between border-b border-gray-800 relative z-10 shrink-0">
-    <!-- アーティスト情報＆タイマー -->
-    <div class="flex items-center space-x-4">
-      <div class="bg-indigo-900/80 border border-indigo-500/50 px-3 py-1.5 rounded-lg">
-        <span class="text-xs text-indigo-300 block">描き手（アーティスト）</span>
-        <span id="current-artist-name" class="text-lg font-bold text-indigo-100">----</span>
+  <header class="top-secret-area px-4 py-2 flex items-center justify-between border-b border-slate-700 relative z-10 shrink-0">
+    <!-- 描き手（アーティスト）情報 & タイマー -->
+    <div class="flex items-center space-x-3">
+      <div class="bg-indigo-950 border border-indigo-500/50 px-3 py-1 rounded-lg">
+        <span class="text-[10px] text-indigo-300 block leading-tight">描き手</span>
+        <span id="current-artist-name" class="text-base font-bold text-indigo-100">----</span>
       </div>
 
-      <div class="bg-gray-800 border border-gray-700 px-4 py-1.5 rounded-lg flex items-center space-x-2">
-        <span class="text-xs text-gray-400">残り時間</span>
-        <span id="timer-display" class="text-3xl font-black text-amber-400 font-mono">01:00</span>
-      </div>
-    </div>
-
-    <!-- お題表示（超重要：描き手にしか見えない領域） -->
-    <div class="flex-1 text-center mx-4 bg-amber-500/10 border-2 border-amber-500/50 rounded-xl p-2 relative">
-      <span class="absolute -top-2.5 left-4 bg-amber-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">
-        テレビには映りません（お題）
-      </span>
-      <div id="word-display" class="text-2xl md:text-3xl font-black tracking-wider text-amber-300 truncate">
-        「スタート」を押してね！
+      <div class="bg-slate-900 border border-slate-700 px-3 py-1 rounded-lg flex items-center space-x-2">
+        <span class="text-[10px] text-slate-400">残り時間</span>
+        <span id="timer-display" class="text-2xl font-black text-amber-400 font-mono">01:00</span>
       </div>
     </div>
 
     <!-- ゲーム操作ボタン -->
     <div class="flex items-center space-x-2">
-      <button id="btn-skip" onclick="skipWord()" disabled class="bg-gray-700 hover:bg-gray-600 disabled:opacity-40 text-white font-bold py-2 px-3 rounded-lg text-sm flex items-center space-x-1 border border-gray-600 transition">
-        <span>パス</span>
+      <button id="btn-skip" onclick="skipWord()" disabled class="bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white font-bold py-1.5 px-3 rounded-lg text-sm border border-slate-600 transition">
+        パス
       </button>
-      <button id="btn-start" onclick="toggleGame()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-5 rounded-lg text-lg border border-emerald-400 shadow-lg transition">
+      <button id="btn-start" onclick="toggleGame()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-5 rounded-lg text-base border border-emerald-400 shadow transition">
         スタート
       </button>
-      <button onclick="openSettings()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 p-2.5 rounded-lg border border-gray-700">
+      <button onclick="openSettings()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-2 rounded-lg border border-slate-700">
         ⚙️
       </button>
     </div>
   </header>
 
   <!-- ========================================== -->
-  <!-- 2. 中央エリア（テレビに横幅いっぱいに表示するキャンバス） -->
+  <!-- 2. 中央エリア（テレビにぴったり表示するキャンバス） -->
+  <!-- テレビの左右切れる部分を考慮し px-8 〜 px-12 で余白を確保 -->
   <!-- ========================================== -->
-  <main class="flex-1 relative flex items-center justify-center bg-gray-950 p-2 overflow-hidden">
-    <!-- キャンバス枠（テレビに綺麗に収まるメインコンテナ） -->
-    <div id="canvas-container" class="w-full h-full relative bg-white rounded-2xl shadow-2xl overflow-hidden flex items-center justify-center">
+  <main class="flex-1 relative flex items-center justify-center bg-slate-950 px-10 py-3 overflow-hidden">
+    <!-- キャンバス容器（左右を少し狭めてテレビ枠に綺麗に配置） -->
+    <div id="canvas-container" class="w-full h-full relative bg-white rounded-2xl shadow-2xl overflow-hidden flex items-center justify-center border-4 border-slate-800">
       <canvas id="paint-canvas" class="w-full h-full"></canvas>
 
-      <!-- ツールバー（キャンバス内の右上に配置） -->
-      <div class="absolute top-4 right-4 bg-gray-900/90 backdrop-blur border border-gray-700 rounded-xl p-2 flex space-x-2 shadow-xl">
-        <button id="tool-pen" onclick="setTool('pen')" class="px-4 py-2 rounded-lg font-bold text-sm bg-indigo-600 text-white border border-indigo-400 flex items-center space-x-1 shadow">
+      <!-- 描画ツールバー（キャンバス右上に配置） -->
+      <div class="absolute top-3 right-3 bg-slate-900/90 backdrop-blur border border-slate-700 rounded-xl p-1.5 flex space-x-2 shadow-xl">
+        <button id="tool-pen" onclick="setTool('pen')" class="px-3 py-1.5 rounded-lg font-bold text-xs bg-indigo-600 text-white border border-indigo-400 flex items-center space-x-1 shadow">
           <span>✏️ ペン</span>
         </button>
-        <button id="tool-eraser" onclick="setTool('eraser')" class="px-4 py-2 rounded-lg font-bold text-sm bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 flex items-center space-x-1">
+        <button id="tool-eraser" onclick="setTool('eraser')" class="px-3 py-1.5 rounded-lg font-bold text-xs bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 flex items-center space-x-1">
           <span>🧹 消しゴム</span>
         </button>
-        <div class="w-px bg-gray-700 my-1"></div>
-        <button onclick="clearCanvas()" class="px-3 py-2 rounded-lg font-bold text-sm bg-rose-900/80 hover:bg-rose-800 text-rose-200 border border-rose-700 flex items-center space-x-1">
+        <div class="w-px bg-slate-700 my-1"></div>
+        <button onclick="clearCanvas()" class="px-2.5 py-1.5 rounded-lg font-bold text-xs bg-rose-900/80 hover:bg-rose-800 text-rose-200 border border-rose-700 flex items-center space-x-1">
           <span>🗑️ 全消去</span>
         </button>
       </div>
@@ -109,19 +100,23 @@
   </main>
 
   <!-- ========================================== -->
-  <!-- 3. 下部エリア（テレビには映らない正解者ボタン領域） -->
+  <!-- 3. 下部エリア（テレビからは見切れる領域：お題＆正解者ボタン） -->
   <!-- ========================================== -->
-  <footer class="bottom-secret-area px-4 py-2 border-t border-gray-800 relative z-10 shrink-0 flex flex-col justify-between">
-    <div class="flex justify-between items-center px-1">
-      <span class="text-xs font-bold text-gray-400 flex items-center space-x-1">
-        <span>👇 答えた人をタップ（アーティストと正解者に +1 pt）</span>
+  <footer class="bottom-secret-area px-4 py-2 border-t border-slate-700 relative z-10 shrink-0 flex flex-col justify-between">
+    <!-- お題表示（テレビには見えない画面最下部エリア） -->
+    <div class="bg-amber-500/10 border-2 border-amber-500/50 rounded-xl px-4 py-1.5 flex items-center justify-between relative shadow-inner">
+      <span class="bg-amber-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shrink-0">
+        お題（テレビ非表示）
       </span>
-      <span class="text-xs text-gray-500">※このエリアはテレビに映りません</span>
+      <div id="word-display" class="text-xl md:text-2xl font-black tracking-wider text-amber-300 truncate text-center flex-1 mx-2">
+        「スタート」を押してね！
+      </div>
+      <span class="text-[10px] text-slate-400 shrink-0">正解したら下のボタンをタップ</span>
     </div>
 
-    <!-- プレイヤー正解ボタン一覧（最大9人） -->
-    <div id="answer-buttons-grid" class="grid grid-cols-9 gap-2 h-24 my-auto">
-      <!-- JavaScriptで動的に生成されます -->
+    <!-- プレイヤー正解者ボタン（最大9人） -->
+    <div id="answer-buttons-grid" class="grid grid-cols-9 gap-2 h-24 my-1">
+      <!-- JavaScriptで動的に生成 -->
     </div>
   </footer>
 
@@ -129,24 +124,24 @@
   <!-- モーダル：設定＆プレイヤー・お題登録画面 -->
   <!-- ========================================== -->
   <div id="settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl">
       <!-- モーダルヘッダー -->
-      <div class="p-4 border-b border-gray-800 flex justify-between items-center">
+      <div class="p-4 border-b border-slate-800 flex justify-between items-center">
         <h2 class="text-xl font-bold text-white flex items-center space-x-2">
           <span>⚙️ ゲーム設定＆お題登録</span>
         </h2>
-        <button onclick="closeSettings()" class="text-gray-400 hover:text-white text-2xl font-bold px-2">✕</button>
+        <button onclick="closeSettings()" class="text-slate-400 hover:text-white text-2xl font-bold px-2">✕</button>
       </div>
 
       <!-- モーダルコンテンツ -->
       <div class="p-6 scrollable-content overflow-y-auto space-y-6 flex-1 text-sm">
         
         <!-- タブ切り替えボタン -->
-        <div class="flex space-x-2 border-b border-gray-800 pb-2">
+        <div class="flex space-x-2 border-b border-slate-800 pb-2">
           <button id="tab-btn-players" onclick="switchTab('players')" class="px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white">
             👥 プレイヤー＆ランキング
           </button>
-          <button id="tab-btn-words" onclick="switchTab('words')" class="px-4 py-2 rounded-lg font-bold bg-gray-800 text-gray-400">
+          <button id="tab-btn-words" onclick="switchTab('words')" class="px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400">
             📝 お題一括登録
           </button>
         </div>
@@ -154,8 +149,8 @@
         <!-- タブ1: プレイヤー管理＆ランキング -->
         <div id="tab-content-players" class="space-y-4">
           <div class="flex justify-between items-center">
-            <p class="text-gray-400 text-xs">
-              参加するプレイヤーをオンにし、名前を設定してください（最大9名）。誰が描き手に移動するか選べます。
+            <p class="text-slate-400 text-xs">
+              参加するプレイヤーをオンにし、名前を設定してください（最大9名）。
             </p>
             <button onclick="resetScores()" class="text-xs bg-rose-900/50 hover:bg-rose-800 text-rose-300 border border-rose-700 px-3 py-1 rounded">
               スコアをリセット
@@ -163,17 +158,17 @@
           </div>
 
           <div id="players-list-container" class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <!-- JavaScriptでプレイヤー行を動的生成 -->
+            <!-- JavaScriptで動的生成 -->
           </div>
         </div>
 
         <!-- タブ2: お題登録 -->
         <div id="tab-content-words" class="space-y-3 hidden">
-          <p class="text-gray-400 text-xs">
-            1行に1つの「お題」を入力・ペーストしてください。ゲーム中ここからランダムに出題されます。
+          <p class="text-slate-400 text-xs">
+            1行に1つの「お題」を入力・ペーストしてください。
           </p>
-          <textarea id="words-input" rows="10" class="w-full bg-gray-950 border border-gray-700 rounded-xl p-3 text-white font-mono text-sm focus:outline-none focus:border-indigo-500" placeholder="リンゴ&#10;ゴリラ&#10;ラッパ"></textarea>
-          <div class="flex justify-between items-center text-xs text-gray-500">
+          <textarea id="words-input" rows="10" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white font-mono text-sm focus:outline-none focus:border-indigo-500" placeholder="リンゴ&#10;ゴリラ&#10;ラッパ"></textarea>
+          <div class="flex justify-between items-center text-xs text-slate-500">
             <span id="words-count-display">現在のお題数: 0個</span>
             <button onclick="loadDefaultWords()" class="text-indigo-400 hover:underline">デフォルトのお題を読み込む</button>
           </div>
@@ -182,7 +177,7 @@
       </div>
 
       <!-- モーダル フッター -->
-      <div class="p-4 border-t border-gray-800 flex justify-end space-x-3">
+      <div class="p-4 border-t border-slate-800 flex justify-end space-x-3">
         <button onclick="saveAndCloseSettings()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg">
           設定を保存して閉じる
         </button>
@@ -194,13 +189,13 @@
   <!-- モーダル：タイムアップ・ラウンド結果画面 -->
   <!-- ========================================== -->
   <div id="result-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-gray-900 border border-amber-500/50 rounded-2xl w-full max-w-md p-6 text-center shadow-2xl space-y-5">
+    <div class="bg-slate-900 border border-amber-500/50 rounded-2xl w-full max-w-md p-6 text-center shadow-2xl space-y-5">
       <div class="text-5xl">⏰</div>
       <h2 class="text-3xl font-black text-amber-400">タイムアップ！</h2>
-      <p class="text-gray-300 text-sm">1分間の挑戦が終了しました！</p>
+      <p class="text-slate-300 text-sm">1分間の挑戦が終了しました！</p>
 
-      <div class="bg-gray-950 border border-gray-800 rounded-xl p-4 space-y-3">
-        <h3 class="text-xs font-bold text-gray-400 border-b border-gray-800 pb-1">🏆 現在のランキング</h3>
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+        <h3 class="text-xs font-bold text-slate-400 border-b border-slate-800 pb-1">🏆 現在のランキング</h3>
         <div id="result-ranking-list" class="space-y-2 max-h-48 scrollable-content overflow-y-auto pr-1">
           <!-- 動的生成 -->
         </div>
@@ -214,9 +209,6 @@
 
   <!-- JavaScript ロジック -->
   <script>
-    // ----------------------------------------------------
-    // グローバル状態・設定
-    // ----------------------------------------------------
     const MAX_PLAYERS = 9;
     const DEFAULT_WORDS = [
       "リンゴ", "富士山", "ドラえもん", "サッカー", "自転車", 
@@ -225,17 +217,16 @@
       "ピアノ", "カブトムシ", "ハンバーガー", "自由の女神", "オバケ"
     ];
 
-    // アイコンのカラーパレット（9人分）
     const PLAYER_COLORS = [
-      { bg: "bg-red-600", border: "border-red-400", text: "text-red-200" },
-      { bg: "bg-blue-600", border: "border-blue-400", text: "text-blue-200" },
-      { bg: "bg-emerald-600", border: "border-emerald-400", text: "text-emerald-200" },
-      { bg: "bg-amber-600", border: "border-amber-400", text: "text-amber-200" },
-      { bg: "bg-purple-600", border: "border-purple-400", text: "text-purple-200" },
-      { bg: "bg-pink-600", border: "border-pink-400", text: "text-pink-200" },
-      { bg: "bg-teal-600", border: "border-teal-400", text: "text-teal-200" },
-      { bg: "bg-indigo-600", border: "border-indigo-400", text: "text-indigo-200" },
-      { bg: "bg-orange-600", border: "border-orange-400", text: "text-orange-200" },
+      { bg: "bg-red-600", border: "border-red-400" },
+      { bg: "bg-blue-600", border: "border-blue-400" },
+      { bg: "bg-emerald-600", border: "border-emerald-400" },
+      { bg: "bg-amber-600", border: "border-amber-400" },
+      { bg: "bg-purple-600", border: "border-purple-400" },
+      { bg: "bg-pink-600", border: "border-pink-400" },
+      { bg: "bg-teal-600", border: "border-teal-400" },
+      { bg: "bg-indigo-600", border: "border-indigo-400" },
+      { bg: "bg-orange-600", border: "border-orange-400" },
     ];
 
     let players = [
@@ -255,19 +246,16 @@
     let usedWordIndices = new Set();
     let currentWord = "";
     
-    // ゲームタイマー状態
     let isGaming = false;
     let timerSeconds = 60;
     let timerInterval = null;
 
-    // キャンバス・ツール状態
     let canvas, ctx;
     let isDrawing = false;
-    let currentTool = 'pen'; // 'pen' or 'eraser'
+    let currentTool = 'pen';
     const PEN_LINE_WIDTH = 6;
     const ERASER_LINE_WIDTH = 32;
 
-    // 効果音 (Web Audio API)
     let audioCtx = null;
 
     function initAudio() {
@@ -285,19 +273,17 @@
         gain.connect(audioCtx.destination);
 
         if (type === 'correct') {
-          // ピンポン♪
           osc.type = 'sine';
-          osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
-          osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.15); // E5
+          osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+          osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.15);
           gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
           gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
           osc.start(audioCtx.currentTime);
           osc.stop(audioCtx.currentTime + 0.4);
         } else if (type === 'finish') {
-          // 終了音
           osc.type = 'triangle';
-          osc.frequency.setValueAtTime(392.00, audioCtx.currentTime); // G4
-          osc.frequency.setValueAtTime(261.63, audioCtx.currentTime + 0.2); // C4
+          osc.frequency.setValueAtTime(392.00, audioCtx.currentTime);
+          osc.frequency.setValueAtTime(261.63, audioCtx.currentTime + 0.2);
           gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
           gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
           osc.start(audioCtx.currentTime);
@@ -308,27 +294,18 @@
       }
     }
 
-    // ----------------------------------------------------
-    // 初期化処理
-    // ----------------------------------------------------
     window.addEventListener('DOMContentLoaded', () => {
       initCanvas();
       renderAnswerButtons();
       updateArtistDisplay();
-      
-      // リサイズ時にキャンバス解像度を維持
       window.addEventListener('resize', resizeCanvas);
     });
 
-    // ----------------------------------------------------
-    // キャンバス描画エンジン
-    // ----------------------------------------------------
     function initCanvas() {
       canvas = document.getElementById('paint-canvas');
       ctx = canvas.getContext('2d');
       resizeCanvas();
 
-      // タッチ / マウスイベントハンドラ登録
       canvas.addEventListener('pointerdown', startDrawing);
       canvas.addEventListener('pointermove', draw);
       canvas.addEventListener('pointerup', stopDrawing);
@@ -337,10 +314,8 @@
 
     function resizeCanvas() {
       const container = document.getElementById('canvas-container');
-      // 解像度が高く描画できるように実際のピクセル数を設定
       const rect = container.getBoundingClientRect();
       
-      // 画像内容を一時保存
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = canvas.width;
       tempCanvas.height = canvas.height;
@@ -352,11 +327,9 @@
       canvas.width = rect.width;
       canvas.height = rect.height;
 
-      // 白背景で初期化
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // 旧画像を復元
       if (tempCanvas.width > 0) {
         ctx.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height);
       }
@@ -377,15 +350,14 @@
       
       ctx.beginPath();
       ctx.moveTo(pos.x, pos.y);
-      
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       
       if (currentTool === 'pen') {
-        ctx.strokeStyle = '#000000'; // 黒固定
+        ctx.strokeStyle = '#000000';
         ctx.lineWidth = PEN_LINE_WIDTH;
       } else {
-        ctx.strokeStyle = '#ffffff'; // 消しゴム（白）
+        ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = ERASER_LINE_WIDTH;
       }
     }
@@ -410,11 +382,11 @@
       const eraserBtn = document.getElementById('tool-eraser');
 
       if (tool === 'pen') {
-        penBtn.className = "px-4 py-2 rounded-lg font-bold text-sm bg-indigo-600 text-white border border-indigo-400 flex items-center space-x-1 shadow";
-        eraserBtn.className = "px-4 py-2 rounded-lg font-bold text-sm bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 flex items-center space-x-1";
+        penBtn.className = "px-3 py-1.5 rounded-lg font-bold text-xs bg-indigo-600 text-white border border-indigo-400 flex items-center space-x-1 shadow";
+        eraserBtn.className = "px-3 py-1.5 rounded-lg font-bold text-xs bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 flex items-center space-x-1";
       } else {
-        eraserBtn.className = "px-4 py-2 rounded-lg font-bold text-sm bg-indigo-600 text-white border border-indigo-400 flex items-center space-x-1 shadow";
-        penBtn.className = "px-4 py-2 rounded-lg font-bold text-sm bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 flex items-center space-x-1";
+        eraserBtn.className = "px-3 py-1.5 rounded-lg font-bold text-xs bg-indigo-600 text-white border border-indigo-400 flex items-center space-x-1 shadow";
+        penBtn.className = "px-3 py-1.5 rounded-lg font-bold text-xs bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 flex items-center space-x-1";
       }
     }
 
@@ -423,9 +395,6 @@
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    // ----------------------------------------------------
-    // ゲーム進行ロジック
-    // ----------------------------------------------------
     function toggleGame() {
       initAudio();
       if (isGaming) {
@@ -452,13 +421,12 @@
       usedWordIndices.clear();
 
       document.getElementById('btn-start').innerText = "中断";
-      document.getElementById('btn-start').className = "bg-rose-600 hover:bg-rose-500 text-white font-bold py-2 px-5 rounded-lg text-lg border border-rose-400 shadow-lg transition";
+      document.getElementById('btn-start').className = "bg-rose-600 hover:bg-rose-500 text-white font-bold py-1.5 px-5 rounded-lg text-base border border-rose-400 shadow transition";
       document.getElementById('btn-skip').disabled = false;
 
       clearCanvas();
       nextWord();
 
-      // タイマー開始
       updateTimerDisplay();
       timerInterval = setInterval(() => {
         timerSeconds--;
@@ -475,7 +443,7 @@
       clearInterval(timerInterval);
       
       document.getElementById('btn-start').innerText = "スタート";
-      document.getElementById('btn-start').className = "bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-5 rounded-lg text-lg border border-emerald-400 shadow-lg transition";
+      document.getElementById('btn-start').className = "bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-5 rounded-lg text-base border border-emerald-400 shadow transition";
       document.getElementById('btn-skip').disabled = true;
       document.getElementById('word-display').innerText = "「スタート」を押してね！";
       updateTimerDisplay(60);
@@ -496,7 +464,7 @@
 
     function nextWord() {
       if (usedWordIndices.size >= wordList.length) {
-        usedWordIndices.clear(); // 全て出尽くしたらリセット
+        usedWordIndices.clear();
       }
 
       let randomIndex;
@@ -516,28 +484,24 @@
       nextWord();
     }
 
-    // 正解者のタップイベント
     function handleCorrectAnswer(winnerPlayerId) {
       if (!isGaming) return;
 
       playSound('correct');
 
-      // アーティストに +1pt
       const activePlayers = players.filter(p => p.active);
       const artist = activePlayers[currentArtistIndex % activePlayers.length];
       if (artist) artist.score += 1;
 
-      // 正解者に +1pt (ただしアーティスト自身をタップした場合は2重加算防止)
       const winner = players.find(p => p.id === winnerPlayerId);
       if (winner && winner.id !== artist.id) {
         winner.score += 1;
       }
 
-      renderAnswerButtons(); // UI更新
+      renderAnswerButtons();
       nextWord();
     }
 
-    // アーティスト交代
     function updateArtistDisplay() {
       const activePlayers = players.filter(p => p.active);
       if (activePlayers.length === 0) {
@@ -548,15 +512,6 @@
       document.getElementById('current-artist-name').innerText = artist ? artist.name : "----";
     }
 
-    function selectArtist(playerIndexInActive) {
-      currentArtistIndex = playerIndexInActive;
-      updateArtistDisplay();
-      renderAnswerButtons();
-    }
-
-    // ----------------------------------------------------
-    // UIレンダリング
-    // ----------------------------------------------------
     function renderAnswerButtons() {
       const grid = document.getElementById('answer-buttons-grid');
       grid.innerHTML = '';
@@ -565,7 +520,7 @@
       const currentArtist = activePlayers[currentArtistIndex % activePlayers.length];
 
       players.forEach((player) => {
-        if (!player.active) return; // 非アクティブプレイヤーは下部に表示しない
+        if (!player.active) return;
 
         const colorStyle = PLAYER_COLORS[player.id % PLAYER_COLORS.length];
         const isArtist = currentArtist && currentArtist.id === player.id;
@@ -585,9 +540,6 @@
       });
     }
 
-    // ----------------------------------------------------
-    // モーダル・設定画面管理
-    // ----------------------------------------------------
     function openSettings() {
       if (isGaming) stopGame();
 
@@ -603,7 +555,6 @@
     }
 
     function saveAndCloseSettings() {
-      // お題の保存
       const rawWords = document.getElementById('words-input').value;
       const parsedWords = rawWords.split('\n').map(w => w.trim()).filter(w => w.length > 0);
       
@@ -614,7 +565,6 @@
 
       wordList = parsedWords;
 
-      // アーティストのインデックス調整
       const activePlayers = players.filter(p => p.active);
       if (currentArtistIndex >= activePlayers.length) {
         currentArtistIndex = 0;
@@ -635,12 +585,12 @@
         tabPlayers.classList.remove('hidden');
         tabWords.classList.add('hidden');
         btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white";
-        btnWords.className = "px-4 py-2 rounded-lg font-bold bg-gray-800 text-gray-400";
+        btnWords.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400";
       } else {
         tabPlayers.classList.add('hidden');
         tabWords.classList.remove('hidden');
         btnWords.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white";
-        btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-gray-800 text-gray-400";
+        btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400";
       }
     }
 
@@ -656,29 +606,27 @@
         const isArtist = activeIdx === (currentArtistIndex % (activePlayers.length || 1));
 
         const card = document.createElement('div');
-        card.className = `p-3 rounded-xl border flex flex-col justify-between space-y-2 bg-gray-950 ${player.active ? 'border-gray-700' : 'border-gray-800 opacity-50'}`;
+        card.className = `p-3 rounded-xl border flex flex-col justify-between space-y-2 bg-slate-950 ${player.active ? 'border-slate-700' : 'border-slate-800 opacity-50'}`;
 
         card.innerHTML = `
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-2">
               <span class="w-3 h-3 rounded-full ${colorStyle.bg}"></span>
-              <span class="font-bold text-gray-300 text-xs">P${player.id + 1}</span>
+              <span class="font-bold text-slate-300 text-xs">P${player.id + 1}</span>
             </div>
-            <!-- 参加ON/OFFスイッチ -->
             <label class="flex items-center cursor-pointer space-x-1">
-              <span class="text-[10px] text-gray-400">${player.active ? '参加' : 'お休み'}</span>
-              <input type="checkbox" ${player.active ? 'checked' : ''} onchange="togglePlayerActive(${player.id})" class="rounded bg-gray-800 border-gray-700 text-indigo-600 focus:ring-0">
+              <span class="text-[10px] text-slate-400">${player.active ? '参加' : 'お休み'}</span>
+              <input type="checkbox" ${player.active ? 'checked' : ''} onchange="togglePlayerActive(${player.id})" class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0">
             </label>
           </div>
 
-          <!-- 名前入力欄 -->
-          <input type="text" value="${player.name}" onchange="updatePlayerName(${player.id}, this.value)" class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs focus:outline-none focus:border-indigo-500" placeholder="名前">
+          <input type="text" value="${player.name}" onchange="updatePlayerName(${player.id}, this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-xs focus:outline-none focus:border-indigo-500" placeholder="名前">
 
-          <div class="flex items-center justify-between pt-1 border-t border-gray-800 text-xs">
+          <div class="flex items-center justify-between pt-1 border-t border-slate-800 text-xs">
             <span class="font-mono text-amber-400 font-bold">${player.score} pt</span>
             
             ${player.active ? `
-              <button onclick="setArtistByPlayerId(${player.id})" class="px-2 py-0.5 rounded text-[10px] font-bold ${isArtist ? 'bg-amber-500 text-black' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}">
+              <button onclick="setArtistByPlayerId(${player.id})" class="px-2 py-0.5 rounded text-[10px] font-bold ${isArtist ? 'bg-amber-500 text-black' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}">
                 ${isArtist ? '★ 現在の描き手' : '描き手に指定'}
               </button>
             ` : '<span></span>'}
@@ -735,20 +683,16 @@
 
     document.getElementById('words-input').addEventListener('input', updateWordsCountDisplay);
 
-    // ----------------------------------------------------
-    // リザルト（結果表示）画面
-    // ----------------------------------------------------
     function showResultModal() {
       const list = document.getElementById('result-ranking-list');
       list.innerHTML = '';
 
-      // スコア順にソート（アクティブのみ）
       const sorted = [...players.filter(p => p.active)].sort((a, b) => b.score - a.score);
 
       sorted.forEach((player, rank) => {
         const colorStyle = PLAYER_COLORS[player.id % PLAYER_COLORS.length];
         const item = document.createElement('div');
-        item.className = "flex justify-between items-center bg-gray-900 px-3 py-2 rounded-lg border border-gray-800 text-sm";
+        item.className = "flex justify-between items-center bg-slate-900 px-3 py-2 rounded-lg border border-slate-800 text-sm";
         
         let medal = `#${rank + 1}`;
         if (rank === 0) medal = "🥇 1位";
@@ -766,7 +710,6 @@
         list.appendChild(item);
       });
 
-      // 自動で次の描き手に切り替え
       const activePlayers = players.filter(p => p.active);
       if (activePlayers.length > 0) {
         currentArtistIndex = (currentArtistIndex + 1) % activePlayers.length;
@@ -784,4 +727,3 @@
 </body>
 </html>
 
-```
