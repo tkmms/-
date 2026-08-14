@@ -1,0 +1,788 @@
+```html
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>テレビでお絵描きパーティ！</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* タッチ・スワイプによる画面スクロールや選択を防止 */
+    body {
+      touch-action: none;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+      overflow: hidden;
+      background-color: #111827;
+      color: #f3f4f6;
+    }
+
+    /* キャンバス領域のタッチ操作最適化 */
+    canvas {
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    /* 上下見切れ防止用レイアウト設定 */
+    .top-secret-area {
+      height: 120px;
+      background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+    }
+
+    .bottom-secret-area {
+      height: 150px;
+      background: linear-gradient(0deg, #1f2937 0%, #111827 100%);
+    }
+
+    /* スクロール可能なエリア設定（モーダル内用） */
+    .scrollable-content {
+      touch-action: pan-y;
+      -webkit-overflow-scrolling: touch;
+    }
+  </style>
+</head>
+<body class="h-screen flex flex-col justify-between font-sans">
+
+  <!-- ========================================== -->
+  <!-- 1. 上部エリア（テレビには映らない秘密のエリア） -->
+  <!-- ========================================== -->
+  <header class="top-secret-area px-4 py-2 flex items-center justify-between border-b border-gray-800 relative z-10 shrink-0">
+    <!-- アーティスト情報＆タイマー -->
+    <div class="flex items-center space-x-4">
+      <div class="bg-indigo-900/80 border border-indigo-500/50 px-3 py-1.5 rounded-lg">
+        <span class="text-xs text-indigo-300 block">描き手（アーティスト）</span>
+        <span id="current-artist-name" class="text-lg font-bold text-indigo-100">----</span>
+      </div>
+
+      <div class="bg-gray-800 border border-gray-700 px-4 py-1.5 rounded-lg flex items-center space-x-2">
+        <span class="text-xs text-gray-400">残り時間</span>
+        <span id="timer-display" class="text-3xl font-black text-amber-400 font-mono">01:00</span>
+      </div>
+    </div>
+
+    <!-- お題表示（超重要：描き手にしか見えない領域） -->
+    <div class="flex-1 text-center mx-4 bg-amber-500/10 border-2 border-amber-500/50 rounded-xl p-2 relative">
+      <span class="absolute -top-2.5 left-4 bg-amber-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+        テレビには映りません（お題）
+      </span>
+      <div id="word-display" class="text-2xl md:text-3xl font-black tracking-wider text-amber-300 truncate">
+        「スタート」を押してね！
+      </div>
+    </div>
+
+    <!-- ゲーム操作ボタン -->
+    <div class="flex items-center space-x-2">
+      <button id="btn-skip" onclick="skipWord()" disabled class="bg-gray-700 hover:bg-gray-600 disabled:opacity-40 text-white font-bold py-2 px-3 rounded-lg text-sm flex items-center space-x-1 border border-gray-600 transition">
+        <span>パス</span>
+      </button>
+      <button id="btn-start" onclick="toggleGame()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-5 rounded-lg text-lg border border-emerald-400 shadow-lg transition">
+        スタート
+      </button>
+      <button onclick="openSettings()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 p-2.5 rounded-lg border border-gray-700">
+        ⚙️
+      </button>
+    </div>
+  </header>
+
+  <!-- ========================================== -->
+  <!-- 2. 中央エリア（テレビに横幅いっぱいに表示するキャンバス） -->
+  <!-- ========================================== -->
+  <main class="flex-1 relative flex items-center justify-center bg-gray-950 p-2 overflow-hidden">
+    <!-- キャンバス枠（テレビに綺麗に収まるメインコンテナ） -->
+    <div id="canvas-container" class="w-full h-full relative bg-white rounded-2xl shadow-2xl overflow-hidden flex items-center justify-center">
+      <canvas id="paint-canvas" class="w-full h-full"></canvas>
+
+      <!-- ツールバー（キャンバス内の右上に配置） -->
+      <div class="absolute top-4 right-4 bg-gray-900/90 backdrop-blur border border-gray-700 rounded-xl p-2 flex space-x-2 shadow-xl">
+        <button id="tool-pen" onclick="setTool('pen')" class="px-4 py-2 rounded-lg font-bold text-sm bg-indigo-600 text-white border border-indigo-400 flex items-center space-x-1 shadow">
+          <span>✏️ ペン</span>
+        </button>
+        <button id="tool-eraser" onclick="setTool('eraser')" class="px-4 py-2 rounded-lg font-bold text-sm bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 flex items-center space-x-1">
+          <span>🧹 消しゴム</span>
+        </button>
+        <div class="w-px bg-gray-700 my-1"></div>
+        <button onclick="clearCanvas()" class="px-3 py-2 rounded-lg font-bold text-sm bg-rose-900/80 hover:bg-rose-800 text-rose-200 border border-rose-700 flex items-center space-x-1">
+          <span>🗑️ 全消去</span>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- 3. 下部エリア（テレビには映らない正解者ボタン領域） -->
+  <!-- ========================================== -->
+  <footer class="bottom-secret-area px-4 py-2 border-t border-gray-800 relative z-10 shrink-0 flex flex-col justify-between">
+    <div class="flex justify-between items-center px-1">
+      <span class="text-xs font-bold text-gray-400 flex items-center space-x-1">
+        <span>👇 答えた人をタップ（アーティストと正解者に +1 pt）</span>
+      </span>
+      <span class="text-xs text-gray-500">※このエリアはテレビに映りません</span>
+    </div>
+
+    <!-- プレイヤー正解ボタン一覧（最大9人） -->
+    <div id="answer-buttons-grid" class="grid grid-cols-9 gap-2 h-24 my-auto">
+      <!-- JavaScriptで動的に生成されます -->
+    </div>
+  </footer>
+
+  <!-- ========================================== -->
+  <!-- モーダル：設定＆プレイヤー・お題登録画面 -->
+  <!-- ========================================== -->
+  <div id="settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl">
+      <!-- モーダルヘッダー -->
+      <div class="p-4 border-b border-gray-800 flex justify-between items-center">
+        <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+          <span>⚙️ ゲーム設定＆お題登録</span>
+        </h2>
+        <button onclick="closeSettings()" class="text-gray-400 hover:text-white text-2xl font-bold px-2">✕</button>
+      </div>
+
+      <!-- モーダルコンテンツ -->
+      <div class="p-6 scrollable-content overflow-y-auto space-y-6 flex-1 text-sm">
+        
+        <!-- タブ切り替えボタン -->
+        <div class="flex space-x-2 border-b border-gray-800 pb-2">
+          <button id="tab-btn-players" onclick="switchTab('players')" class="px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white">
+            👥 プレイヤー＆ランキング
+          </button>
+          <button id="tab-btn-words" onclick="switchTab('words')" class="px-4 py-2 rounded-lg font-bold bg-gray-800 text-gray-400">
+            📝 お題一括登録
+          </button>
+        </div>
+
+        <!-- タブ1: プレイヤー管理＆ランキング -->
+        <div id="tab-content-players" class="space-y-4">
+          <div class="flex justify-between items-center">
+            <p class="text-gray-400 text-xs">
+              参加するプレイヤーをオンにし、名前を設定してください（最大9名）。誰が描き手に移動するか選べます。
+            </p>
+            <button onclick="resetScores()" class="text-xs bg-rose-900/50 hover:bg-rose-800 text-rose-300 border border-rose-700 px-3 py-1 rounded">
+              スコアをリセット
+            </button>
+          </div>
+
+          <div id="players-list-container" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <!-- JavaScriptでプレイヤー行を動的生成 -->
+          </div>
+        </div>
+
+        <!-- タブ2: お題登録 -->
+        <div id="tab-content-words" class="space-y-3 hidden">
+          <p class="text-gray-400 text-xs">
+            1行に1つの「お題」を入力・ペーストしてください。ゲーム中ここからランダムに出題されます。
+          </p>
+          <textarea id="words-input" rows="10" class="w-full bg-gray-950 border border-gray-700 rounded-xl p-3 text-white font-mono text-sm focus:outline-none focus:border-indigo-500" placeholder="リンゴ&#10;ゴリラ&#10;ラッパ"></textarea>
+          <div class="flex justify-between items-center text-xs text-gray-500">
+            <span id="words-count-display">現在のお題数: 0個</span>
+            <button onclick="loadDefaultWords()" class="text-indigo-400 hover:underline">デフォルトのお題を読み込む</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- モーダル フッター -->
+      <div class="p-4 border-t border-gray-800 flex justify-end space-x-3">
+        <button onclick="saveAndCloseSettings()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg">
+          設定を保存して閉じる
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- モーダル：タイムアップ・ラウンド結果画面 -->
+  <!-- ========================================== -->
+  <div id="result-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-gray-900 border border-amber-500/50 rounded-2xl w-full max-w-md p-6 text-center shadow-2xl space-y-5">
+      <div class="text-5xl">⏰</div>
+      <h2 class="text-3xl font-black text-amber-400">タイムアップ！</h2>
+      <p class="text-gray-300 text-sm">1分間の挑戦が終了しました！</p>
+
+      <div class="bg-gray-950 border border-gray-800 rounded-xl p-4 space-y-3">
+        <h3 class="text-xs font-bold text-gray-400 border-b border-gray-800 pb-1">🏆 現在のランキング</h3>
+        <div id="result-ranking-list" class="space-y-2 max-h-48 scrollable-content overflow-y-auto pr-1">
+          <!-- 動的生成 -->
+        </div>
+      </div>
+
+      <button onclick="closeResultModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl shadow-lg text-lg">
+        次のラウンドへ！
+      </button>
+    </div>
+  </div>
+
+  <!-- JavaScript ロジック -->
+  <script>
+    // ----------------------------------------------------
+    // グローバル状態・設定
+    // ----------------------------------------------------
+    const MAX_PLAYERS = 9;
+    const DEFAULT_WORDS = [
+      "リンゴ", "富士山", "ドラえもん", "サッカー", "自転車", 
+      "ひまわり", "ペンギン", "ラーメン", "新幹線", "メガネ",
+      "東京タワー", "寿司", "クリスマスツリー", "ライオン", "宇宙船",
+      "ピアノ", "カブトムシ", "ハンバーガー", "自由の女神", "オバケ"
+    ];
+
+    // アイコンのカラーパレット（9人分）
+    const PLAYER_COLORS = [
+      { bg: "bg-red-600", border: "border-red-400", text: "text-red-200" },
+      { bg: "bg-blue-600", border: "border-blue-400", text: "text-blue-200" },
+      { bg: "bg-emerald-600", border: "border-emerald-400", text: "text-emerald-200" },
+      { bg: "bg-amber-600", border: "border-amber-400", text: "text-amber-200" },
+      { bg: "bg-purple-600", border: "border-purple-400", text: "text-purple-200" },
+      { bg: "bg-pink-600", border: "border-pink-400", text: "text-pink-200" },
+      { bg: "bg-teal-600", border: "border-teal-400", text: "text-teal-200" },
+      { bg: "bg-indigo-600", border: "border-indigo-400", text: "text-indigo-200" },
+      { bg: "bg-orange-600", border: "border-orange-400", text: "text-orange-200" },
+    ];
+
+    let players = [
+      { id: 0, name: "プレイヤー1", active: true, score: 0 },
+      { id: 1, name: "プレイヤー2", active: true, score: 0 },
+      { id: 2, name: "プレイヤー3", active: true, score: 0 },
+      { id: 3, name: "プレイヤー4", active: false, score: 0 },
+      { id: 4, name: "プレイヤー5", active: false, score: 0 },
+      { id: 5, name: "プレイヤー6", active: false, score: 0 },
+      { id: 6, name: "プレイヤー7", active: false, score: 0 },
+      { id: 7, name: "プレイヤー8", active: false, score: 0 },
+      { id: 8, name: "プレイヤー9", active: false, score: 0 },
+    ];
+
+    let currentArtistIndex = 0;
+    let wordList = [...DEFAULT_WORDS];
+    let usedWordIndices = new Set();
+    let currentWord = "";
+    
+    // ゲームタイマー状態
+    let isGaming = false;
+    let timerSeconds = 60;
+    let timerInterval = null;
+
+    // キャンバス・ツール状態
+    let canvas, ctx;
+    let isDrawing = false;
+    let currentTool = 'pen'; // 'pen' or 'eraser'
+    const PEN_LINE_WIDTH = 6;
+    const ERASER_LINE_WIDTH = 32;
+
+    // 効果音 (Web Audio API)
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playSound(type) {
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'correct') {
+          // ピンポン♪
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+          osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.15); // E5
+          gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+          osc.start(audioCtx.currentTime);
+          osc.stop(audioCtx.currentTime + 0.4);
+        } else if (type === 'finish') {
+          // 終了音
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(392.00, audioCtx.currentTime); // G4
+          osc.frequency.setValueAtTime(261.63, audioCtx.currentTime + 0.2); // C4
+          gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+          osc.start(audioCtx.currentTime);
+          osc.stop(audioCtx.currentTime + 0.6);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // ----------------------------------------------------
+    // 初期化処理
+    // ----------------------------------------------------
+    window.addEventListener('DOMContentLoaded', () => {
+      initCanvas();
+      renderAnswerButtons();
+      updateArtistDisplay();
+      
+      // リサイズ時にキャンバス解像度を維持
+      window.addEventListener('resize', resizeCanvas);
+    });
+
+    // ----------------------------------------------------
+    // キャンバス描画エンジン
+    // ----------------------------------------------------
+    function initCanvas() {
+      canvas = document.getElementById('paint-canvas');
+      ctx = canvas.getContext('2d');
+      resizeCanvas();
+
+      // タッチ / マウスイベントハンドラ登録
+      canvas.addEventListener('pointerdown', startDrawing);
+      canvas.addEventListener('pointermove', draw);
+      canvas.addEventListener('pointerup', stopDrawing);
+      canvas.addEventListener('pointercancel', stopDrawing);
+    }
+
+    function resizeCanvas() {
+      const container = document.getElementById('canvas-container');
+      // 解像度が高く描画できるように実際のピクセル数を設定
+      const rect = container.getBoundingClientRect();
+      
+      // 画像内容を一時保存
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      const tempCtx = tempCanvas.getContext('2d');
+      if (canvas.width > 0) {
+        tempCtx.drawImage(canvas, 0, 0);
+      }
+
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+
+      // 白背景で初期化
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // 旧画像を復元
+      if (tempCanvas.width > 0) {
+        ctx.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    function getCanvasCoordinates(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      };
+    }
+
+    function startDrawing(e) {
+      initAudio();
+      isDrawing = true;
+      const pos = getCanvasCoordinates(e);
+      
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+      
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      
+      if (currentTool === 'pen') {
+        ctx.strokeStyle = '#000000'; // 黒固定
+        ctx.lineWidth = PEN_LINE_WIDTH;
+      } else {
+        ctx.strokeStyle = '#ffffff'; // 消しゴム（白）
+        ctx.lineWidth = ERASER_LINE_WIDTH;
+      }
+    }
+
+    function draw(e) {
+      if (!isDrawing) return;
+      const pos = getCanvasCoordinates(e);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+    }
+
+    function stopDrawing() {
+      if (isDrawing) {
+        ctx.closePath();
+        isDrawing = false;
+      }
+    }
+
+    function setTool(tool) {
+      currentTool = tool;
+      const penBtn = document.getElementById('tool-pen');
+      const eraserBtn = document.getElementById('tool-eraser');
+
+      if (tool === 'pen') {
+        penBtn.className = "px-4 py-2 rounded-lg font-bold text-sm bg-indigo-600 text-white border border-indigo-400 flex items-center space-x-1 shadow";
+        eraserBtn.className = "px-4 py-2 rounded-lg font-bold text-sm bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 flex items-center space-x-1";
+      } else {
+        eraserBtn.className = "px-4 py-2 rounded-lg font-bold text-sm bg-indigo-600 text-white border border-indigo-400 flex items-center space-x-1 shadow";
+        penBtn.className = "px-4 py-2 rounded-lg font-bold text-sm bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 flex items-center space-x-1";
+      }
+    }
+
+    function clearCanvas() {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // ----------------------------------------------------
+    // ゲーム進行ロジック
+    // ----------------------------------------------------
+    function toggleGame() {
+      initAudio();
+      if (isGaming) {
+        stopGame();
+      } else {
+        startGame();
+      }
+    }
+
+    function startGame() {
+      if (wordList.length === 0) {
+        alert("お題が登録されていません。設定画面からお題を追加してください。");
+        return;
+      }
+
+      const activePlayers = players.filter(p => p.active);
+      if (activePlayers.length < 1) {
+        alert("ゲームに参加するプレイヤーを最低1名以上設定してください。");
+        return;
+      }
+
+      isGaming = true;
+      timerSeconds = 60;
+      usedWordIndices.clear();
+
+      document.getElementById('btn-start').innerText = "中断";
+      document.getElementById('btn-start').className = "bg-rose-600 hover:bg-rose-500 text-white font-bold py-2 px-5 rounded-lg text-lg border border-rose-400 shadow-lg transition";
+      document.getElementById('btn-skip').disabled = false;
+
+      clearCanvas();
+      nextWord();
+
+      // タイマー開始
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+        timerSeconds--;
+        updateTimerDisplay();
+
+        if (timerSeconds <= 0) {
+          finishRound();
+        }
+      }, 1000);
+    }
+
+    function stopGame() {
+      isGaming = false;
+      clearInterval(timerInterval);
+      
+      document.getElementById('btn-start').innerText = "スタート";
+      document.getElementById('btn-start').className = "bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-5 rounded-lg text-lg border border-emerald-400 shadow-lg transition";
+      document.getElementById('btn-skip').disabled = true;
+      document.getElementById('word-display').innerText = "「スタート」を押してね！";
+      updateTimerDisplay(60);
+    }
+
+    function finishRound() {
+      stopGame();
+      playSound('finish');
+      showResultModal();
+    }
+
+    function updateTimerDisplay(overrideSec) {
+      const sec = overrideSec !== undefined ? overrideSec : timerSeconds;
+      const mm = String(Math.floor(sec / 60)).padStart(2, '0');
+      const ss = String(sec % 60).padStart(2, '0');
+      document.getElementById('timer-display').innerText = `${mm}:${ss}`;
+    }
+
+    function nextWord() {
+      if (usedWordIndices.size >= wordList.length) {
+        usedWordIndices.clear(); // 全て出尽くしたらリセット
+      }
+
+      let randomIndex;
+      do {
+        randomIndex = Math.floor(Math.random() * wordList.length);
+      } while (usedWordIndices.has(randomIndex) && usedWordIndices.size < wordList.length);
+
+      usedWordIndices.add(randomIndex);
+      currentWord = wordList[randomIndex];
+      document.getElementById('word-display').innerText = currentWord;
+      
+      clearCanvas();
+    }
+
+    function skipWord() {
+      if (!isGaming) return;
+      nextWord();
+    }
+
+    // 正解者のタップイベント
+    function handleCorrectAnswer(winnerPlayerId) {
+      if (!isGaming) return;
+
+      playSound('correct');
+
+      // アーティストに +1pt
+      const activePlayers = players.filter(p => p.active);
+      const artist = activePlayers[currentArtistIndex % activePlayers.length];
+      if (artist) artist.score += 1;
+
+      // 正解者に +1pt (ただしアーティスト自身をタップした場合は2重加算防止)
+      const winner = players.find(p => p.id === winnerPlayerId);
+      if (winner && winner.id !== artist.id) {
+        winner.score += 1;
+      }
+
+      renderAnswerButtons(); // UI更新
+      nextWord();
+    }
+
+    // アーティスト交代
+    function updateArtistDisplay() {
+      const activePlayers = players.filter(p => p.active);
+      if (activePlayers.length === 0) {
+        document.getElementById('current-artist-name').innerText = "----";
+        return;
+      }
+      const artist = activePlayers[currentArtistIndex % activePlayers.length];
+      document.getElementById('current-artist-name').innerText = artist ? artist.name : "----";
+    }
+
+    function selectArtist(playerIndexInActive) {
+      currentArtistIndex = playerIndexInActive;
+      updateArtistDisplay();
+      renderAnswerButtons();
+    }
+
+    // ----------------------------------------------------
+    // UIレンダリング
+    // ----------------------------------------------------
+    function renderAnswerButtons() {
+      const grid = document.getElementById('answer-buttons-grid');
+      grid.innerHTML = '';
+
+      const activePlayers = players.filter(p => p.active);
+      const currentArtist = activePlayers[currentArtistIndex % activePlayers.length];
+
+      players.forEach((player) => {
+        if (!player.active) return; // 非アクティブプレイヤーは下部に表示しない
+
+        const colorStyle = PLAYER_COLORS[player.id % PLAYER_COLORS.length];
+        const isArtist = currentArtist && currentArtist.id === player.id;
+
+        const btn = document.createElement('button');
+        btn.onclick = () => handleCorrectAnswer(player.id);
+        
+        btn.className = `h-full rounded-xl flex flex-col justify-between p-2 text-left border-2 transition active:scale-95 relative ${colorStyle.bg} ${colorStyle.border} ${isArtist ? 'ring-4 ring-amber-400 font-extrabold' : 'opacity-90'}`;
+
+        btn.innerHTML = `
+          ${isArtist ? '<span class="absolute -top-2 -right-1 bg-amber-400 text-black text-[9px] font-black px-1.5 py-0.2 rounded-full shadow">描き手</span>' : ''}
+          <div class="text-xs font-bold text-white truncate">${player.name}</div>
+          <div class="text-right text-lg font-black text-white font-mono leading-none">${player.score} <span class="text-[10px]">pt</span></div>
+        `;
+
+        grid.appendChild(btn);
+      });
+    }
+
+    // ----------------------------------------------------
+    // モーダル・設定画面管理
+    // ----------------------------------------------------
+    function openSettings() {
+      if (isGaming) stopGame();
+
+      renderPlayersSettingsList();
+      document.getElementById('words-input').value = wordList.join('\n');
+      updateWordsCountDisplay();
+
+      document.getElementById('settings-modal').classList.remove('hidden');
+    }
+
+    function closeSettings() {
+      document.getElementById('settings-modal').classList.add('hidden');
+    }
+
+    function saveAndCloseSettings() {
+      // お題の保存
+      const rawWords = document.getElementById('words-input').value;
+      const parsedWords = rawWords.split('\n').map(w => w.trim()).filter(w => w.length > 0);
+      
+      if (parsedWords.length === 0) {
+        alert("お題は最低1つ以上入力してください。");
+        return;
+      }
+
+      wordList = parsedWords;
+
+      // アーティストのインデックス調整
+      const activePlayers = players.filter(p => p.active);
+      if (currentArtistIndex >= activePlayers.length) {
+        currentArtistIndex = 0;
+      }
+
+      updateArtistDisplay();
+      renderAnswerButtons();
+      closeSettings();
+    }
+
+    function switchTab(tabName) {
+      const tabPlayers = document.getElementById('tab-content-players');
+      const tabWords = document.getElementById('tab-content-words');
+      const btnPlayers = document.getElementById('tab-btn-players');
+      const btnWords = document.getElementById('tab-btn-words');
+
+      if (tabName === 'players') {
+        tabPlayers.classList.remove('hidden');
+        tabWords.classList.add('hidden');
+        btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white";
+        btnWords.className = "px-4 py-2 rounded-lg font-bold bg-gray-800 text-gray-400";
+      } else {
+        tabPlayers.classList.add('hidden');
+        tabWords.classList.remove('hidden');
+        btnWords.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white";
+        btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-gray-800 text-gray-400";
+      }
+    }
+
+    function renderPlayersSettingsList() {
+      const container = document.getElementById('players-list-container');
+      container.innerHTML = '';
+
+      const activePlayers = players.filter(p => p.active);
+
+      players.forEach((player) => {
+        const colorStyle = PLAYER_COLORS[player.id % PLAYER_COLORS.length];
+        const activeIdx = activePlayers.findIndex(p => p.id === player.id);
+        const isArtist = activeIdx === (currentArtistIndex % (activePlayers.length || 1));
+
+        const card = document.createElement('div');
+        card.className = `p-3 rounded-xl border flex flex-col justify-between space-y-2 bg-gray-950 ${player.active ? 'border-gray-700' : 'border-gray-800 opacity-50'}`;
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="w-3 h-3 rounded-full ${colorStyle.bg}"></span>
+              <span class="font-bold text-gray-300 text-xs">P${player.id + 1}</span>
+            </div>
+            <!-- 参加ON/OFFスイッチ -->
+            <label class="flex items-center cursor-pointer space-x-1">
+              <span class="text-[10px] text-gray-400">${player.active ? '参加' : 'お休み'}</span>
+              <input type="checkbox" ${player.active ? 'checked' : ''} onchange="togglePlayerActive(${player.id})" class="rounded bg-gray-800 border-gray-700 text-indigo-600 focus:ring-0">
+            </label>
+          </div>
+
+          <!-- 名前入力欄 -->
+          <input type="text" value="${player.name}" onchange="updatePlayerName(${player.id}, this.value)" class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs focus:outline-none focus:border-indigo-500" placeholder="名前">
+
+          <div class="flex items-center justify-between pt-1 border-t border-gray-800 text-xs">
+            <span class="font-mono text-amber-400 font-bold">${player.score} pt</span>
+            
+            ${player.active ? `
+              <button onclick="setArtistByPlayerId(${player.id})" class="px-2 py-0.5 rounded text-[10px] font-bold ${isArtist ? 'bg-amber-500 text-black' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}">
+                ${isArtist ? '★ 現在の描き手' : '描き手に指定'}
+              </button>
+            ` : '<span></span>'}
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    function togglePlayerActive(playerId) {
+      const p = players.find(x => x.id === playerId);
+      if (p) {
+        p.active = !p.active;
+        renderPlayersSettingsList();
+      }
+    }
+
+    function updatePlayerName(playerId, newName) {
+      const p = players.find(x => x.id === playerId);
+      if (p) {
+        p.name = newName.trim() || `プレイヤー${playerId + 1}`;
+      }
+    }
+
+    function setArtistByPlayerId(playerId) {
+      const activePlayers = players.filter(p => p.active);
+      const idx = activePlayers.findIndex(p => p.id === playerId);
+      if (idx !== -1) {
+        currentArtistIndex = idx;
+        renderPlayersSettingsList();
+        updateArtistDisplay();
+      }
+    }
+
+    function resetScores() {
+      if (confirm("全員のスコアを 0 pt にリセットしますか？")) {
+        players.forEach(p => p.score = 0);
+        renderPlayersSettingsList();
+        renderAnswerButtons();
+      }
+    }
+
+    function loadDefaultWords() {
+      document.getElementById('words-input').value = DEFAULT_WORDS.join('\n');
+      updateWordsCountDisplay();
+    }
+
+    function updateWordsCountDisplay() {
+      const rawWords = document.getElementById('words-input').value;
+      const parsedWords = rawWords.split('\n').map(w => w.trim()).filter(w => w.length > 0);
+      document.getElementById('words-count-display').innerText = `現在のお題数: ${parsedWords.length}個`;
+    }
+
+    document.getElementById('words-input').addEventListener('input', updateWordsCountDisplay);
+
+    // ----------------------------------------------------
+    // リザルト（結果表示）画面
+    // ----------------------------------------------------
+    function showResultModal() {
+      const list = document.getElementById('result-ranking-list');
+      list.innerHTML = '';
+
+      // スコア順にソート（アクティブのみ）
+      const sorted = [...players.filter(p => p.active)].sort((a, b) => b.score - a.score);
+
+      sorted.forEach((player, rank) => {
+        const colorStyle = PLAYER_COLORS[player.id % PLAYER_COLORS.length];
+        const item = document.createElement('div');
+        item.className = "flex justify-between items-center bg-gray-900 px-3 py-2 rounded-lg border border-gray-800 text-sm";
+        
+        let medal = `#${rank + 1}`;
+        if (rank === 0) medal = "🥇 1位";
+        if (rank === 1) medal = "🥈 2位";
+        if (rank === 2) medal = "🥉 3位";
+
+        item.innerHTML = `
+          <div class="flex items-center space-x-2">
+            <span class="font-bold text-xs text-amber-400 w-12 text-left">${medal}</span>
+            <span class="w-2.5 h-2.5 rounded-full ${colorStyle.bg}"></span>
+            <span class="text-white font-bold">${player.name}</span>
+          </div>
+          <span class="font-mono font-black text-amber-300 text-base">${player.score} <span class="text-xs">pt</span></span>
+        `;
+        list.appendChild(item);
+      });
+
+      // 自動で次の描き手に切り替え
+      const activePlayers = players.filter(p => p.active);
+      if (activePlayers.length > 0) {
+        currentArtistIndex = (currentArtistIndex + 1) % activePlayers.length;
+        updateArtistDisplay();
+        renderAnswerButtons();
+      }
+
+      document.getElementById('result-modal').classList.remove('hidden');
+    }
+
+    function closeResultModal() {
+      document.getElementById('result-modal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
+
+```
