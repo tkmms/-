@@ -43,9 +43,9 @@
       -webkit-overflow-scrolling: touch;
     }
 
-    /* ランキング順位変更時の移動アニメーション */
-    .player-card {
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* FLIP移動アニメーション用スタイル */
+    .player-card-move {
+      transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
     /* ポイント獲得時の光るアニメーション */
@@ -62,9 +62,9 @@
     /* Floating Point (+1pt) アニメーション */
     @keyframes floatUp {
       0% { opacity: 0; transform: translateY(10px) scale(0.5); }
-      30% { opacity: 1; transform: translateY(-10px) scale(1.3); }
-      80% { opacity: 1; transform: translateY(-25px) scale(1); }
-      100% { opacity: 0; transform: translateY(-35px) scale(0.8); }
+      30% { opacity: 1; transform: translateY(-12px) scale(1.3); }
+      80% { opacity: 1; transform: translateY(-28px) scale(1); }
+      100% { opacity: 0; transform: translateY(-38px) scale(0.8); }
     }
 
     .float-score-text {
@@ -79,11 +79,11 @@
   <!-- 1. テレビに映るメイン領域 -->
   <!-- 下部にしっかり余裕を設けてテレビ端切れ・見切れを防止 -->
   <!-- ========================================== -->
-  <div class="flex-1 flex flex-col pt-[7dvh] px-[4vw] pb-[3dvh] min-h-0 relative">
+  <div class="flex-1 flex flex-col pt-[7dvh] px-[4vw] pb-[2.5dvh] min-h-0 relative">
     <div class="w-full h-full flex flex-row gap-3 min-h-0">
       
-      <!-- テレビ左側：プレイヤーランキング縦並び -->
-      <aside id="tv-rankings-container" class="w-40 md:w-52 h-full flex flex-col gap-1.5 shrink-0">
+      <!-- テレビ左側：プレイヤーランキング縦並び（アニメーション移動対応） -->
+      <aside id="tv-rankings-container" class="w-44 md:w-56 h-full flex flex-col gap-1.5 shrink-0 relative">
         <!-- JavaScriptで動的生成 -->
       </aside>
 
@@ -109,22 +109,21 @@
 
 
   <!-- ========================================== -->
-  <!-- 2. テレビには絶対映らない秘密の領域（画面最下部：14dvhに高さをさらに縮小して位置を下げ） -->
+  <!-- 2. テレビには絶対映らない秘密の領域（画面最下部：高さを14dvhに抑制して位置をしっかり保持） -->
   <!-- ========================================== -->
-  <footer class="h-[14dvh] w-full bg-slate-900 border-t-2 border-slate-800 px-3 py-1 flex items-center justify-between gap-2 shrink-0 z-20 shadow-2xl overflow-hidden">
+  <footer class="h-[14dvh] w-full bg-slate-900 border-t-2 border-slate-800 px-3 py-1 flex items-center justify-between gap-2 shrink-0 z-20 shadow-2xl overflow-hidden relative">
     
-    <!-- お題 ＆ スタート/中断コントロール一体型エリア（テレビ非表示） -->
-    <div class="flex-1 bg-amber-500/10 border-2 border-amber-500/50 rounded-xl px-3 py-1 flex items-center justify-between relative shadow-inner h-full overflow-hidden gap-2">
+    <!-- 正解者タップ用ヒントガイド（テレビからは映らない境界エリアに配置） -->
+    <div class="absolute -top-5 left-4 text-[10px] text-amber-300/80 font-bold tracking-wider pointer-events-none flex items-center space-x-1">
+      <span>👇 正解したら左のプレイヤーをタップ！</span>
+    </div>
+
+    <!-- お題 ＆ スタート/中断コントロール一体型エリア（テレビ非表示・お題のみ表示） -->
+    <div class="flex-1 bg-amber-500/10 border-2 border-amber-500/50 rounded-xl px-4 py-1 flex items-center justify-between relative shadow-inner h-full overflow-hidden gap-3">
       
-      <!-- 左側：お題表示 -->
-      <div class="flex-1 flex flex-col justify-center h-full min-w-0">
-        <div class="flex items-center space-x-2">
-          <span class="bg-amber-600 text-white text-[9px] font-bold px-1.5 py-0.2 rounded shrink-0">
-            テレビ非表示（お題）
-          </span>
-          <span class="text-[9px] text-slate-400 truncate">正解者をタップ！</span>
-        </div>
-        <div id="word-display" class="text-base md:text-xl font-black tracking-wider text-amber-300 truncate my-auto">
+      <!-- お題表示（「テレビ非表示」の文言を撤去してお題のみ大きく） -->
+      <div class="flex-1 flex items-center justify-center h-full min-w-0">
+        <div id="word-display" class="text-xl md:text-3xl font-black tracking-wider text-amber-300 truncate text-center">
           「スタート」を押してね！
         </div>
       </div>
@@ -187,7 +186,7 @@
         <div class="flex items-center justify-between border-b border-slate-800 pb-2">
           <div class="flex space-x-2">
             <button id="tab-btn-players" onclick="switchTab('players')" class="px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white">
-              👥 プレイヤー＆順位
+              👥 プレイヤー・アイコン編集
             </button>
             <button id="tab-btn-words" onclick="switchTab('words')" class="px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400">
               📝 お題一括登録
@@ -201,11 +200,11 @@
           </label>
         </div>
 
-        <!-- タブ1: プレイヤー管理 -->
+        <!-- タブ1: プレイヤー管理 (名前・色・絵文字) -->
         <div id="tab-content-players" class="space-y-4">
           <div class="flex justify-between items-center">
             <p class="text-slate-400 text-xs">
-              参加するプレイヤーをONにし、名前を設定してください（最大9名）。設定は自動保存されます。
+              プレイヤーの名前、アバター絵文字、テーマカラーを選択してください（最大9名）。
             </p>
             <button onclick="resetScores()" class="text-xs bg-rose-900/50 hover:bg-rose-800 text-rose-300 border border-rose-700 px-3 py-1 rounded">
               スコアをリセット
@@ -220,7 +219,7 @@
         <!-- タブ2: お題登録 -->
         <div id="tab-content-words" class="space-y-3 hidden">
           <p class="text-slate-400 text-xs">
-            1行に1つの「お題」を入力・ペーストしてください。保存するとブラウザに記録されます。
+            1行に1つの「お題」を入力・ペーストしてください。保存すると自動で記録されます。
           </p>
           <textarea id="words-input" rows="10" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white font-mono text-sm focus:outline-none focus:border-indigo-500" placeholder="リンゴ&#10;ゴリラ&#10;ラッパ"></textarea>
           <div class="flex justify-between items-center text-xs text-slate-500">
@@ -266,14 +265,29 @@
 
   <!-- JavaScript ロジック -->
   <script>
-    // 保存用キー定義
-    const STORAGE_KEY_PLAYERS = 'oekaki_app_players_v3';
-    const STORAGE_KEY_WORDS = 'oekaki_app_words_v3';
-    const STORAGE_KEY_SETTINGS = 'oekaki_app_settings_v3';
+    // 保存キー
+    const STORAGE_KEY_PLAYERS = 'oekaki_app_players_v4';
+    const STORAGE_KEY_WORDS = 'oekaki_app_words_v4';
+    const STORAGE_KEY_SETTINGS = 'oekaki_app_settings_v4';
 
-    // 互換読み込み用旧キー一覧
-    const OLD_PLAYER_KEYS = ['oekaki_app_players_v2', 'oekaki_app_players_v1'];
-    const OLD_WORD_KEYS = ['oekaki_app_words_v2', 'oekaki_app_words_v1'];
+    const OLD_PLAYER_KEYS = ['oekaki_app_players_v3', 'oekaki_app_players_v2', 'oekaki_app_players_v1'];
+    const OLD_WORD_KEYS = ['oekaki_app_words_v3', 'oekaki_app_words_v2', 'oekaki_app_words_v1'];
+
+    // アバター絵文字選択候補
+    const EMOJI_OPTIONS = ["🐶", "🐱", "🐰", "🦊", "🦁", "🐼", "🐻", "🐸", "🚀", "👑", "🎨", "⚽", "🤖", "👻", "🦄", "⭐"];
+
+    // プレイヤーパレットカラー
+    const COLOR_OPTIONS = [
+      { id: "red", name: "レッド", bg: "bg-red-600", border: "border-red-400" },
+      { id: "blue", name: "ブルー", bg: "bg-blue-600", border: "border-blue-400" },
+      { id: "emerald", name: "グリーン", bg: "bg-emerald-600", border: "border-emerald-400" },
+      { id: "amber", name: "イエロー", bg: "bg-amber-600", border: "border-amber-400" },
+      { id: "purple", name: "パープル", bg: "bg-purple-600", border: "border-purple-400" },
+      { id: "pink", name: "ピンク", bg: "bg-pink-600", border: "border-pink-400" },
+      { id: "teal", name: "ティール", bg: "bg-teal-600", border: "border-teal-400" },
+      { id: "indigo", name: "インディゴ", bg: "bg-indigo-600", border: "border-indigo-400" },
+      { id: "orange", name: "オレンジ", bg: "bg-orange-600", border: "border-orange-400" },
+    ];
 
     const DEFAULT_WORDS = [
       "リンゴ", "富士山", "ドラえもん", "サッカー", "自転車", 
@@ -282,28 +296,16 @@
       "ピアノ", "カブトムシ", "ハンバーガー", "自由の女神", "オバケ"
     ];
 
-    const PLAYER_COLORS = [
-      { bg: "bg-red-600", border: "border-red-400" },
-      { bg: "bg-blue-600", border: "border-blue-400" },
-      { bg: "bg-emerald-600", border: "border-emerald-400" },
-      { bg: "bg-amber-600", border: "border-amber-400" },
-      { bg: "bg-purple-600", border: "border-purple-400" },
-      { bg: "bg-pink-600", border: "border-pink-400" },
-      { bg: "bg-teal-600", border: "border-teal-400" },
-      { bg: "bg-indigo-600", border: "border-indigo-400" },
-      { bg: "bg-orange-600", border: "border-orange-400" },
-    ];
-
     const DEFAULT_PLAYERS = [
-      { id: 0, name: "プレイヤー1", active: true, score: 0 },
-      { id: 1, name: "プレイヤー2", active: true, score: 0 },
-      { id: 2, name: "プレイヤー3", active: true, score: 0 },
-      { id: 3, name: "プレイヤー4", active: false, score: 0 },
-      { id: 4, name: "プレイヤー5", active: false, score: 0 },
-      { id: 5, name: "プレイヤー6", active: false, score: 0 },
-      { id: 6, name: "プレイヤー7", active: false, score: 0 },
-      { id: 7, name: "プレイヤー8", active: false, score: 0 },
-      { id: 8, name: "プレイヤー9", active: false, score: 0 },
+      { id: 0, name: "プレイヤー1", emoji: "🐶", colorIdx: 0, active: true, score: 0 },
+      { id: 1, name: "プレイヤー2", emoji: "🐱", colorIdx: 1, active: true, score: 0 },
+      { id: 2, name: "プレイヤー3", emoji: "🐰", colorIdx: 2, active: true, score: 0 },
+      { id: 3, name: "プレイヤー4", emoji: "🦊", colorIdx: 3, active: false, score: 0 },
+      { id: 4, name: "プレイヤー5", emoji: "🦁", colorIdx: 4, active: false, score: 0 },
+      { id: 5, name: "プレイヤー6", emoji: "🐼", colorIdx: 5, active: false, score: 0 },
+      { id: 6, name: "プレイヤー7", emoji: "🐻", colorIdx: 6, active: false, score: 0 },
+      { id: 7, name: "プレイヤー8", emoji: "🐸", colorIdx: 7, active: false, score: 0 },
+      { id: 8, name: "プレイヤー9", emoji: "🚀", colorIdx: 8, active: false, score: 0 },
     ];
 
     let players = [];
@@ -324,6 +326,7 @@
     const ERASER_LINE_WIDTH = 32;
 
     let audioCtx = null;
+    let previousPositions = new Map(); // FLIPアニメーション位置記憶用
 
     // iOSダブルタップ・ピンチズームの完全禁止
     document.addEventListener('gesturestart', (e) => e.preventDefault());
@@ -332,8 +335,47 @@
     }, { passive: false });
 
     // ----------------------------------------------------
-    // 音声読み上げ（Web Speech API）
+    // 音声読み上げ＆ランダムバリエーション実況ボイス
     // ----------------------------------------------------
+    const VOICE_PHRASES = {
+      start: [
+        "よーい、スタート！絵を描いてね！",
+        "お絵描きタイム、はじまり〜！",
+        "画伯！キャンバスに描いて描いて〜！",
+        "ゲームスタート！何を描くのかな〜？"
+      ],
+      correct: [
+        (name) => `${name}さん、大正解！ナイス推理！`,
+        (name) => `すごーい！${name}さん正解！バッチリ！`,
+        (name) => `天才！${name}さんに、1ポイント！`,
+        (name) => `正解出ました！${name}さんお見事！`
+      ],
+      pass: [
+        "パス！次のお題へいくよ〜！",
+        "うーん難しかった！次いってみよう！",
+        "パス！どんどん描いて〜！"
+      ],
+      time30: [
+        "残り、30秒だよ！",
+        "折り返し！あと30秒！"
+      ],
+      time10: [
+        "残り10秒！急いで急いで！",
+        "ラスト10秒！ラストスパート！"
+      ],
+      finish: [
+        "タイムアップ！ゲーム終了〜！",
+        "終了〜！みんなお疲れ様〜！"
+      ]
+    };
+
+    function getRandomPhrase(key, param) {
+      const list = VOICE_PHRASES[key];
+      if (!list || list.length === 0) return "";
+      const item = list[Math.floor(Math.random() * list.length)];
+      return typeof item === 'function' ? item(param) : item;
+    }
+
     function speakText(text) {
       if (!enableSpeech || !('speechSynthesis' in window)) return;
       try {
@@ -354,36 +396,38 @@
     }
 
     // ----------------------------------------------------
-    // ローカルストレージ読み込み・保存（過去の保存データ自動復元付き）
+    // ローカルストレージ読み込み・保存
     // ----------------------------------------------------
     function loadStorageData() {
-      // プレイヤーデータの復元（旧キー含む）
       let loadedPlayers = localStorage.getItem(STORAGE_KEY_PLAYERS);
       if (!loadedPlayers) {
         for (const oldKey of OLD_PLAYER_KEYS) {
           const oldData = localStorage.getItem(oldKey);
-          if (oldData) {
-            loadedPlayers = oldData;
-            break;
-          }
+          if (oldData) { loadedPlayers = oldData; break; }
         }
       }
 
       try {
-        players = loadedPlayers ? JSON.parse(loadedPlayers) : JSON.parse(JSON.stringify(DEFAULT_PLAYERS));
+        if (loadedPlayers) {
+          const parsed = JSON.parse(loadedPlayers);
+          players = parsed.map((p, idx) => ({
+            ...DEFAULT_PLAYERS[idx],
+            ...p,
+            emoji: p.emoji || DEFAULT_PLAYERS[idx].emoji,
+            colorIdx: p.colorIdx !== undefined ? p.colorIdx : (idx % COLOR_OPTIONS.length)
+          }));
+        } else {
+          players = JSON.parse(JSON.stringify(DEFAULT_PLAYERS));
+        }
       } catch (e) {
         players = JSON.parse(JSON.stringify(DEFAULT_PLAYERS));
       }
 
-      // お題データの復元（旧キー含む）
       let loadedWords = localStorage.getItem(STORAGE_KEY_WORDS);
       if (!loadedWords) {
         for (const oldKey of OLD_WORD_KEYS) {
           const oldData = localStorage.getItem(oldKey);
-          if (oldData) {
-            loadedWords = oldData;
-            break;
-          }
+          if (oldData) { loadedWords = oldData; break; }
         }
       }
 
@@ -402,8 +446,6 @@
       } catch (e) {}
 
       document.getElementById('speech-toggle').checked = enableSpeech;
-
-      // 復元したデータを新キーで即時保存
       saveStorageData();
     }
 
@@ -587,19 +629,18 @@
       clearCanvas();
       nextWord();
 
-      // スタート音声実況
-      speakText("よーい、スタート！キャンバスに絵を描いてね！");
+      // ランダムスタートボイス
+      speakText(getRandomPhrase('start'));
 
       updateTimerDisplay();
       timerInterval = setInterval(() => {
         timerSeconds--;
         updateTimerDisplay();
 
-        // 残り時間の実況アナウンス
         if (timerSeconds === 30) {
-          speakText("残り、30秒！");
+          speakText(getRandomPhrase('time30'));
         } else if (timerSeconds === 10) {
-          speakText("残り10秒！急いで！");
+          speakText(getRandomPhrase('time10'));
         }
 
         if (timerSeconds <= 0) {
@@ -622,7 +663,7 @@
     function finishRound() {
       stopGame();
       playSound('finish');
-      speakText("タイムアップ！ゲーム終了です！");
+      speakText(getRandomPhrase('finish'));
       showResultModal();
     }
 
@@ -652,12 +693,11 @@
       document.getElementById('word-display').innerText = currentWord;
       
       clearCanvas();
-      // お題の音声読み上げは一切行いません（非表示・無言）
     }
 
     function skipWord() {
       if (!isGaming) return;
-      speakText("パス！次のお題へ！");
+      speakText(getRandomPhrase('pass'));
       nextWord();
     }
 
@@ -675,21 +715,21 @@
         winner.score += 1;
       }
 
-      // 音声読み上げ演出（正解者の名前を喋る）
+      // ランダム実況ボイス
       if (winner) {
-        speakText(`${winner.name}さん、大正解！プラス１ポイント！`);
+        speakText(getRandomPhrase('correct', winner.name));
       }
 
       saveStorageData();
-      renderTvRankings();
+      renderTvRankingsWithAnimation(); // アニメーション付きソート更新
 
-      // スコアポップアップアニメーション演出実行
+      // アニメーションエフェクト
       triggerScoreAnimation(winnerPlayerId, artist ? artist.id : null);
 
       nextWord();
     }
 
-    // 正解時のド派手ポップアップアニメーション
+    // 正解時のポップアップアニメーション
     function triggerScoreAnimation(winnerId, artistId) {
       const idsToAnimate = new Set([winnerId, artistId].filter(id => id !== null));
       
@@ -711,6 +751,46 @@
       });
     }
 
+    // FLIP技術を用いたぬるぬる移動アニメーション付きランキング描画
+    function renderTvRankingsWithAnimation() {
+      const container = document.getElementById('tv-rankings-container');
+      
+      // 1. FIRST: 変更前の全カード要素の位置を記憶
+      const children = Array.from(container.children);
+      children.forEach(child => {
+        const id = child.id;
+        if (id) {
+          previousPositions.set(id, child.getBoundingClientRect());
+        }
+      });
+
+      // 2. LAST: DOMを再描画
+      renderTvRankings();
+
+      // 3. INVERT & PLAY: 描画後の新しい位置との差分を計算し補間移動
+      const newChildren = Array.from(container.children);
+      newChildren.forEach(child => {
+        const id = child.id;
+        const first = previousPositions.get(id);
+        if (first) {
+          const last = child.getBoundingClientRect();
+          const deltaY = first.top - last.top;
+
+          if (deltaY !== 0) {
+            // 一瞬元の位置に戻す
+            child.style.transform = `translateY(${deltaY}px)`;
+            child.style.transition = 'none';
+
+            // 次のフレームでスムーズに現在位置へアニメーション移動
+            requestAnimationFrame(() => {
+              child.style.transition = 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+              child.style.transform = '';
+            });
+          }
+        }
+      });
+    }
+
     function renderTvRankings() {
       const container = document.getElementById('tv-rankings-container');
       container.innerHTML = '';
@@ -726,24 +806,26 @@
       })).sort((a, b) => b.score - a.score || a.id - b.id);
 
       sorted.forEach((player, rank) => {
-        const colorStyle = PLAYER_COLORS[player.id % PLAYER_COLORS.length];
+        const colorStyle = COLOR_OPTIONS[player.colorIdx % COLOR_OPTIONS.length] || COLOR_OPTIONS[0];
         const isArtist = currentArtist && currentArtist.id === player.id;
 
         const btn = document.createElement('button');
         btn.id = `player-card-${player.id}`;
         btn.onclick = () => handleCorrectAnswer(player.id);
         
-        btn.className = `player-card w-full flex-1 rounded-xl p-2 flex items-center justify-between border-2 transition active:scale-95 relative overflow-hidden shadow-md ${colorStyle.bg} ${colorStyle.border} ${isArtist ? 'ring-4 ring-amber-400 font-black' : 'opacity-90'}`;
+        btn.className = `player-card-move w-full flex-1 rounded-xl p-2 flex items-center justify-between border-2 transition active:scale-95 relative overflow-hidden shadow-md ${colorStyle.bg} ${colorStyle.border} ${isArtist ? 'ring-4 ring-amber-400 font-black' : 'opacity-90'}`;
 
-        let rankBadge = `<span class="text-xs font-black w-5 text-center text-white/80">#${rank + 1}</span>`;
-        if (rank === 0) rankBadge = `<span class="text-sm font-black w-5 text-center">🥇</span>`;
-        if (rank === 1) rankBadge = `<span class="text-sm font-black w-5 text-center">🥈</span>`;
-        if (rank === 2) rankBadge = `<span class="text-sm font-black w-5 text-center">🥉</span>`;
+        let rankBadge = `<span class="text-xs font-black w-4 text-center text-white/80">#${rank + 1}</span>`;
+        if (rank === 0) rankBadge = `<span class="text-sm font-black w-4 text-center">🥇</span>`;
+        if (rank === 1) rankBadge = `<span class="text-sm font-black w-4 text-center">🥈</span>`;
+        if (rank === 2) rankBadge = `<span class="text-sm font-black w-4 text-center">🥉</span>`;
 
         btn.innerHTML = `
           ${isArtist ? '<span class="absolute top-0 right-0 bg-amber-400 text-black text-[8px] font-black px-1.5 py-0.2 rounded-bl-md shadow z-10">描き手</span>' : ''}
-          <div class="flex items-center space-x-1 truncate flex-1 min-w-0 pr-1">
+          <div class="flex items-center space-x-1.5 truncate flex-1 min-w-0 pr-1">
             ${rankBadge}
+            <!-- 絵文字アイコンを大きく表示 -->
+            <span class="text-lg md:text-2xl leading-none shrink-0 drop-shadow-sm">${player.emoji}</span>
             <span class="text-xs md:text-sm font-extrabold text-white truncate">${player.name}</span>
           </div>
           <div class="text-right shrink-0">
@@ -816,7 +898,7 @@
       const activePlayers = players.filter(p => p.active);
 
       players.forEach((player) => {
-        const colorStyle = PLAYER_COLORS[player.id % PLAYER_COLORS.length];
+        const colorStyle = COLOR_OPTIONS[player.colorIdx % COLOR_OPTIONS.length] || COLOR_OPTIONS[0];
         const activeIdx = activePlayers.findIndex(p => p.id === player.id);
         const isArtist = activeIdx === (currentArtistIndex % (activePlayers.length || 1));
 
@@ -835,14 +917,26 @@
             </label>
           </div>
 
-          <input type="text" value="${player.name}" onchange="updatePlayerName(${player.id}, this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-xs focus:outline-none focus:border-indigo-500" placeholder="名前">
+          <!-- アバター絵文字＆名前編集 -->
+          <div class="flex space-x-2">
+            <select onchange="updatePlayerEmoji(${player.id}, this.value)" class="bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-lg text-white focus:outline-none">
+              ${EMOJI_OPTIONS.map(e => `<option value="${e}" ${e === player.emoji ? 'selected' : ''}>${e}</option>`).join('')}
+            </select>
+            <input type="text" value="${player.name}" onchange="updatePlayerName(${player.id}, this.value)" class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-xs focus:outline-none focus:border-indigo-500" placeholder="名前">
+          </div>
 
+          <!-- テーマカラー選択 & 描き手指定 -->
           <div class="flex items-center justify-between pt-1 border-t border-slate-800 text-xs">
-            <span class="font-mono text-amber-400 font-bold">${player.score} pt</span>
+            <div class="flex items-center space-x-1">
+              <span class="text-[10px] text-slate-400">色:</span>
+              <select onchange="updatePlayerColor(${player.id}, this.value)" class="bg-slate-900 text-slate-300 text-[10px] border border-slate-700 rounded px-1 py-0.5">
+                ${COLOR_OPTIONS.map((c, i) => `<option value="${i}" ${i === player.colorIdx ? 'selected' : ''}>${c.name}</option>`).join('')}
+              </select>
+            </div>
             
             ${player.active ? `
               <button onclick="setArtistByPlayerId(${player.id})" class="px-2 py-0.5 rounded text-[10px] font-bold ${isArtist ? 'bg-amber-500 text-black' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}">
-                ${isArtist ? '★ 現在の描き手' : '描き手に指定'}
+                ${isArtist ? '★ 描き手' : '描き手に指定'}
               </button>
             ` : '<span></span>'}
           </div>
@@ -866,6 +960,23 @@
       if (p) {
         p.name = newName.trim() || `プレイヤー${playerId + 1}`;
         saveStorageData();
+      }
+    }
+
+    function updatePlayerEmoji(playerId, emoji) {
+      const p = players.find(x => x.id === playerId);
+      if (p) {
+        p.emoji = emoji;
+        saveStorageData();
+      }
+    }
+
+    function updatePlayerColor(playerId, colorIdxStr) {
+      const p = players.find(x => x.id === playerId);
+      if (p) {
+        p.colorIdx = parseInt(colorIdxStr, 10);
+        saveStorageData();
+        renderPlayersSettingsList();
       }
     }
 
@@ -907,7 +1018,7 @@
       const sorted = [...players.filter(p => p.active)].sort((a, b) => b.score - a.score);
 
       sorted.forEach((player, rank) => {
-        const colorStyle = PLAYER_COLORS[player.id % PLAYER_COLORS.length];
+        const colorStyle = COLOR_OPTIONS[player.colorIdx % COLOR_OPTIONS.length] || COLOR_OPTIONS[0];
         const item = document.createElement('div');
         item.className = "flex justify-between items-center bg-slate-900 px-3 py-2 rounded-lg border border-slate-800 text-sm";
         
@@ -919,7 +1030,7 @@
         item.innerHTML = `
           <div class="flex items-center space-x-2">
             <span class="font-bold text-xs text-amber-400 w-12 text-left">${medal}</span>
-            <span class="w-2.5 h-2.5 rounded-full ${colorStyle.bg}"></span>
+            <span class="text-xl">${player.emoji}</span>
             <span class="text-white font-bold">${player.name}</span>
           </div>
           <span class="font-mono font-black text-amber-300 text-base">${player.score} <span class="text-xs">pt</span></span>
