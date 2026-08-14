@@ -53,18 +53,18 @@
 
   <!-- ========================================== -->
   <!-- 1. テレビに映るメイン領域 -->
-  <!-- 上・左右に安全余白（Padding）を設定し、テレビの切れを防止 -->
+  <!-- 上・左右にしっかりとゆとり（パディング）を持たせてテレビ端切れを防止 -->
   <!-- ========================================== -->
-  <div class="flex-1 flex flex-col pt-[5.5dvh] px-[2.5vw] pb-[1dvh] min-h-0 relative">
-    <div class="w-full h-full flex flex-row gap-2.5 min-h-0">
+  <div class="flex-1 flex flex-col pt-[7dvh] px-[4vw] pb-[2dvh] min-h-0 relative">
+    <div class="w-full h-full flex flex-row gap-3 min-h-0">
       
       <!-- テレビ左側：プレイヤーランキング縦並び（リアルタイム順位ソート＆高さ自動フィット） -->
-      <aside id="tv-rankings-container" class="w-44 md:w-56 h-full flex flex-col gap-1.5 shrink-0">
+      <aside id="tv-rankings-container" class="w-40 md:w-52 h-full flex flex-col gap-1.5 shrink-0">
         <!-- JavaScriptで動的生成されます -->
       </aside>
 
       <!-- テレビ中央〜右側：タイマーバー ＆ お絵描きキャンバス -->
-      <main class="flex-1 h-full flex flex-col gap-1.5 min-h-0 min-w-0">
+      <main class="flex-1 h-full flex flex-col gap-2 min-h-0 min-w-0">
         
         <!-- YouTube風 タイマープログレスバー -->
         <div class="w-full bg-slate-800/90 rounded-full h-4 overflow-hidden border border-slate-700 relative shrink-0 shadow-inner">
@@ -85,9 +85,9 @@
 
 
   <!-- ========================================== -->
-  <!-- 2. テレビには絶対映らない秘密の領域（画面最下部 21dvhに少し拡大して押し下げる） -->
+  <!-- 2. テレビには絶対映らない秘密の領域（画面最下部・テレビの表示枠外へ完全に押し下げ） -->
   <!-- ========================================== -->
-  <footer class="h-[21dvh] w-full bg-slate-900 border-t-4 border-slate-800 px-4 py-2 flex items-center justify-between gap-3 shrink-0 z-20 shadow-2xl overflow-hidden">
+  <footer class="h-[22dvh] w-full bg-slate-900 border-t-4 border-slate-800 px-4 py-2 flex items-center justify-between gap-3 shrink-0 z-20 shadow-2xl overflow-hidden">
     
     <!-- お題表示（テレビ非表示・描き手用） -->
     <div class="flex-1 bg-amber-500/10 border-2 border-amber-500/50 rounded-xl px-3 py-1 flex flex-col justify-between relative shadow-inner h-full overflow-hidden">
@@ -164,7 +164,7 @@
         <div id="tab-content-players" class="space-y-4">
           <div class="flex justify-between items-center">
             <p class="text-slate-400 text-xs">
-              参加するプレイヤーをONにし、名前を設定してください（最大9名）。
+              参加するプレイヤーをONにし、名前を設定してください（最大9名）。設定は自動保存されます。
             </p>
             <button onclick="resetScores()" class="text-xs bg-rose-900/50 hover:bg-rose-800 text-rose-300 border border-rose-700 px-3 py-1 rounded">
               スコアをリセット
@@ -179,7 +179,7 @@
         <!-- タブ2: お題登録 -->
         <div id="tab-content-words" class="space-y-3 hidden">
           <p class="text-slate-400 text-xs">
-            1行に1つの「お題」を入力・ペーストしてください。
+            1行に1つの「お題」を入力・ペーストしてください。保存するとブラウザに記録されます。
           </p>
           <textarea id="words-input" rows="10" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white font-mono text-sm focus:outline-none focus:border-indigo-500" placeholder="リンゴ&#10;ゴリラ&#10;ラッパ"></textarea>
           <div class="flex justify-between items-center text-xs text-slate-500">
@@ -225,6 +225,9 @@
 
   <!-- JavaScript ロジック -->
   <script>
+    const STORAGE_KEY_PLAYERS = 'oekaki_app_players_v1';
+    const STORAGE_KEY_WORDS = 'oekaki_app_words_v1';
+
     const DEFAULT_WORDS = [
       "リンゴ", "富士山", "ドラえもん", "サッカー", "自転車", 
       "ひまわり", "ペンギン", "ラーメン", "新幹線", "メガネ",
@@ -244,7 +247,7 @@
       { bg: "bg-orange-600", border: "border-orange-400" },
     ];
 
-    let players = [
+    const DEFAULT_PLAYERS = [
       { id: 0, name: "プレイヤー1", active: true, score: 0 },
       { id: 1, name: "プレイヤー2", active: true, score: 0 },
       { id: 2, name: "プレイヤー3", active: true, score: 0 },
@@ -256,8 +259,9 @@
       { id: 8, name: "プレイヤー9", active: false, score: 0 },
     ];
 
+    let players = [];
+    let wordList = [];
     let currentArtistIndex = 0;
-    let wordList = [...DEFAULT_WORDS];
     let usedWordIndices = new Set();
     let currentWord = "";
     
@@ -272,6 +276,44 @@
     const ERASER_LINE_WIDTH = 32;
 
     let audioCtx = null;
+
+    // ----------------------------------------------------
+    // ローカルストレージ読み込み・保存処理
+    // ----------------------------------------------------
+    function loadStorageData() {
+      // プレイヤーデータの読み込み
+      try {
+        const savedPlayers = localStorage.getItem(STORAGE_KEY_PLAYERS);
+        if (savedPlayers) {
+          players = JSON.parse(savedPlayers);
+        } else {
+          players = JSON.parse(JSON.stringify(DEFAULT_PLAYERS));
+        }
+      } catch (e) {
+        players = JSON.parse(JSON.stringify(DEFAULT_PLAYERS));
+      }
+
+      // お題データの読み込み
+      try {
+        const savedWords = localStorage.getItem(STORAGE_KEY_WORDS);
+        if (savedWords) {
+          wordList = JSON.parse(savedWords);
+        } else {
+          wordList = [...DEFAULT_WORDS];
+        }
+      } catch (e) {
+        wordList = [...DEFAULT_WORDS];
+      }
+    }
+
+    function saveStorageData() {
+      try {
+        localStorage.setItem(STORAGE_KEY_PLAYERS, JSON.stringify(players));
+        localStorage.setItem(STORAGE_KEY_WORDS, JSON.stringify(wordList));
+      } catch (e) {
+        console.error("Storage save failed:", e);
+      }
+    }
 
     function initAudio() {
       if (!audioCtx) {
@@ -310,6 +352,7 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
+      loadStorageData();
       initCanvas();
       renderTvRankings();
       window.addEventListener('resize', resizeCanvas);
@@ -517,6 +560,7 @@
         winner.score += 1;
       }
 
+      saveStorageData(); // スコアを保存
       renderTvRankings();
       nextWord();
     }
@@ -594,6 +638,7 @@
         currentArtistIndex = 0;
       }
 
+      saveStorageData(); // データの永続化
       renderTvRankings();
       closeSettings();
     }
@@ -664,6 +709,7 @@
       const p = players.find(x => x.id === playerId);
       if (p) {
         p.active = !p.active;
+        saveStorageData();
         renderPlayersSettingsList();
       }
     }
@@ -672,6 +718,7 @@
       const p = players.find(x => x.id === playerId);
       if (p) {
         p.name = newName.trim() || `プレイヤー${playerId + 1}`;
+        saveStorageData();
       }
     }
 
@@ -687,6 +734,7 @@
     function resetScores() {
       if (confirm("全員のスコアを 0 pt にリセットしますか？")) {
         players.forEach(p => p.score = 0);
+        saveStorageData();
         renderPlayersSettingsList();
         renderTvRankings();
       }
