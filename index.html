@@ -16,7 +16,6 @@
 
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* 全画面バウンス・スクロール・ズームの徹底防止 */
     html, body {
       height: 100dvh;
       width: 100vw;
@@ -31,24 +30,20 @@
       color: #f8fafc;
     }
 
-    /* キャンバス領域のタッチ操作最適化 */
     canvas {
       touch-action: none;
       cursor: crosshair;
     }
 
-    /* スクロール可能なエリア（モーダル用） */
     .scrollable-content {
       touch-action: pan-y;
       -webkit-overflow-scrolling: touch;
     }
 
-    /* FLIP移動アニメーション用スタイル */
     .player-card-move {
       transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
-    /* ポイント獲得時の光るアニメーション */
     @keyframes scorePop {
       0% { transform: scale(1); filter: brightness(1); }
       50% { transform: scale(1.08); filter: brightness(1.6); ring-color: #f59e0b; }
@@ -59,7 +54,6 @@
       animation: scorePop 0.6s ease-out;
     }
 
-    /* 絵文字の数秒ごとのジャンプアニメーション */
     @keyframes periodicJump {
       0%, 80%, 100% { transform: translateY(0); }
       85% { transform: translateY(-15px) scale(1.05); }
@@ -71,7 +65,6 @@
       animation: periodicJump 3s infinite ease-in-out;
     }
 
-    /* Floating Point (+1pt) アニメーション */
     @keyframes floatUp {
       0% { opacity: 0; transform: translateY(10px) scale(0.5); }
       30% { opacity: 1; transform: translateY(-12px) scale(1.3); }
@@ -87,12 +80,8 @@
 </head>
 <body class="h-[100dvh] w-vw flex flex-col justify-between font-sans overflow-hidden relative">
 
-  <!-- ========================================== -->
   <!-- 0. テレビ枠外（iPad画面最上部）のツールコントロール -->
-  <!-- 左上に設定ボタン ＆ 「アテテ！」タイトル、右上にカラーパレット -->
-  <!-- ========================================== -->
   <header class="absolute top-0.5 left-0 right-0 z-30 px-[5vw] flex items-center justify-between pointer-events-auto">
-    <!-- 左側：設定ボタン ＆ 「アテテ！」タイトル -->
     <div class="flex items-center space-x-3">
       <button onclick="openSettingsWithSE()" class="bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1 rounded-xl text-xs font-bold shadow-lg flex items-center space-x-1 active:scale-95 transition">
         <span>⚙️ 設定</span>
@@ -100,7 +89,6 @@
       <span class="text-base md:text-lg font-black text-amber-300 tracking-wider drop-shadow">アテテ！</span>
     </div>
 
-    <!-- 右側：カラーパレット & 全消し -->
     <div class="flex items-center space-x-2">
       <div id="color-palette" class="flex items-center space-x-1.5">
         <!-- JSで動的生成 -->
@@ -112,21 +100,16 @@
     </div>
   </header>
 
-  <!-- ========================================== -->
   <!-- 1. テレビに映るメイン領域 -->
-  <!-- ========================================== -->
   <div class="flex-1 flex flex-col pt-[8.5dvh] px-[5vw] pb-[2.5dvh] min-h-0 relative">
     <div class="w-full h-full flex flex-row gap-3 min-h-0">
       
-      <!-- テレビ左側：プレイヤーランキング縦並び（スタート前はタップでアーティスト手動変更可能） -->
       <aside id="tv-rankings-container" class="w-44 md:w-56 h-full flex flex-col gap-1.5 shrink-0 relative select-none">
         <!-- JavaScriptで動的生成 -->
       </aside>
 
-      <!-- テレビ中央〜右側：タイマーバー ＆ お絵描きキャンバス（＋スタート前中央巨大スタートボタン） -->
       <main class="flex-1 h-full flex flex-col gap-2 min-h-0 min-w-0 relative">
         
-        <!-- YouTube風 タイマープログレスバー -->
         <div class="w-full bg-slate-800/90 rounded-full h-4 overflow-hidden border border-slate-700 relative shrink-0 shadow-inner">
           <div id="timer-progress-bar" class="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-500 rounded-full transition-all duration-200 ease-linear w-full"></div>
           <span id="timer-text-overlay" class="absolute inset-0 flex items-center justify-center text-[11px] font-black text-white drop-shadow font-mono">
@@ -134,11 +117,9 @@
           </span>
         </div>
 
-        <!-- キャンバス容器 -->
         <div id="canvas-container" class="flex-1 w-full relative bg-white rounded-2xl overflow-hidden shadow-2xl border-2 border-slate-800 min-h-0">
           <canvas id="paint-canvas" class="w-full h-full"></canvas>
 
-          <!-- スタート前：キャンバス中央の巨大スタートボタン -->
           <div id="center-start-overlay" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 z-20 transition-opacity duration-300">
             <div class="text-center space-y-4">
               <span class="text-xs font-bold tracking-widest text-amber-400 block uppercase">現在のアーティスト</span>
@@ -156,22 +137,15 @@
     </div>
   </div>
 
-
-  <!-- ========================================== -->
   <!-- 2. テレビには絶対映らない秘密の領域（画面最下部：14dvh固定） -->
-  <!-- スタート後は「中断」「パス」「お題」「🎉正解！」が出現 -->
-  <!-- ========================================== -->
   <footer class="h-[14dvh] w-full bg-slate-900 border-t-2 border-slate-800 px-4 py-1.5 flex items-center justify-between gap-2 shrink-0 z-20 shadow-2xl overflow-hidden relative">
     
-    <!-- 正解者タップ用ヒントガイド -->
     <div class="absolute -top-5 left-6 text-[10px] text-amber-300/80 font-bold tracking-wider pointer-events-none flex items-center space-x-1">
       <span>正解したら右側の「🎉 正解！」ボタンをタップ！</span>
     </div>
 
-    <!-- お題 ＆ コントロールエリア -->
     <div class="w-full bg-amber-500/10 border-2 border-amber-500/50 rounded-2xl px-4 py-1.5 flex items-center justify-between relative shadow-inner h-full overflow-hidden gap-3">
       
-      <!-- 左側：中断/パスボタン（スタート後に出現） -->
       <div id="footer-active-controls-left" class="flex items-center space-x-2 shrink-0 opacity-0 pointer-events-none transition-opacity duration-300">
         <button id="btn-start" onclick="toggleGameWithSE()" class="bg-rose-600 hover:bg-rose-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs md:text-sm border border-rose-400 shadow active:scale-95 transition">
           中断
@@ -181,14 +155,12 @@
         </button>
       </div>
 
-      <!-- 中央：お題表示 -->
       <div class="flex-1 flex items-center justify-center h-full min-w-0 px-3">
         <div id="word-display" class="font-black tracking-wider text-amber-300 text-center truncate w-full" style="font-size: clamp(1.2rem, 3vw, 2.4rem);">
           「スタート」を押してね！
         </div>
       </div>
 
-      <!-- 右側：🎉 正解！ボタン（スタート後に出現） -->
       <div id="footer-active-controls-right" class="flex items-center shrink-0 opacity-0 pointer-events-none transition-opacity duration-300">
         <button id="btn-correct-trigger" onclick="openAnswerModalWithSE()" disabled class="bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black font-black py-2.5 px-6 rounded-xl text-xs md:text-base border border-amber-300 shadow-lg active:scale-95 transition">
           🎉 正解！
@@ -198,10 +170,7 @@
     </div>
   </footer>
 
-
-  <!-- ========================================== -->
   <!-- 3. 🎉 正解選択モーダル -->
-  <!-- ========================================== -->
   <div id="answer-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-3">
     <div class="bg-slate-900 border-2 border-amber-500/80 rounded-2xl w-full max-w-5xl h-[68vh] flex flex-col shadow-2xl overflow-hidden p-5 space-y-2 relative -top-6">
       
@@ -212,14 +181,12 @@
 
       <div class="flex-1 flex flex-col md:flex-row gap-4 min-h-0 overflow-hidden items-stretch">
         
-        <!-- 左エリア：超巨大絵文字 -->
         <div class="w-full md:w-1/2 bg-gradient-to-b from-amber-500/20 to-slate-900/80 border-2 border-amber-500/40 rounded-2xl p-4 flex flex-col items-center justify-center h-full text-center relative overflow-hidden shadow-inner">
           <div id="modal-word-display" class="flex flex-col items-center justify-center h-full w-full">
             <!-- 動的生成 -->
           </div>
         </div>
 
-        <!-- 右エリア：プレイヤー選択 -->
         <div id="answer-modal-grid" class="w-full md:w-1/2 grid grid-cols-3 gap-3 h-full overflow-y-auto p-2">
           <!-- 動的生成 -->
         </div>
@@ -234,10 +201,7 @@
     </div>
   </div>
 
-
-  <!-- ========================================== -->
   <!-- 4. モーダル：設定＆プレイヤー・お題登録 -->
-  <!-- ========================================== -->
   <div id="settings-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[88vh] flex flex-col shadow-2xl">
       <div class="p-4 border-b border-slate-800 flex justify-between items-center">
@@ -304,11 +268,7 @@
     </div>
   </div>
 
-
-  <!-- ========================================== -->
-  <!-- 5. モーダル：「〇〇さんのアート作品」タイムアップ・ギャラリー展示 -->
-  <!-- ウィンドウ横幅をさらに狭めてテレビ外はみ出し防止 -->
-  <!-- ========================================== -->
+  <!-- 5. モーダル：タイムアップ・ギャラリー展示 -->
   <div id="result-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex flex-col justify-between p-4 pt-10">
     
     <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/60 rounded-3xl w-full max-w-5xl h-[68vh] mx-auto flex flex-col p-5 shadow-2xl space-y-3 relative overflow-hidden mt-8">
@@ -327,7 +287,6 @@
 
       <div class="flex-1 flex flex-col md:flex-row gap-4 min-h-0 overflow-hidden">
         
-        <!-- 左側：ギャラリー -->
         <div class="w-full md:w-8/12 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 flex flex-col min-h-0 shadow-inner">
           <h3 class="text-xs font-bold text-amber-300 border-b border-slate-800 pb-1.5 shrink-0 mb-2">🖼️ 展示ギャラリー</h3>
           <div id="result-drawings-gallery" class="flex-1 grid grid-cols-2 md:grid-cols-3 gap-3 scrollable-content overflow-y-auto pr-1">
@@ -335,7 +294,6 @@
           </div>
         </div>
 
-        <!-- 右側：ランキング -->
         <div class="w-full md:w-4/12 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 flex flex-col min-h-0 shadow-inner">
           <h3 class="text-xs font-bold text-amber-300 border-b border-slate-800 pb-1.5 shrink-0 mb-2">🏆 ランキング</h3>
           <div id="result-ranking-list" class="flex-1 space-y-2 scrollable-content overflow-y-auto pr-1">
@@ -346,7 +304,6 @@
       </div>
     </div>
 
-    <!-- テレビ非表示の画面最下部枠外エリア -->
     <div class="w-full max-w-xl mx-auto py-2 shrink-0">
       <button onclick="closeResultModalWithSE()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-2xl shadow-2xl text-base md:text-lg border-2 border-emerald-400 active:scale-95 transition">
         次のラウンドへ進む ➔
@@ -355,8 +312,6 @@
 
   </div>
 
-
-  <!-- JavaScript ロジック -->
   <script>
     const STORAGE_KEY_PLAYERS = 'atete_app_players_v18';
     const STORAGE_KEY_WORDS = 'atete_app_words_v18';
@@ -728,6 +683,26 @@
       }
     }
 
+    // ★ 追加：ボタンクリック音（playButtonSE）を定義
+    function playButtonSE() {
+      unlockAudioAndSpeech();
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.start(audioCtx.currentTime);
+        osc.stop(audioCtx.currentTime + 0.1);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       loadStorageData();
       initCanvas();
@@ -798,7 +773,6 @@
       };
     }
 
-    // 描画処理：黒（主線）と白は source-over、他カラーは黒線を消さない destination-over
     function startDrawing(e) {
       unlockAudioAndSpeech();
       isDrawing = true;
@@ -817,7 +791,7 @@
         ctx.globalCompositeOperation = 'source-over';
         ctx.lineWidth = ERASER_LINE_WIDTH;
       } else if (colorObj && colorObj.isOverlayColor) {
-        ctx.globalCompositeOperation = 'destination-over'; // 黒線の下に色を塗る（塗り専用）
+        ctx.globalCompositeOperation = 'destination-over';
         ctx.lineWidth = COLOR_LINE_WIDTH;
       } else {
         ctx.globalCompositeOperation = 'source-over';
@@ -887,7 +861,6 @@
       roundDrawingsHistory = [];
       players.forEach(p => { roundScores[p.id] = 0; });
 
-      // フッターのコントロール表示切替
       document.getElementById('center-start-overlay').classList.add('opacity-0', 'pointer-events-none');
       document.getElementById('footer-active-controls-left').classList.remove('opacity-0', 'pointer-events-none');
       document.getElementById('footer-active-controls-right').classList.remove('opacity-0', 'pointer-events-none');
@@ -934,7 +907,6 @@
       isPaused = false;
       clearInterval(timerInterval);
       
-      // フッターコントロール非表示 ＆ 中央スタートボタン再表示
       document.getElementById('center-start-overlay').classList.remove('opacity-0', 'pointer-events-none');
       document.getElementById('footer-active-controls-left').classList.add('opacity-0', 'pointer-events-none');
       document.getElementById('footer-active-controls-right').classList.add('opacity-0', 'pointer-events-none');
@@ -1449,7 +1421,6 @@
 
     document.getElementById('words-input').addEventListener('input', updateWordsCountDisplay);
 
-    // お気に入り作品のスクエア画像保存（項目名ラベル廃止・上お題、中央絵画、下アーティスト大・年月日時分＋秒数）
     function saveDrawingAsImage(dataUrl, wordName, artistName, timeTaken) {
       playButtonSE();
       const img = new Image();
@@ -1465,25 +1436,21 @@
         cx.fillStyle = grad;
         cx.fillRect(0, 0, 1080, 1080);
 
-        // 上部中央：お題（ラベルなし）
         cx.fillStyle = '#fef3c7';
         cx.font = 'bold 48px sans-serif';
         cx.textAlign = 'center';
         cx.fillText(`${wordName}`, 540, 85);
 
-        // 中央：キャンバス（正方形枠）
         cx.fillStyle = '#ffffff';
         cx.roundRect(90, 110, 900, 780, 24);
         cx.fill();
         cx.drawImage(img, 110, 130, 860, 740);
 
-        // 下部中央：アーティスト名（ラベルなし・大サイズ）
         cx.fillStyle = '#fbbf24';
         cx.font = 'bold 44px sans-serif';
         cx.textAlign = 'center';
         cx.fillText(`${artistName}`, 540, 955);
 
-        // 最下部：年月日時分 ＆ 所要時間（縦線なし）
         const now = new Date();
         const days = ['日', '月', '火', '水', '木', '金', '土'];
         const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日(${days[now.getDay()]}) ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}  所要時間 ${timeTaken}秒`;
@@ -1500,7 +1467,6 @@
       img.src = dataUrl;
     }
 
-    // タイムアップギャラリー表示（ウィンドウ横幅を少し狭める ＆ ランキング0ptは薄く）
     function showResultModal() {
       const list = document.getElementById('result-ranking-list');
       const gallery = document.getElementById('result-drawings-gallery');
@@ -1618,4 +1584,3 @@
   </script>
 </body>
 </html>
-
