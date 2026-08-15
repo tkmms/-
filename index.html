@@ -88,7 +88,7 @@
 <body class="h-[100dvh] w-vw flex flex-col justify-between font-sans overflow-hidden">
 
   <!-- ========================================== -->
-  <!-- 1. テレビに映るメイン領域（上下左右の余白を最適化してテレビ切れ防止） -->
+  <!-- 1. テレビに映るメイン領域 -->
   <!-- ========================================== -->
   <div class="flex-1 flex flex-col pt-[8.5dvh] px-[5vw] pb-[2.5dvh] min-h-0 relative">
     <div class="w-full h-full flex flex-row gap-3 min-h-0">
@@ -142,7 +142,7 @@
         </button>
       </div>
 
-      <!-- 中央：お題表示（文字幅に合わせて自動フィットするよう調整） -->
+      <!-- 中央：お題表示 -->
       <div class="flex-1 flex items-center justify-center h-full min-w-0 px-2">
         <div id="word-display" class="font-black tracking-wider text-amber-300 text-center truncate w-full" style="font-size: clamp(1rem, 2.5vw, 2rem);">
           「スタート」を押してね！
@@ -186,11 +186,11 @@
 
 
   <!-- ========================================== -->
-  <!-- 3. 🎉 正解選択モーダル（超々巨大絵文字＆最前面アーティストバッジ＆テレビ内収まり） -->
+  <!-- 3. 🎉 正解選択モーダル（上方シフト＆アーティスト枠内側配置＆超巨大絵文字） -->
   <!-- ========================================== -->
   <div id="answer-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-3">
-    <!-- 下部が切れないよう高さを抑え、テレビ枠内に完璧に収まる設計 -->
-    <div class="bg-slate-900 border-2 border-amber-500/80 rounded-2xl w-full max-w-5xl h-[70vh] flex flex-col shadow-2xl overflow-hidden p-4 space-y-2 relative my-auto">
+    <!-- モーダルを少し上に配置し、テレビ画面内に綺麗に収まる高さ（68vh）に設計 -->
+    <div class="bg-slate-900 border-2 border-amber-500/80 rounded-2xl w-full max-w-5xl h-[68vh] flex flex-col shadow-2xl overflow-hidden p-4 space-y-2 relative -top-6">
       
       <div class="flex items-center justify-between border-b border-slate-800 pb-2 shrink-0">
         <span class="text-xs md:text-sm font-bold text-amber-400">🎉 正解発表！正解したプレイヤーをタップ</span>
@@ -200,21 +200,21 @@
       <!-- 左右分割メインコンテンツ -->
       <div class="flex-1 flex flex-col md:flex-row gap-4 min-h-0 overflow-hidden items-stretch">
         
-        <!-- 左エリア：超々巨大絵文字＋定期ジャンプアニメーション -->
+        <!-- 左エリア：超々巨大絵文字＋周期ジャンプアニメーション -->
         <div class="w-full md:w-1/2 bg-gradient-to-b from-amber-500/20 to-slate-900/80 border-2 border-amber-500/40 rounded-2xl p-4 flex flex-col items-center justify-center h-full text-center relative overflow-hidden shadow-inner">
           <div id="modal-word-display" class="flex flex-col items-center justify-center h-full w-full">
             <!-- JavaScriptで超巨大絵文字＋テキスト名生成 -->
           </div>
         </div>
 
-        <!-- 右エリア：縦並び型プレイヤー選択グリッド（アーティスト枠最前面） -->
+        <!-- 右エリア：プレイヤー選択（アーティストバッジを枠「内側」に配置） -->
         <div id="answer-modal-grid" class="w-full md:w-1/2 grid grid-cols-3 gap-2.5 h-full overflow-y-auto pr-1">
           <!-- JavaScriptで動的生成 -->
         </div>
 
       </div>
 
-      <!-- 下部キャンセルボタン（テレビ枠外へ配置） -->
+      <!-- 下部キャンセルボタン -->
       <div class="flex justify-end pt-1 border-t border-slate-800 shrink-0">
         <button onclick="closeAnswerModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-6 py-1.5 rounded-xl text-xs font-bold border border-slate-700 active:scale-95 transition">
           キャンセル（ゲーム再開）
@@ -305,14 +305,14 @@
 
   <!-- ========================================== -->
   <!-- 5. モーダル：「〇〇さんのアート作品」タイムアップ・ギャラリー展示 -->
-  <!-- 左右逆配置 ＆ ギャラリー左・ランキング右 ＆ 「次のラウンドへ」ボタンはテレビ外（画面最下部） -->
+  <!-- 左右逆配置（左ギャラリー・右ランキング） ＆ ギャラリー枠を少し下にずらしてテレビ内余白確保 -->
   <!-- ========================================== -->
-  <div id="result-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex flex-col justify-between p-3">
+  <div id="result-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex flex-col justify-between p-4">
     
-    <!-- テレビ表示用ギャラリー展示メインエリア（左右反転対応） -->
-    <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/60 rounded-3xl w-full max-w-6xl h-[74vh] mx-auto flex flex-col p-5 shadow-2xl space-y-3 relative overflow-hidden">
+    <!-- テレビ表示用ギャラリー展示メインエリア（上下左右にゆとりを持たせ、テレビ枠内に完全収容） -->
+    <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/60 rounded-3xl w-full max-w-6xl h-[68vh] mx-auto flex flex-col p-5 shadow-2xl space-y-3 relative overflow-hidden mt-2">
       
-      <!-- エレガントヘッダー -->
+      <!-- エレガントヘッダー（スクショ用文言削除） -->
       <div class="flex items-center justify-between border-b border-amber-500/30 pb-3 shrink-0">
         <div class="flex items-center space-x-3">
           <span class="text-3xl">🎨</span>
@@ -321,14 +321,14 @@
           </h2>
         </div>
         <span class="text-xs font-bold text-amber-400/80 bg-amber-950/80 border border-amber-500/40 px-3 py-1 rounded-full">
-          📸 スクショ撮影タイム
+          ✨ ラウンド終了
         </span>
       </div>
 
-      <!-- 左右逆配置：左側にギャラリー、右側にポイントランキング -->
+      <!-- 左右逆配置：左側にギャラリー、右側にポイントランキング（アーティスト除外） -->
       <div class="flex-1 flex flex-col md:flex-row gap-4 min-h-0 overflow-hidden">
         
-        <!-- 左側：全幅アートギャラリーカード一覧（横幅を広げ作品を大量掲載） -->
+        <!-- 左側：全幅アートギャラリーカード一覧（横幅広々・所要時間表示付き） -->
         <div class="w-full md:w-8/12 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 flex flex-col min-h-0 shadow-inner">
           <h3 class="text-xs font-bold text-amber-300 border-b border-slate-800 pb-1.5 shrink-0 mb-2">🖼️ 展示ギャラリー</h3>
           <div id="result-drawings-gallery" class="flex-1 grid grid-cols-2 md:grid-cols-3 gap-3 scrollable-content overflow-y-auto pr-1">
@@ -336,11 +336,11 @@
           </div>
         </div>
 
-        <!-- 右側：この1分間のポイントランキング -->
+        <!-- 右側：この1分間のポイントランキング（アーティスト除外） -->
         <div class="w-full md:w-4/12 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 flex flex-col min-h-0 shadow-inner">
           <h3 class="text-xs font-bold text-amber-300 border-b border-slate-800 pb-1.5 shrink-0 mb-2">🏆 1分間獲得ポイント</h3>
           <div id="result-ranking-list" class="flex-1 space-y-2 scrollable-content overflow-y-auto pr-1">
-            <!-- 動ディ生成 -->
+            <!-- 動的生成 -->
           </div>
         </div>
 
@@ -359,18 +359,19 @@
 
   <!-- JavaScript ロジック -->
   <script>
-    const STORAGE_KEY_PLAYERS = 'oekaki_app_players_v10';
-    const STORAGE_KEY_WORDS = 'oekaki_app_words_v10';
-    const STORAGE_KEY_SETTINGS = 'oekaki_app_settings_v10';
+    const STORAGE_KEY_PLAYERS = 'oekaki_app_players_v11';
+    const STORAGE_KEY_WORDS = 'oekaki_app_words_v11';
+    const STORAGE_KEY_SETTINGS = 'oekaki_app_settings_v11';
 
-    const OLD_PLAYER_KEYS = ['oekaki_app_players_v9', 'oekaki_app_players_v8'];
-    const OLD_WORD_KEYS = ['oekaki_app_words_v9', 'oekaki_app_words_v8'];
+    const OLD_PLAYER_KEYS = ['oekaki_app_players_v10', 'oekaki_app_players_v9'];
+    const OLD_WORD_KEYS = ['oekaki_app_words_v10', 'oekaki_app_words_v9'];
 
     // ご指定いただいた14種類の動物プレイヤーアイコン
     const EMOJI_OPTIONS = ["🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐮", "🐦", "🐣"];
 
-    // 虹色順描画用ペンカラー（黒色には認識しやすいよう枠線を付与）
+    // 虹色順描画用ペンカラー（デフォルトは黒：#000000）
     const PEN_COLORS = [
+      { id: "#000000", name: "黒", bg: "bg-black border-2 border-white/90 ring-1 ring-black" },
       { id: "#ef4444", name: "赤", bg: "bg-red-500" },
       { id: "#f97316", name: "オレンジ", bg: "bg-orange-500" },
       { id: "#eab308", name: "黄", bg: "bg-yellow-500" },
@@ -379,7 +380,6 @@
       { id: "#3b82f6", name: "青", bg: "bg-blue-500" },
       { id: "#a855f7", name: "紫", bg: "bg-purple-500" },
       { id: "#ec4899", name: "ピンク", bg: "bg-pink-500" },
-      { id: "#000000", name: "黒", bg: "bg-black border-2 border-white/90 ring-1 ring-black" },
       { id: "#6b7280", name: "グレー", bg: "bg-gray-500" },
     ];
 
@@ -524,7 +524,7 @@
       pencilGainNode.gain.setValueAtTime(0, audioCtx.currentTime);
     }
 
-    // 実況音声ボイス拡充
+    // 実況音声ボイス（カウントダウン、所要時間実況等拡張）
     const VOICE_PHRASES = {
       start: [
         "よーい、スタート！キャンバスに描いてね！",
@@ -533,16 +533,16 @@
         "さあ何を描くのかな？スタート！"
       ],
       correctAnswerOpen: [
-        "正解はこれでした！お見事！",
-        "答えはこちら！分かったかな？",
-        "正解発表！ナイス推理！",
-        "見事に描けていましたね！正解はこれ！"
+        (name) => `正解はこれでした！お見事！`,
+        (name) => `答えはこちら！分かったかな？`,
+        (name) => `正解発表！ナイス推理！`,
+        (name) => `見事に描けていましたね！正解はこれ！`
       ],
       correctWinner: [
-        (name) => `${name}さん、大正解！ナイス推理！`,
-        (name) => `すごーい！${name}さん正解！バッチリ！`,
-        (name) => `天才！${name}さんに、1ポイント！`,
-        (name) => `正解が出ました！${name}さんお見事！`
+        (name) => `正解はこれでした！ ${name}さん、大正解！ナイス推理です！`,
+        (name) => `正解はこちら！ すごーい！${name}さん正解！バッチリです！`,
+        (name) => `正解発表！ 天才！${name}さんに、1ポイント獲得！`,
+        (name) => `見事に描けていましたね！正解が出ました！${name}さんお見事！`
       ],
       pass: [
         "パス！次のお題へいくよ〜！",
@@ -551,6 +551,10 @@
       ],
       time30: ["残り、30秒だよ！", "折り返し！あと30秒！"],
       time10: ["残り10秒！急いで急いで！", "ラスト10秒！ラストスパート！"],
+      countdown: [
+        (sec) => `${sec}`,
+        (sec) => `${sec}！`
+      ],
       finishRound: [
         (name, score) => `${name}さん、${score}ポイント獲得って凄いですね！素晴らしい作品集です！`,
         (name, score) => `${name}さん、${score}ポイント獲得！画伯の才能が光っていましたね！`,
@@ -560,6 +564,12 @@
         (name) => `次のアーティストは${name}さん。頑張ってね！`,
         (name) => `次は${name}さんのターンです！名作を期待しています！`,
         (name) => `さあ、アーティスト${name}さんの登場です！楽しんで描いてね！`
+      ],
+      drawingTimeComment: [
+        (name, sec) => `${name}のイラストは、${sec}秒で完成！すごすぎます！`,
+        (name, sec) => `${name}のイラストは、${sec}秒かかりましたが苦戦しながらも描き上げました！`,
+        (name, sec) => `${name}はわずか${sec}秒のスピード作成！お見事です！`,
+        (name, sec) => `${name}のイラストは${sec}秒で描き上げました！素晴らしいです！`
       ]
     };
 
@@ -870,10 +880,15 @@
         timerSeconds--;
         updateTimerDisplay();
 
-        if (timerSeconds === 30) {
+        // 残り3秒からのカウントダウン音声
+        if (timerSeconds === 3) {
+          speakText("3");
+        } else if (timerSeconds === 2) {
+          speakText("2");
+        } else if (timerSeconds === 1) {
+          speakText("1");
+        } else if (timerSeconds === 30) {
           speakText(getRandomPhrase('time30'));
-        } else if (timerSeconds === 10) {
-          speakText(getRandomPhrase('time10'));
         }
 
         if (timerSeconds <= 0) {
@@ -963,7 +978,7 @@
     }
 
     // ----------------------------------------------------
-    // 🎉 正解モーダル制御（超々巨大絵文字＋ジャンプアニメーション）
+    // 🎉 正解モーダル制御（ピンポン音 ➔ 音声実況 ＆ アーティスト枠内側配置）
     // ----------------------------------------------------
     function openAnswerModal() {
       if (!isGaming) return;
@@ -980,8 +995,6 @@
       } else {
         displayContainer.innerHTML = `<span class="text-5xl md:text-7xl font-black text-amber-200 drop-shadow">${currentWordObj.name}</span>`;
       }
-
-      speakText(getRandomPhrase('correctAnswerOpen'));
 
       renderAnswerModalGrid();
       document.getElementById('answer-modal').classList.remove('hidden');
@@ -1009,10 +1022,11 @@
         const btn = document.createElement('button');
         btn.onclick = () => submitCorrectWinner(player.id);
         
+        // アーティストバッジを枠「内側」に配置して切れを防止
         btn.className = `p-2 rounded-2xl border-2 flex flex-col items-center justify-between transition active:scale-95 shadow-lg relative ${colorStyle.bg} ${colorStyle.border} ${isArtist ? 'ring-4 ring-amber-400 font-black' : ''}`;
 
         btn.innerHTML = `
-          ${isArtist ? '<span class="absolute top-1 right-1 bg-amber-400 text-black text-[9px] font-black px-1.5 py-0.2 rounded-full shadow z-30">アーティスト</span>' : ''}
+          ${isArtist ? '<span class="absolute top-2 left-2 bg-amber-400 text-black text-[9px] font-black px-2 py-0.5 rounded-full shadow z-30">アーティスト</span>' : ''}
           <span class="text-4xl md:text-5xl my-1 shrink-0 drop-shadow">${player.emoji}</span>
           <span class="text-xs md:text-sm font-extrabold text-white truncate w-full text-center px-1">${player.name}</span>
           <span class="mt-1 text-[11px] font-mono font-bold text-amber-300 bg-black/40 px-2 py-0.5 rounded-full border border-white/20">
@@ -1026,6 +1040,8 @@
 
     function submitCorrectWinner(winnerPlayerId) {
       if (!isGaming) return;
+      
+      // ① まず「ピンポン♪」効果音を鳴らす
       playSound('correct');
 
       const activePlayers = players.filter(p => p.active);
@@ -1043,6 +1059,7 @@
 
       saveCurrentCanvasToHistory(winner);
 
+      // ② 効果音直後にバリエーション豊かな音声実況を発話
       if (winner) {
         speakText(getRandomPhrase('correctWinner', winner.name));
       }
@@ -1324,7 +1341,7 @@
 
     document.getElementById('words-input').addEventListener('input', updateWordsCountDisplay);
 
-    // タイムアップ・アート作品ギャラリー表示（左右逆配置 ＆ ギャラリー広々表示）
+    // タイムアップ・アート作品ギャラリー表示（左右反転：左ギャラリー・右ランキング、アーティスト除外、所要時間実況対応）
     function showResultModal() {
       const list = document.getElementById('result-ranking-list');
       const gallery = document.getElementById('result-drawings-gallery');
@@ -1340,8 +1357,9 @@
         galleryTitle.innerText = `${currentArtist ? currentArtist.name : 'アーティスト'}さんのアート作品`;
       }
 
-      // 1分間の獲得ポイントランキング
-      const roundRanked = activePlayers.map(p => ({
+      // 1分間の獲得ポイントランキングからアーティストを除外
+      const detectives = activePlayers.filter(p => !currentArtist || p.id !== currentArtist.id);
+      const roundRanked = detectives.map(p => ({
         ...p,
         roundScore: roundScores[p.id] || 0
       })).sort((a, b) => b.roundScore - a.roundScore || b.score - a.score);
@@ -1368,7 +1386,7 @@
         list.appendChild(item);
       });
 
-      // ギャラリー一覧（左側配置・広々表示）
+      // ギャラリー一覧（左側配置・所要時間表示付き）
       if (roundDrawingsHistory.length === 0) {
         gallery.innerHTML = `<div class="col-span-3 text-slate-500 text-xs py-12 text-center w-full">このラウンドで描かれた作品はありません</div>`;
       } else {
@@ -1385,12 +1403,18 @@
                 ${item.wordEmoji ? `<span class="text-sm">${item.wordEmoji}</span>` : ''}
                 <span>${item.wordName}</span>
               </div>
+              <span class="text-[10px] font-mono bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded border border-amber-500/30">
+                ⏱️ ${item.timeTaken}秒
+              </span>
             </div>
             <div class="text-[10px] text-slate-400 truncate w-full text-center border-t border-slate-800/80 pt-1">
               ${item.winnerName ? `<span class="text-emerald-400 font-bold">🎉 正解: ${item.winnerEmoji || ''}${item.winnerName}</span>` : '<span class="text-slate-500">（未回答 / パス）</span>'}
             </div>
           `;
           gallery.appendChild(card);
+
+          // 所要時間に応じた実況ボイス発話（最後尾の作品についてコメント）
+          speakText(getRandomPhrase('drawingTimeComment', item.wordName, item.timeTaken));
         });
       }
 
