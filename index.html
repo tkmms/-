@@ -93,7 +93,7 @@
   <div class="flex-1 flex flex-col pt-[8.5dvh] px-[5vw] pb-[2.5dvh] min-h-0 relative">
     <div class="w-full h-full flex flex-row gap-3 min-h-0">
       
-      <!-- テレビ左側：プレイヤーランキング縦並び（タップ無効表示専用） -->
+      <!-- テレビ左側：プレイヤーランキング縦並び（同点同順位対応） -->
       <aside id="tv-rankings-container" class="w-44 md:w-56 h-full flex flex-col gap-1.5 shrink-0 relative pointer-events-none select-none">
         <!-- JavaScriptで動的生成 -->
       </aside>
@@ -186,7 +186,7 @@
 
 
   <!-- ========================================== -->
-  <!-- 3. 🎉 正解選択モーダル（アーティスト枠内側配置＆即時ピンポン＆実況） -->
+  <!-- 3. 🎉 正解選択モーダル -->
   <!-- ========================================== -->
   <div id="answer-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-3">
     <div class="bg-slate-900 border-2 border-amber-500/80 rounded-2xl w-full max-w-5xl h-[68vh] flex flex-col shadow-2xl overflow-hidden p-4 space-y-2 relative -top-6">
@@ -293,7 +293,6 @@
 
   <!-- ========================================== -->
   <!-- 5. モーダル：「〇〇さんのアート作品」タイムアップ・ギャラリー展示 -->
-  <!-- 枠を少し下にずらし、左右と上の余白を広げ、高さも少し拡張。ランキング左・ギャラリー右 -->
   <!-- ========================================== -->
   <div id="result-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex flex-col justify-between p-4 pt-10">
     
@@ -346,12 +345,12 @@
 
   <!-- JavaScript ロジック -->
   <script>
-    const STORAGE_KEY_PLAYERS = 'oekaki_app_players_v13';
-    const STORAGE_KEY_WORDS = 'oekaki_app_words_v13';
-    const STORAGE_KEY_SETTINGS = 'oekaki_app_settings_v13';
+    const STORAGE_KEY_PLAYERS = 'oekaki_app_players_v14';
+    const STORAGE_KEY_WORDS = 'oekaki_app_words_v14';
+    const STORAGE_KEY_SETTINGS = 'oekaki_app_settings_v14';
 
-    const OLD_PLAYER_KEYS = ['oekaki_app_players_v12', 'oekaki_app_players_v11'];
-    const OLD_WORD_KEYS = ['oekaki_app_words_v12', 'oekaki_app_words_v11'];
+    const OLD_PLAYER_KEYS = ['oekaki_app_players_v13', 'oekaki_app_players_v12'];
+    const OLD_WORD_KEYS = ['oekaki_app_words_v13', 'oekaki_app_words_v12'];
 
     const EMOJI_OPTIONS = ["🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐮", "🐦", "🐣"];
 
@@ -446,7 +445,7 @@
     let isPaused = false;
     let timerSeconds = 60;
     let timerInterval = null;
-    let keepAliveInterval = null; // 無音キープアライブ用
+    let keepAliveInterval = null;
 
     let roundScores = {};
     let roundDrawingsHistory = [];
@@ -463,7 +462,7 @@
     let pencilGainNode = null;
     let previousPositions = new Map();
 
-    // iOSミラーリング時の音声途切れ防止（無音キープアライブ再生）
+    // iOSミラーリング時の音声途切れ防止（無音パルス継続送信）
     function startAudioKeepAlive() {
       if (keepAliveInterval) return;
       keepAliveInterval = setInterval(() => {
@@ -471,13 +470,13 @@
         try {
           const osc = audioCtx.createOscillator();
           const gain = audioCtx.createGain();
-          gain.gain.setValueAtTime(0.0001, audioCtx.currentTime); // ほぼ無音
+          gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
           osc.connect(gain);
           gain.connect(audioCtx.destination);
           osc.start();
           osc.stop(audioCtx.currentTime + 0.05);
         } catch (e) {}
-      }, 8000); // 8秒おきに微小な音を出してスリープ回避
+      }, 5000);
     }
 
     function initPencilSoundNode() {
@@ -523,7 +522,6 @@
       pencilGainNode.gain.setValueAtTime(0, audioCtx.currentTime);
     }
 
-    // バリエーション豊かな実況音声フレーズ
     const VOICE_PHRASES = {
       start: [
         (artist) => `よーい、スタート！${artist}さん、キャンバスに描いてね！`,
@@ -537,16 +535,11 @@
         (word) => `正解発表！${word}でした！ナイス推理！`,
         (word) => `見事に描けていましたね！正解は${word}です！`
       ],
-      correctWinner: [
-        (name, word) => `正解の${word}ですね！ ${name}さん、大正解！ナイス推理です！`,
-        (name, word) => `その通り${word}です！ すごーい！${name}さん正解！バッチリです！`,
-        (name, word) => `大正解の${word}！ 天才！${name}さんに、1ポイント獲得！`,
-        (name, word) => `見事に${word}を当てました！${name}さんお見事です！`
-      ],
       afterCorrectWinner: [
         (name) => `${name}さんお見事！次の作品は何かな〜？`,
         (name) => `${name}さんすごい！さあ次の作品にいってみよう！`,
-        (name) => `${name}さんナイス推理！次は何が飛び出すかな？`
+        (name) => `${name}さんナイス推理！次は何が飛び出すかな？`,
+        (name) => `ナイス回答${name}さん！次の絵の準備はいいですか？`
       ],
       pass: [
         (artist) => `パス！${artist}さん、次のお題へいくよ〜！`,
@@ -573,15 +566,10 @@
       ],
       drawingTimeComment: [
         (name, sec) => `${name}のイラストは、${sec}秒で完成！すごすぎます！`,
-        (name, sec) => `${name}のイラストは${sec}秒かかりましたが大健闘です！`,
+        (name, sec) => `${name}のイラストは、${sec}秒かかりましたが大健闘です！`,
         (name, sec) => `${name}はわずか${sec}秒のスピード作成！お見事です！`,
         (name, sec) => `${name}のイラストは${sec}秒で描き上げました！素晴らしいです！`,
         (name, sec) => `${name}のイラスト！時間をじっくりかけて見事に仕上げましたね。ユニークです！`
-      ],
-      unfinishedComment: [
-        (name) => `${name}のイラスト！途中ですがとてもユニークなアイデアですね！`,
-        (name) => `${name}の作品！タイムアップとなりましたが個性あふれる一枚です！`,
-        (name) => `${name}のイラスト！途中の状態も味があって素敵ですね！`
       ]
     };
 
@@ -927,7 +915,7 @@
     }
 
     function finishRound() {
-      saveCurrentCanvasToHistory(null, true); // タイムアップによる未完成保存
+      saveCurrentCanvasToHistory(null, true);
       stopGame();
       playSound('finish');
       
@@ -997,16 +985,14 @@
     }
 
     // ----------------------------------------------------
-    // 🎉 正解モーダル制御（押した瞬間にピンポン＋実況開始）
+    // 🎉 正解モーダル制御
     // ----------------------------------------------------
     function openAnswerModal() {
       if (!isGaming) return;
       unlockAudioAndSpeech();
       isPaused = true;
 
-      // ① 正解ボタンを押した瞬間に「ピンポン♪」効果音
       playSound('correct');
-      // ② 正解ボタンを押した瞬間に実況音声を即座に再生
       speakText(getRandomPhrase('correctAnswerOpen', currentWordObj.name));
 
       const displayContainer = document.getElementById('modal-word-display');
@@ -1077,9 +1063,8 @@
         roundScores[winner.id] = (roundScores[winner.id] || 0) + 1;
       }
 
-      saveCurrentCanvasToHistory(winner, false); // 完了作品として保存
+      saveCurrentCanvasToHistory(winner, false);
 
-      // ③ プレイヤー選択直後の実況（お祝い＆進行）
       if (winner) {
         speakText(getRandomPhrase('afterCorrectWinner', winner.name));
       }
@@ -1145,6 +1130,7 @@
       });
     }
 
+    // 左側ランキング表示（同点の場合は同じ順位を付与）
     function renderTvRankings() {
       const container = document.getElementById('tv-rankings-container');
       container.innerHTML = '';
@@ -1154,24 +1140,35 @@
 
       const currentArtist = activePlayers[currentArtistIndex % activePlayers.length];
 
+      // スコア順にソート
       const sorted = activePlayers.map((p, originalIndex) => ({
         ...p,
         originalIndex
       })).sort((a, b) => b.score - a.score || a.id - b.id);
 
-      sorted.forEach((player, rank) => {
+      // 同点チェックして順位（タイ順位）を計算
+      let currentRank = 1;
+      const rankedPlayers = sorted.map((player, idx, arr) => {
+        if (idx > 0 && player.score < arr[idx - 1].score) {
+          currentRank = idx + 1;
+        }
+        return { ...player, displayRank: currentRank };
+      });
+
+      rankedPlayers.forEach((player) => {
         const colorStyle = COLOR_OPTIONS[player.colorIdx % COLOR_OPTIONS.length] || COLOR_OPTIONS[0];
         const isArtist = currentArtist && currentArtist.id === player.id;
+        const rank = player.displayRank;
 
         const card = document.createElement('div');
         card.id = `player-card-${player.id}`;
         
         card.className = `player-card-move w-full flex-1 rounded-xl p-2 flex items-center justify-between border-2 transition relative overflow-hidden shadow-md ${colorStyle.bg} ${colorStyle.border} ${isArtist ? 'ring-4 ring-amber-400 font-black' : 'opacity-90'}`;
 
-        let rankBadge = `<span class="text-xs font-bold w-6 text-center text-white/90">${rank + 1}位</span>`;
-        if (rank === 0) rankBadge = `<span class="text-sm font-black w-6 text-center">🥇</span>`;
-        if (rank === 1) rankBadge = `<span class="text-sm font-black w-6 text-center">🥈</span>`;
-        if (rank === 2) rankBadge = `<span class="text-sm font-black w-6 text-center">🥉</span>`;
+        let rankBadge = `<span class="text-xs font-bold w-6 text-center text-white/90">${rank}位</span>`;
+        if (rank === 1) rankBadge = `<span class="text-sm font-black w-6 text-center">🥇</span>`;
+        if (rank === 2) rankBadge = `<span class="text-sm font-black w-6 text-center">🥈</span>`;
+        if (rank === 3) rankBadge = `<span class="text-sm font-black w-6 text-center">🥉</span>`;
 
         card.innerHTML = `
           ${isArtist ? '<span class="absolute top-0 right-0 bg-amber-400 text-black text-[8px] font-black px-1.5 py-0.2 rounded-bl-md shadow z-30">アーティスト</span>' : ''}
@@ -1361,7 +1358,54 @@
 
     document.getElementById('words-input').addEventListener('input', updateWordsCountDisplay);
 
-    // タイムアップ・アート作品ギャラリー表示（下へずらし、左右余裕確保、アーティスト除外、所要時間＆未完成対応コメント）
+    // お気に入り作品の画像保存（メタデータ焼き込み付き Canvas 生成）
+    function saveDrawingAsImage(dataUrl, wordName, artistName, timeTaken) {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement('canvas');
+        c.width = 1200;
+        c.height = 900;
+        const cx = c.getContext('2d');
+
+        // 背景（エレガントなグラデーション）
+        const grad = cx.createLinearGradient(0, 0, 0, 900);
+        grad.addColorStop(0, '#0f172a');
+        grad.addColorStop(1, '#1e1b4b');
+        cx.fillStyle = grad;
+        cx.fillRect(0, 0, 1200, 900);
+
+        // 額縁カード背景
+        cx.fillStyle = '#ffffff';
+        cx.roundRect(100, 80, 1000, 640, 24);
+        cx.fill();
+
+        // 描画された絵を高解像度でセンタリング描画
+        cx.drawImage(img, 140, 110, 920, 520);
+
+        // メタデータ文字描画
+        cx.fillStyle = '#fef3c7';
+        cx.font = 'bold 36px sans-serif';
+        cx.fillText(`🎨 お題: ${wordName}`, 120, 780);
+
+        const now = new Date();
+        const days = ['日', '月', '火', '水', '木', '金', '土'];
+        const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日(${days[now.getDay()]}) ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        
+        cx.fillStyle = '#cbd5e1';
+        cx.font = '22px sans-serif';
+        cx.fillText(`アーティスト: ${artistName}  |  所要時間: ${timeTaken}秒`, 120, 825);
+        cx.fillText(dateStr, 120, 860);
+
+        // ダウンロードリンクを生成して自動クリック（写真アプリやデバイスへの保存）
+        const link = document.createElement('a');
+        link.download = `${wordName}_${artistName}.png`;
+        link.href = c.toDataURL('image/png');
+        link.click();
+      };
+      img.src = dataUrl;
+    }
+
+    // タイムアップ・アート作品ギャラリー表示（上下左右のゆとり確保、同点タイ順位ランキング、ギャラリー左・ランキング右）
     function showResultModal() {
       const list = document.getElementById('result-ranking-list');
       const gallery = document.getElementById('result-drawings-gallery');
@@ -1372,26 +1416,35 @@
 
       const activePlayers = players.filter(p => p.active);
       const currentArtist = activePlayers[currentArtistIndex % activePlayers.length];
+      const artistName = currentArtist ? currentArtist.name : "アーティスト";
 
       if (galleryTitle) {
-        galleryTitle.innerText = `${currentArtist ? currentArtist.name : 'アーティスト'}さんのアート作品`;
+        galleryTitle.innerText = `${artistName}さんのアート作品`;
       }
 
-      // 1分間の獲得ポイントランキングからアーティストを除外
+      // 1分間の獲得ポイントランキングからアーティストを除外 ＆ 同点タイ順位対応
       const detectives = activePlayers.filter(p => !currentArtist || p.id !== currentArtist.id);
       const roundRanked = detectives.map(p => ({
         ...p,
         roundScore: roundScores[p.id] || 0
-      })).sort((a, b) => b.roundScore - a.roundScore || b.score - a.score);
+      })).sort((a, b) => b.roundScore - a.roundScore || b.id - a.id);
 
-      roundRanked.forEach((player, rank) => {
+      let currentRank = 1;
+      const rankedRoundDetectives = roundRanked.map((player, idx, arr) => {
+        if (idx > 0 && player.roundScore < arr[idx - 1].roundScore) {
+          currentRank = idx + 1;
+        }
+        return { ...player, displayRank: currentRank };
+      });
+
+      rankedRoundDetectives.forEach((player) => {
         const item = document.createElement('div');
         item.className = "flex justify-between items-center bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 text-sm";
         
-        let rankBadge = `<span class="font-bold text-xs text-amber-400 w-10 text-left">${rank + 1}位</span>`;
-        if (rank === 0) rankBadge = `<span class="font-bold text-xs text-amber-400 w-10 text-left">🥇 1位</span>`;
-        if (rank === 1) rankBadge = `<span class="font-bold text-xs text-amber-400 w-10 text-left">🥈 2位</span>`;
-        if (rank === 2) rankBadge = `<span class="font-bold text-xs text-amber-400 w-10 text-left">🥉 3位</span>`;
+        let rankBadge = `<span class="font-bold text-xs text-amber-400 w-10 text-left">${player.displayRank}位</span>`;
+        if (player.displayRank === 1) rankBadge = `<span class="font-bold text-xs text-amber-400 w-10 text-left">🥇 1位</span>`;
+        if (player.displayRank === 2) rankBadge = `<span class="font-bold text-xs text-amber-400 w-10 text-left">🥈 2位</span>`;
+        if (player.displayRank === 3) rankBadge = `<span class="font-bold text-xs text-amber-400 w-10 text-left">🥉 3位</span>`;
 
         item.innerHTML = `
           <div class="flex items-center space-x-1.5 truncate">
@@ -1406,7 +1459,7 @@
         list.appendChild(item);
       });
 
-      // ギャラリー一覧生成
+      // ギャラリー一覧生成（画像保存ボタン付き）
       if (roundDrawingsHistory.length === 0) {
         gallery.innerHTML = `<div class="col-span-3 text-slate-500 text-xs py-12 text-center w-full">このラウンドで描かれた作品はありません</div>`;
       } else {
@@ -1415,8 +1468,12 @@
           card.className = "bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/30 rounded-xl p-2 flex flex-col items-center space-y-1.5 text-center shadow-lg relative";
           
           card.innerHTML = `
-            <div class="w-full h-24 md:h-28 bg-white rounded-lg overflow-hidden border-2 border-slate-800 shadow-inner flex items-center justify-center p-1">
+            <div class="w-full h-24 md:h-28 bg-white rounded-lg overflow-hidden border-2 border-slate-800 shadow-inner flex items-center justify-center p-1 relative group">
               <img src="${item.dataUrl}" class="max-w-full max-h-full object-contain">
+              <!-- 保存ボタン -->
+              <button onclick="saveDrawingAsImage('${item.dataUrl}', '${item.wordName}', '${artistName}', ${item.timeTaken})" class="absolute top-1.5 right-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow border border-indigo-400 active:scale-95 transition">
+                📥 保存
+              </button>
             </div>
             <div class="w-full flex items-center justify-between px-1">
               <div class="text-xs font-black text-amber-300 truncate flex items-center space-x-1">
@@ -1433,8 +1490,7 @@
           `;
           gallery.appendChild(card);
 
-          // 作品ごとの実況音声（最後尾＝未完成作品の場合は専用コメント、それ以外は所要時間に応じたコメント）
-          const artistName = currentArtist ? currentArtist.name : "アーティスト";
+          // 所要時間に応じた実況音声（最後の未完成作品の配慮付き）
           if (index === roundDrawingsHistory.length - 1 && item.isUnfinished) {
             speakText(getRandomPhrase('unfinishedComment', artistName));
           } else {
