@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>アテテ</title>
+  <title>アテテ！</title>
 
   <!-- PWA & iOS Safari フルスクリーン対応設定 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="アテテ">
+  <meta name="apple-mobile-web-app-title" content="アテテ！">
   <meta name="theme-color" content="#020617">
   
   <!-- PWA Web App Manifest -->
-  <link rel="manifest" href='data:application/manifest+json,{"name":"アテテ","short_name":"アテテ","start_url":".","display":"standalone","background_color":"#020617","theme_color":"#020617"}'>
+  <link rel="manifest" href='data:application/manifest+json,{"name":"アテテ！","short_name":"アテテ！","start_url":".","display":"standalone","background_color":"#020617","theme_color":"#020617"}'>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -88,16 +88,19 @@
 <body class="h-[100dvh] w-vw flex flex-col justify-between font-sans overflow-hidden relative">
 
   <!-- ========================================== -->
-  <!-- 0. テレビ枠外（iPad画面最上部：さらに上へ調整）のツールコントロール -->
-  <!-- 左上に設定ボタン、右上にパレット（黒い背景枠なし）を配置 -->
+  <!-- 0. テレビ枠外（iPad画面最上部）のツールコントロール -->
+  <!-- 左上に設定ボタン ＆ 「アテテ！」タイトル、右上にカラーパレット -->
   <!-- ========================================== -->
   <header class="absolute top-0.5 left-0 right-0 z-30 px-[5vw] flex items-center justify-between pointer-events-auto">
-    <!-- 左上：設定ボタン -->
-    <button onclick="openSettingsWithSE()" class="bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1 rounded-xl text-xs font-bold shadow-lg flex items-center space-x-1 active:scale-95 transition">
-      <span>⚙️ 設定</span>
-    </button>
+    <!-- 左側：設定ボタン ＆ 「アテテ！」タイトル -->
+    <div class="flex items-center space-x-3">
+      <button onclick="openSettingsWithSE()" class="bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1 rounded-xl text-xs font-bold shadow-lg flex items-center space-x-1 active:scale-95 transition">
+        <span>⚙️ 設定</span>
+      </button>
+      <span class="text-base md:text-lg font-black text-amber-300 tracking-wider drop-shadow">アテテ！</span>
+    </div>
 
-    <!-- 右上：カラーパレット & 全消し（背景枠なし・極力上へ配置） -->
+    <!-- 右側：カラーパレット & 全消し -->
     <div class="flex items-center space-x-2">
       <div id="color-palette" class="flex items-center space-x-1.5">
         <!-- JSで動的生成 -->
@@ -120,8 +123,8 @@
         <!-- JavaScriptで動的生成 -->
       </aside>
 
-      <!-- テレビ中央〜右側：タイマーバー ＆ お絵描きキャンバス -->
-      <main class="flex-1 h-full flex flex-col gap-2 min-h-0 min-w-0">
+      <!-- テレビ中央〜右側：タイマーバー ＆ お絵描きキャンバス（＋スタート前中央巨大スタートボタン） -->
+      <main class="flex-1 h-full flex flex-col gap-2 min-h-0 min-w-0 relative">
         
         <!-- YouTube風 タイマープログレスバー -->
         <div class="w-full bg-slate-800/90 rounded-full h-4 overflow-hidden border border-slate-700 relative shrink-0 shadow-inner">
@@ -134,6 +137,19 @@
         <!-- キャンバス容器 -->
         <div id="canvas-container" class="flex-1 w-full relative bg-white rounded-2xl overflow-hidden shadow-2xl border-2 border-slate-800 min-h-0">
           <canvas id="paint-canvas" class="w-full h-full"></canvas>
+
+          <!-- スタート前：キャンバス中央の巨大スタートボタン -->
+          <div id="center-start-overlay" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 z-20 transition-opacity duration-300">
+            <div class="text-center space-y-4">
+              <span class="text-xs font-bold tracking-widest text-amber-400 block uppercase">現在のアーティスト</span>
+              <div id="center-artist-display" class="flex items-center justify-center space-x-3 bg-slate-900 border-2 border-amber-500/60 px-6 py-4 rounded-3xl shadow-2xl">
+                <!-- アーティスト絵文字と名前 -->
+              </div>
+              <button onclick="toggleGameWithSE()" class="mt-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-4 px-12 rounded-3xl text-2xl md:text-3xl border-4 border-emerald-300 shadow-2xl active:scale-95 transition animate-bounce">
+                ▶️ スタート！
+              </button>
+            </div>
+          </div>
         </div>
       </main>
 
@@ -143,6 +159,7 @@
 
   <!-- ========================================== -->
   <!-- 2. テレビには絶対映らない秘密の領域（画面最下部：14dvh固定） -->
+  <!-- スタート後は「中断」「パス」「お題」「🎉正解！」が出現 -->
   <!-- ========================================== -->
   <footer class="h-[14dvh] w-full bg-slate-900 border-t-2 border-slate-800 px-4 py-1.5 flex items-center justify-between gap-2 shrink-0 z-20 shadow-2xl overflow-hidden relative">
     
@@ -151,15 +168,15 @@
       <span>正解したら右側の「🎉 正解！」ボタンをタップ！</span>
     </div>
 
-    <!-- お題 ＆ コントロールエリア（横幅最大活用） -->
+    <!-- お題 ＆ コントロールエリア -->
     <div class="w-full bg-amber-500/10 border-2 border-amber-500/50 rounded-2xl px-4 py-1.5 flex items-center justify-between relative shadow-inner h-full overflow-hidden gap-3">
       
-      <!-- 左側：スタート/中断/パスボタン -->
-      <div class="flex items-center space-x-2 shrink-0">
-        <button id="btn-start" onclick="toggleGameWithSE()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-5 rounded-xl text-xs md:text-sm border border-emerald-400 shadow-md active:scale-95 transition">
-          スタート
+      <!-- 左側：中断/パスボタン（スタート後に出現） -->
+      <div id="footer-active-controls-left" class="flex items-center space-x-2 shrink-0 opacity-0 pointer-events-none transition-opacity duration-300">
+        <button id="btn-start" onclick="toggleGameWithSE()" class="bg-rose-600 hover:bg-rose-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs md:text-sm border border-rose-400 shadow active:scale-95 transition">
+          中断
         </button>
-        <button id="btn-skip" onclick="skipWordWithSE()" disabled class="bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white font-bold py-2.5 px-3.5 rounded-xl text-xs border border-slate-600 active:scale-95 transition">
+        <button id="btn-skip" onclick="skipWordWithSE()" disabled class="bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white font-bold py-2.5 px-3 rounded-xl text-xs border border-slate-600 active:scale-95 transition">
           パス
         </button>
       </div>
@@ -171,8 +188,8 @@
         </div>
       </div>
 
-      <!-- 右側：🎉 正解！ボタン -->
-      <div class="flex items-center shrink-0">
+      <!-- 右側：🎉 正解！ボタン（スタート後に出現） -->
+      <div id="footer-active-controls-right" class="flex items-center shrink-0 opacity-0 pointer-events-none transition-opacity duration-300">
         <button id="btn-correct-trigger" onclick="openAnswerModalWithSE()" disabled class="bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black font-black py-2.5 px-6 rounded-xl text-xs md:text-base border border-amber-300 shadow-lg active:scale-95 transition">
           🎉 正解！
         </button>
@@ -202,7 +219,7 @@
           </div>
         </div>
 
-        <!-- 右エリア：プレイヤー選択（アーティストバッジ内側配置） -->
+        <!-- 右エリア：プレイヤー選択 -->
         <div id="answer-modal-grid" class="w-full md:w-1/2 grid grid-cols-3 gap-3 h-full overflow-y-auto p-2">
           <!-- 動的生成 -->
         </div>
@@ -290,11 +307,11 @@
 
   <!-- ========================================== -->
   <!-- 5. モーダル：「〇〇さんのアート作品」タイムアップ・ギャラリー展示 -->
-  <!-- 「1分間獲得ポイント」➔「ランキング」に変更・0ptは薄く表示 -->
+  <!-- ウィンドウ横幅をさらに狭めてテレビ外はみ出し防止 -->
   <!-- ========================================== -->
   <div id="result-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex flex-col justify-between p-4 pt-10">
     
-    <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/60 rounded-3xl w-full max-w-6xl h-[69vh] mx-auto flex flex-col p-5 shadow-2xl space-y-3 relative overflow-hidden mt-8">
+    <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/60 rounded-3xl w-full max-w-5xl h-[68vh] mx-auto flex flex-col p-5 shadow-2xl space-y-3 relative overflow-hidden mt-8">
       
       <div class="flex items-center justify-between border-b border-amber-500/30 pb-3 shrink-0">
         <div class="flex items-center space-x-3">
@@ -318,7 +335,7 @@
           </div>
         </div>
 
-        <!-- 右側：ランキング（0ptは薄く表示） -->
+        <!-- 右側：ランキング -->
         <div class="w-full md:w-4/12 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 flex flex-col min-h-0 shadow-inner">
           <h3 class="text-xs font-bold text-amber-300 border-b border-slate-800 pb-1.5 shrink-0 mb-2">🏆 ランキング</h3>
           <div id="result-ranking-list" class="flex-1 space-y-2 scrollable-content overflow-y-auto pr-1">
@@ -341,18 +358,17 @@
 
   <!-- JavaScript ロジック -->
   <script>
-    const STORAGE_KEY_PLAYERS = 'atete_app_players_v17';
-    const STORAGE_KEY_WORDS = 'atete_app_words_v17';
-    const STORAGE_KEY_SETTINGS = 'atete_app_settings_v17';
+    const STORAGE_KEY_PLAYERS = 'atete_app_players_v18';
+    const STORAGE_KEY_WORDS = 'atete_app_words_v18';
+    const STORAGE_KEY_SETTINGS = 'atete_app_settings_v18';
 
-    const OLD_PLAYER_KEYS = ['oekaki_app_players_v16', 'oekaki_app_players_v15'];
-    const OLD_WORD_KEYS = ['oekaki_app_words_v16', 'oekaki_app_words_v15'];
+    const OLD_PLAYER_KEYS = ['atete_app_players_v17', 'oekaki_app_players_v16'];
+    const OLD_WORD_KEYS = ['atete_app_words_v17', 'oekaki_app_words_v16'];
 
     const EMOJI_OPTIONS = ["🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐮", "🐦", "🐣"];
 
-    // 虹色順ペンカラー（黒・色カラー・白）
     const PEN_COLORS = [
-      { id: "#000000", name: "黒（主線）", bg: "bg-black border-2 border-white/90 ring-1 ring-black", isOverlayColor: false },
+      { id: "#000000", name: "黒", bg: "bg-black border-2 border-white/90 ring-1 ring-black", isOverlayColor: false },
       { id: "#ef4444", name: "赤", bg: "bg-red-500", isOverlayColor: true },
       { id: "#f97316", name: "オレンジ", bg: "bg-orange-500", isOverlayColor: true },
       { id: "#eab308", name: "黄", bg: "bg-yellow-500", isOverlayColor: true },
@@ -361,7 +377,7 @@
       { id: "#3b82f6", name: "青", bg: "bg-blue-500", isOverlayColor: true },
       { id: "#a855f7", name: "紫", bg: "bg-purple-500", isOverlayColor: true },
       { id: "#ec4899", name: "ピンク", bg: "bg-pink-500", isOverlayColor: true },
-      { id: "#ffffff", name: "白（消去）", bg: "bg-white border border-gray-400", isOverlayColor: false },
+      { id: "#ffffff", name: "白", bg: "bg-white border border-gray-400", isOverlayColor: false },
     ];
 
     const COLOR_OPTIONS = [
@@ -449,40 +465,16 @@
 
     let canvas, ctx;
     let isDrawing = false;
-    let currentPenColor = '#000000'; // 初期ペン色：黒
-    const BLACK_LINE_WIDTH = 6;     // 黒ペン（主線）の太さ
-    const COLOR_LINE_WIDTH = 16;    // カラーペン（色塗り）の太さ
-    const ERASER_LINE_WIDTH = 28;   // 白ペン（消しゴム用途）の太さ
+    let currentPenColor = '#000000';
+    const BLACK_LINE_WIDTH = 6;
+    const COLOR_LINE_WIDTH = 16;
+    const ERASER_LINE_WIDTH = 28;
 
     let audioCtx = null;
     let pencilNoiseNode = null;
     let pencilGainNode = null;
     let previousPositions = new Map();
 
-    // ----------------------------------------------------
-    // ボタン汎用効果音（SE）再生
-    // ----------------------------------------------------
-    function playButtonSE() {
-      unlockAudioAndSpeech();
-      if (!audioCtx) return;
-      try {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
-        osc.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.08); // E6
-        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.08);
-      } catch (e) {}
-    }
-
-    // ----------------------------------------------------
-    // キープアライブ & 鉛筆音
-    // ----------------------------------------------------
     function startAudioKeepAlive() {
       if (keepAliveInterval) return;
       keepAliveInterval = setInterval(() => {
@@ -496,7 +488,7 @@
           osc.start();
           osc.stop(audioCtx.currentTime + 0.05);
         } catch (e) {}
-      }, 3000);
+      }, 4000);
     }
 
     function initPencilSoundNode() {
@@ -542,7 +534,6 @@
       pencilGainNode.gain.setValueAtTime(0, audioCtx.currentTime);
     }
 
-    // 多彩な実況ボイス
     const VOICE_PHRASES = {
       start: [
         (artist) => `よーい、スタート！${artist}画伯、魂の一作をお願いします！`,
@@ -807,7 +798,7 @@
       };
     }
 
-    // 描画処理（カラーペンは黒線を消さない destination-over 合成モード）
+    // 描画処理：黒（主線）と白は source-over、他カラーは黒線を消さない destination-over
     function startDrawing(e) {
       unlockAudioAndSpeech();
       isDrawing = true;
@@ -823,15 +814,12 @@
       ctx.strokeStyle = currentPenColor;
 
       if (currentPenColor === '#ffffff') {
-        // 白ペン（消しゴム）
         ctx.globalCompositeOperation = 'source-over';
         ctx.lineWidth = ERASER_LINE_WIDTH;
       } else if (colorObj && colorObj.isOverlayColor) {
-        // カラーペン：黒線を塗っても黒線を上に保つ（destination-over）
-        ctx.globalCompositeOperation = 'destination-over';
+        ctx.globalCompositeOperation = 'destination-over'; // 黒線の下に色を塗る（塗り専用）
         ctx.lineWidth = COLOR_LINE_WIDTH;
       } else {
-        // 黒ペン（主線）
         ctx.globalCompositeOperation = 'source-over';
         ctx.lineWidth = BLACK_LINE_WIDTH;
       }
@@ -848,7 +836,7 @@
       if (isDrawing) {
         ctx.closePath();
         isDrawing = false;
-        ctx.globalCompositeOperation = 'source-over'; // 通常モードに復帰
+        ctx.globalCompositeOperation = 'source-over';
         stopPencilSound();
       }
     }
@@ -899,8 +887,13 @@
       roundDrawingsHistory = [];
       players.forEach(p => { roundScores[p.id] = 0; });
 
+      // フッターのコントロール表示切替
+      document.getElementById('center-start-overlay').classList.add('opacity-0', 'pointer-events-none');
+      document.getElementById('footer-active-controls-left').classList.remove('opacity-0', 'pointer-events-none');
+      document.getElementById('footer-active-controls-right').classList.remove('opacity-0', 'pointer-events-none');
+
       document.getElementById('btn-start').innerText = "中断";
-      document.getElementById('btn-start').className = "bg-rose-600 hover:bg-rose-500 text-white font-bold py-2 px-4 rounded-xl text-xs md:text-sm border border-rose-400 shadow active:scale-95 transition";
+      document.getElementById('btn-start').className = "bg-rose-600 hover:bg-rose-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs md:text-sm border border-rose-400 shadow active:scale-95 transition";
       document.getElementById('btn-skip').disabled = false;
       document.getElementById('btn-correct-trigger').disabled = false;
 
@@ -941,12 +934,18 @@
       isPaused = false;
       clearInterval(timerInterval);
       
+      // フッターコントロール非表示 ＆ 中央スタートボタン再表示
+      document.getElementById('center-start-overlay').classList.remove('opacity-0', 'pointer-events-none');
+      document.getElementById('footer-active-controls-left').classList.add('opacity-0', 'pointer-events-none');
+      document.getElementById('footer-active-controls-right').classList.add('opacity-0', 'pointer-events-none');
+
       document.getElementById('btn-start').innerText = "スタート";
-      document.getElementById('btn-start').className = "bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-4 rounded-xl text-xs md:text-sm border border-emerald-400 shadow active:scale-95 transition";
+      document.getElementById('btn-start').className = "bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-5 rounded-xl text-xs md:text-sm border border-emerald-400 shadow-md active:scale-95 transition";
       document.getElementById('btn-skip').disabled = true;
       document.getElementById('btn-correct-trigger').disabled = true;
       document.getElementById('word-display').innerText = "「スタート」を押してね！";
       updateTimerDisplay(60);
+      updateCenterArtistDisplay();
     }
 
     function finishRound() {
@@ -1024,7 +1023,6 @@
       nextWord();
     }
 
-    // 正解モーダル表示
     function openAnswerModalWithSE() {
       playButtonSE();
       openAnswerModal();
@@ -1035,9 +1033,7 @@
       unlockAudioAndSpeech();
       isPaused = true;
 
-      // ① ピンポン♪効果音を即時再生
       playSound('correct');
-      // ② 正解発表実況音声を再生
       speakText(getRandomPhrase('correctAnswerOpen', currentWordObj.name));
 
       const displayContainer = document.getElementById('modal-word-display');
@@ -1115,7 +1111,6 @@
 
       saveCurrentCanvasToHistory(winner, false);
 
-      // 正解者選択直後の実況ボイス
       if (winner) {
         speakText(getRandomPhrase('afterCorrectWinner', winner.name));
       }
@@ -1237,6 +1232,20 @@
 
         container.appendChild(card);
       });
+
+      updateCenterArtistDisplay();
+    }
+
+    function updateCenterArtistDisplay() {
+      const activePlayers = players.filter(p => p.active);
+      const currentArtist = activePlayers[currentArtistIndex % activePlayers.length];
+      const displayEl = document.getElementById('center-artist-display');
+      if (displayEl && currentArtist) {
+        displayEl.innerHTML = `
+          <span class="text-5xl md:text-6xl">${currentArtist.emoji}</span>
+          <span class="text-xl md:text-2xl font-black text-white">${currentArtist.name}</span>
+        `;
+      }
     }
 
     function selectArtistByCardTap(playerId) {
@@ -1254,11 +1263,6 @@
       }
     }
 
-    function openSettingsWithSE() {
-      playButtonSE();
-      openSettings();
-    }
-
     function openSettings() {
       if (isGaming) stopGame();
 
@@ -1268,18 +1272,8 @@
       document.getElementById('settings-modal').classList.remove('hidden');
     }
 
-    function closeSettingsWithSE() {
-      playButtonSE();
-      closeSettings();
-    }
-
     function closeSettings() {
       document.getElementById('settings-modal').classList.add('hidden');
-    }
-
-    function saveAndCloseSettingsWithSE() {
-      playButtonSE();
-      saveAndCloseSettings();
     }
 
     function saveAndCloseSettings() {
@@ -1302,11 +1296,6 @@
       saveStorageData();
       renderTvRankings();
       closeSettings();
-    }
-
-    function switchTabWithSE(tabName) {
-      playButtonSE();
-      switchTab(tabName);
     }
 
     function switchTab(tabName) {
@@ -1460,7 +1449,7 @@
 
     document.getElementById('words-input').addEventListener('input', updateWordsCountDisplay);
 
-    // お気に入り作品のスクエア（1080x1080）画像保存
+    // お気に入り作品のスクエア画像保存（項目名ラベル廃止・上お題、中央絵画、下アーティスト大・年月日時分＋秒数）
     function saveDrawingAsImage(dataUrl, wordName, artistName, timeTaken) {
       playButtonSE();
       const img = new Image();
@@ -1470,18 +1459,17 @@
         c.height = 1080;
         const cx = c.getContext('2d');
 
-        // 背景
         const grad = cx.createLinearGradient(0, 0, 0, 1080);
         grad.addColorStop(0, '#0f172a');
         grad.addColorStop(1, '#1e1b4b');
         cx.fillStyle = grad;
         cx.fillRect(0, 0, 1080, 1080);
 
-        // 上部中央：お題表示（項目名なし）
+        // 上部中央：お題（ラベルなし）
         cx.fillStyle = '#fef3c7';
-        cx.font = 'bold 42px sans-serif';
+        cx.font = 'bold 48px sans-serif';
         cx.textAlign = 'center';
-        cx.fillText(`${wordName}`, 540, 80);
+        cx.fillText(`${wordName}`, 540, 85);
 
         // 中央：キャンバス（正方形枠）
         cx.fillStyle = '#ffffff';
@@ -1489,20 +1477,20 @@
         cx.fill();
         cx.drawImage(img, 110, 130, 860, 740);
 
-        // 下部中央：大きめのアーティスト名（項目名なし）
+        // 下部中央：アーティスト名（ラベルなし・大サイズ）
         cx.fillStyle = '#fbbf24';
-        cx.font = 'bold 38px sans-serif';
+        cx.font = 'bold 44px sans-serif';
         cx.textAlign = 'center';
         cx.fillText(`${artistName}`, 540, 955);
 
-        // 最下部：年月日時間 & 所要時間
+        // 最下部：年月日時分 ＆ 所要時間（縦線なし）
         const now = new Date();
         const days = ['日', '月', '火', '水', '木', '金', '土'];
-        const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日(${days[now.getDay()]}) ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}  |  所要時間: ${timeTaken}秒`;
+        const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日(${days[now.getDay()]}) ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}  所要時間 ${timeTaken}秒`;
         
         cx.fillStyle = '#94a3b8';
         cx.font = '22px sans-serif';
-        cx.fillText(dateStr, 540, 1020);
+        cx.fillText(dateStr, 540, 1015);
 
         const link = document.createElement('a');
         link.download = `${wordName}_${artistName}.png`;
@@ -1512,7 +1500,7 @@
       img.src = dataUrl;
     }
 
-    // タイムアップギャラリー表示（タイトル「ランキング」、0ptは薄く表示）
+    // タイムアップギャラリー表示（ウィンドウ横幅を少し狭める ＆ ランキング0ptは薄く）
     function showResultModal() {
       const list = document.getElementById('result-ranking-list');
       const gallery = document.getElementById('result-drawings-gallery');
@@ -1546,8 +1534,6 @@
       rankedRoundDetectives.forEach((player) => {
         const item = document.createElement('div');
         const isZero = player.roundScore === 0;
-
-        // 0ptは薄く表示 (opacity-40)
         item.className = `flex justify-between items-center bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 text-sm transition ${isZero ? 'opacity-40' : 'opacity-100'}`;
         
         let rankBadge = `<span class="font-bold text-xs text-amber-400 w-10 text-left">${player.displayRank}位</span>`;
