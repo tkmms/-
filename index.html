@@ -112,7 +112,7 @@
   <!-- ========================================== -->
   <footer class="h-[14dvh] w-full bg-slate-900 border-t-2 border-slate-800 px-3 py-1.5 flex items-center justify-between gap-2 shrink-0 z-20 shadow-2xl overflow-hidden relative">
     
-    <!-- 正解者タップ用ヒントガイド（テレビ外の境界に配置） -->
+    <!-- 正解者タップ用ヒントガイド -->
     <div class="absolute -top-5 left-4 text-[10px] text-amber-300/80 font-bold tracking-wider pointer-events-none flex items-center space-x-1">
       <span>正解したら右下の「🎉 正解！」ボタンをタップ！</span>
     </div>
@@ -142,10 +142,10 @@
 
     </div>
 
-    <!-- 描画ツール（多色対応）＆設定ボタン -->
+    <!-- 描画ツール ＆ 設定ボタン -->
     <div class="h-full flex flex-col justify-between py-0.5 space-y-1 shrink-0">
       
-      <!-- 描画ツール & 8色カラーパレット -->
+      <!-- 描画ツール & カラーパレット -->
       <div class="flex items-center space-x-1.5 bg-slate-950 border border-slate-700 p-1.5 rounded-xl">
         <div id="color-palette" class="flex items-center space-x-1.5 pr-1.5 border-r border-slate-800">
           <!-- JSで動的生成 -->
@@ -170,36 +170,37 @@
 
 
   <!-- ========================================== -->
-  <!-- 3. 🎉 正解選択モーダル（左右2分割ダイナミックレイアウト） -->
+  <!-- 3. 🎉 正解選択モーダル（大型化・左右分割レイアウト） -->
   <!-- ========================================== -->
   <div id="answer-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-3">
-    <div class="bg-slate-900 border-2 border-amber-500/80 rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden p-4 space-y-3">
+    <!-- テレビ上部にしっかり余裕を持たせつつ画面縦幅（82vh）いっぱいに活用 -->
+    <div class="bg-slate-900 border-2 border-amber-500/80 rounded-2xl w-full max-w-5xl h-[82vh] flex flex-col shadow-2xl overflow-hidden p-4 space-y-2 relative">
       
-      <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-        <span class="text-xs font-bold text-amber-400">🎉 正解発表＆正解者選択</span>
-        <span class="text-[11px] text-slate-400">誰が当てましたか？（タップで判定＆加算）</span>
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2 shrink-0">
+        <span class="text-xs md:text-sm font-bold text-amber-400">🎉 正解発表！正解したプレイヤーをタップ</span>
+        <span class="text-[11px] text-slate-400">※タップすると+1pt入って次のお題へ！</span>
       </div>
 
-      <!-- 左右2分割メインコンテンツ -->
-      <div class="flex-1 flex flex-col md:flex-row gap-4 min-h-0 overflow-hidden items-center">
+      <!-- 左右分割メインコンテンツ（高さを最大限活用） -->
+      <div class="flex-1 flex flex-col md:flex-row gap-4 min-h-0 overflow-hidden items-stretch">
         
-        <!-- 左エリア：超巨大アピール正解画面 -->
-        <div class="w-full md:w-1/2 bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex flex-col items-center justify-center h-full text-center relative overflow-hidden shadow-inner">
-          <div id="modal-word-display" class="flex flex-col items-center justify-center space-y-2">
-            <!-- JavaScriptで超巨大絵文字＋テキスト名生成 -->
+        <!-- 左エリア：ダイナミック超巨大正解画面 -->
+        <div class="w-full md:w-1/2 bg-amber-500/10 border-2 border-amber-500/30 rounded-2xl p-4 flex flex-col items-center justify-center h-full text-center relative overflow-hidden shadow-inner">
+          <div id="modal-word-display" class="flex flex-col items-center justify-center h-full w-full">
+            <!-- JavaScriptでダイナミック巨大表示 -->
           </div>
         </div>
 
-        <!-- 右エリア：プレイヤー正解者タップ選択（3×3グリッド） -->
-        <div id="answer-modal-grid" class="w-full md:w-1/2 grid grid-cols-2 md:grid-cols-3 gap-2.5 max-h-[50vh] md:max-h-full overflow-y-auto pr-1">
-          <!-- JavaScriptで動的生成 -->
+        <!-- 右エリア：縦並び型プレイヤー選択グリッド -->
+        <div id="answer-modal-grid" class="w-full md:w-1/2 grid grid-cols-3 gap-2.5 h-full overflow-y-auto pr-1">
+          <!-- JavaScriptでアイコン・名前・ポイントを縦並びで動的生成 -->
         </div>
 
       </div>
 
       <!-- 下部キャンセルボタン -->
-      <div class="flex justify-end pt-1 border-t border-slate-800">
-        <button onclick="closeAnswerModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-5 py-1.5 rounded-xl text-xs font-bold border border-slate-700">
+      <div class="flex justify-end pt-2 border-t border-slate-800 shrink-0">
+        <button onclick="closeAnswerModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-6 py-2 rounded-xl text-xs font-bold border border-slate-700 active:scale-95 transition">
           キャンセル（ゲーム再開）
         </button>
       </div>
@@ -211,7 +212,7 @@
   <!-- 4. モーダル：設定＆プレイヤー・お題登録 -->
   <!-- ========================================== -->
   <div id="settings-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[88vh] flex flex-col shadow-2xl">
       <!-- ヘッダー -->
       <div class="p-4 border-b border-slate-800 flex justify-between items-center">
         <h2 class="text-xl font-bold text-white flex items-center space-x-2">
@@ -241,7 +242,7 @@
           </label>
         </div>
 
-        <!-- タブ1: プレイヤー管理 (直感的なカラーパレット選択) -->
+        <!-- タブ1: プレイヤー管理 -->
         <div id="tab-content-players" class="space-y-4">
           <div class="flex justify-between items-center">
             <p class="text-slate-400 text-xs">
@@ -257,12 +258,12 @@
           </div>
         </div>
 
-        <!-- タブ2: お題一括登録（フォーマット：🎺 トランペット） -->
+        <!-- タブ2: お題一括登録 -->
         <div id="tab-content-words" class="space-y-3 hidden">
           <div class="bg-indigo-950/60 border border-indigo-500/40 p-3 rounded-xl">
             <span class="text-xs font-bold text-indigo-200 block mb-1">お題の入力形式について</span>
             <p class="text-[11px] text-slate-300">
-              「<span class="text-amber-300 font-bold">🎺 トランペット</span>」のように、絵文字と名前をスペース区切りで1行ずつ入力・コピーペーストしてください。（絵文字なしの単語入力も可能です）
+              「<span class="text-amber-300 font-bold">🎺 トランペット</span>」のように、絵文字と名前をスペース区切りで1行ずつ入力してください。
             </p>
           </div>
 
@@ -287,22 +288,39 @@
 
 
   <!-- ========================================== -->
-  <!-- 5. モーダル：タイムアップ・その1分間の獲得ポイント発表 -->
+  <!-- 5. モーダル：タイムアップ ＆ 描いたイラスト一覧ギャラリー -->
+  <!-- テレビ画面下部にはみ出ないよう上寄りに配置＆高さを調整 -->
   <!-- ========================================== -->
   <div id="result-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-amber-500/50 rounded-2xl w-full max-w-md p-6 text-center shadow-2xl space-y-5">
-      <div class="text-5xl">⏰</div>
-      <h2 class="text-3xl font-black text-amber-400">タイムアップ！</h2>
-      <p class="text-slate-300 text-xs">この1分間のゲーム結果です！</p>
-
-      <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
-        <h3 class="text-xs font-bold text-amber-300 border-b border-slate-800 pb-1">🏆 1分間ラウンド獲得ポイント</h3>
-        <div id="result-ranking-list" class="space-y-2 max-h-48 scrollable-content overflow-y-auto pr-1">
-          <!-- 1分間の獲得ポイントランキング表示 -->
-        </div>
+    <div class="bg-slate-900 border border-amber-500/50 rounded-2xl w-full max-w-3xl max-h-[82vh] flex flex-col p-5 text-center shadow-2xl space-y-4">
+      
+      <!-- ヘッダー -->
+      <div class="flex items-center justify-center space-x-2 shrink-0">
+        <span class="text-3xl">⏰</span>
+        <h2 class="text-2xl md:text-3xl font-black text-amber-400">タイムアップ！</h2>
       </div>
 
-      <button onclick="closeResultModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl shadow-lg text-lg">
+      <div class="flex-1 flex flex-col md:flex-row gap-4 min-h-0 overflow-hidden">
+        
+        <!-- 左側：この1分間のポイントランキング -->
+        <div class="w-full md:w-5/12 bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col min-h-0">
+          <h3 class="text-xs font-bold text-amber-300 border-b border-slate-800 pb-1 shrink-0 mb-2">🏆 1分間ラウンド獲得ポイント</h3>
+          <div id="result-ranking-list" class="flex-1 space-y-2 scrollable-content overflow-y-auto pr-1">
+            <!-- 動的生成 -->
+          </div>
+        </div>
+
+        <!-- 右側：1分間で描いたイラストギャラリー一覧 -->
+        <div class="w-full md:w-7/12 bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col min-h-0">
+          <h3 class="text-xs font-bold text-amber-300 border-b border-slate-800 pb-1 shrink-0 mb-2">🎨 このラウンドで描いた作品</h3>
+          <div id="result-drawings-gallery" class="flex-1 grid grid-cols-2 gap-2.5 scrollable-content overflow-y-auto pr-1">
+            <!-- この1分間で描かれたキャンバスのサムネイル画像一覧が追加されます -->
+          </div>
+        </div>
+
+      </div>
+
+      <button onclick="closeResultModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl shadow-lg text-base shrink-0 active:scale-95 transition">
         次のラウンドへ！
       </button>
     </div>
@@ -312,15 +330,15 @@
   <!-- JavaScript ロジック -->
   <script>
     // 保存キー
-    const STORAGE_KEY_PLAYERS = 'oekaki_app_players_v7';
-    const STORAGE_KEY_WORDS = 'oekaki_app_words_v7';
-    const STORAGE_KEY_SETTINGS = 'oekaki_app_settings_v7';
+    const STORAGE_KEY_PLAYERS = 'oekaki_app_players_v8';
+    const STORAGE_KEY_WORDS = 'oekaki_app_words_v8';
+    const STORAGE_KEY_SETTINGS = 'oekaki_app_settings_v8';
 
-    const OLD_PLAYER_KEYS = ['oekaki_app_players_v6', 'oekaki_app_players_v5'];
-    const OLD_WORD_KEYS = ['oekaki_app_words_v6', 'oekaki_app_words_v5'];
+    const OLD_PLAYER_KEYS = ['oekaki_app_players_v7', 'oekaki_app_players_v6'];
+    const OLD_WORD_KEYS = ['oekaki_app_words_v7', 'oekaki_app_words_v6'];
 
-    // アバター絵文字選択候補
-    const EMOJI_OPTIONS = ["🐶", "🐱", "🐰", "🦊", "🦁", "🐼", "🐻", "🐸", "🚀", "👑", "🎨", "⚽", "🤖", "👻", "🦄", "⭐"];
+    // ご指定いただいた14種類の動物プレイヤーアイコン
+    const EMOJI_OPTIONS = ["🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐮", "🐦", "🐣"];
 
     // 描画用ペンカラー一覧（8色）
     const PEN_COLORS = [
@@ -350,7 +368,6 @@
       { id: "lime", name: "ライム", bg: "bg-lime-600", border: "border-lime-400" },
     ];
 
-    // デフォルトお題フォーマット
     const DEFAULT_WORDS_RAW = `🎺 トランペット
 🎻 バイオリン
 🎤 マイク
@@ -394,16 +411,16 @@
       { id: 1, name: "プレイヤー2", emoji: "🐱", colorIdx: 1, active: true, score: 0 },
       { id: 2, name: "プレイヤー3", emoji: "🐰", colorIdx: 2, active: true, score: 0 },
       { id: 3, name: "プレイヤー4", emoji: "🦊", colorIdx: 3, active: false, score: 0 },
-      { id: 4, name: "プレイヤー5", emoji: "🦁", colorIdx: 4, active: false, score: 0 },
+      { id: 4, name: "プレイヤー5", emoji: "🐻", colorIdx: 4, active: false, score: 0 },
       { id: 5, name: "プレイヤー6", emoji: "🐼", colorIdx: 5, active: false, score: 0 },
-      { id: 6, name: "プレイヤー7", emoji: "🐻", colorIdx: 6, active: false, score: 0 },
-      { id: 7, name: "プレイヤー8", emoji: "🐸", colorIdx: 7, active: false, score: 0 },
-      { id: 8, name: "プレイヤー9", emoji: "🚀", colorIdx: 8, active: false, score: 0 },
+      { id: 6, name: "プレイヤー7", emoji: "🐨", colorIdx: 6, active: false, score: 0 },
+      { id: 7, name: "プレイヤー8", emoji: "🦁", colorIdx: 7, active: false, score: 0 },
+      { id: 8, name: "プレイヤー9", emoji: "🐣", colorIdx: 8, active: false, score: 0 },
     ];
 
     let players = [];
     let rawWordInputText = DEFAULT_WORDS_RAW;
-    let parsedWordList = []; // { emoji: "🎺", name: "トランペット" }
+    let parsedWordList = [];
     let enableSpeech = true;
     let currentArtistIndex = 0;
     let usedWordIndices = new Set();
@@ -415,6 +432,7 @@
     let timerInterval = null;
 
     let roundScores = {};
+    let roundDrawingsHistory = []; // 描いた絵の履歴画像データ
 
     let canvas, ctx;
     let isDrawing = false;
@@ -428,24 +446,8 @@
     let pencilGainNode = null;
     let previousPositions = new Map();
 
-    // iOSダブルタップ・ピンチズームの完全禁止
-    document.addEventListener('gesturestart', (e) => e.preventDefault());
-    document.addEventListener('touchstart', (e) => {
-      if (e.touches.length > 1) e.preventDefault();
-    }, { passive: false });
-
-    // ダブルタップ拡大防止コードの強化
-    let lastTouchEnd = 0;
-    document.addEventListener('touchend', (e) => {
-      const now = (new Date()).getTime();
-      if (now - lastTouchEnd <= 300) {
-        e.preventDefault();
-      }
-      lastTouchEnd = now;
-    }, false);
-
     // ----------------------------------------------------
-    // 鉛筆書き擦れ効果音（Web Audio API ノイズ合成）
+    // 鉛筆音・音声
     // ----------------------------------------------------
     function initPencilSoundNode() {
       if (!audioCtx) return;
@@ -474,7 +476,7 @@
         pencilGainNode.connect(audioCtx.destination);
         pencilNoiseNode.start();
       } catch (e) {
-        console.error("Pencil sound init error:", e);
+        console.error("Pencil sound error:", e);
       }
     }
 
@@ -490,9 +492,6 @@
       pencilGainNode.gain.setValueAtTime(0, audioCtx.currentTime);
     }
 
-    // ----------------------------------------------------
-    // 実況音声ボイス
-    // ----------------------------------------------------
     const VOICE_PHRASES = {
       start: [
         "よーい、スタート！キャンバスに描いてね！",
@@ -517,18 +516,9 @@
         "うーん難しかった！次いってみよう！",
         "パス！どんどん描いて〜！"
       ],
-      time30: [
-        "残り、30秒だよ！",
-        "折り返し！あと30秒！"
-      ],
-      time10: [
-        "残り10秒！急いで急いで！",
-        "ラスト10秒！ラストスパート！"
-      ],
-      finish: [
-        "タイムアップ！1分間終了〜！",
-        "終了〜！みんなお疲れ様でした〜！"
-      ]
+      time30: ["残り、30秒だよ！", "折り返し！あと30秒！"],
+      time10: ["残り10秒！急いで急いで！", "ラスト10秒！ラストスパート！"],
+      finish: ["タイムアップ！1分間終了〜！", "終了〜！みんなお疲れ様でした〜！"]
     };
 
     function getRandomPhrase(key, param) {
@@ -570,13 +560,9 @@
       saveStorageData();
     }
 
-    // ----------------------------------------------------
-    // ストレージ＆お題パース
-    // ----------------------------------------------------
     function parseWordListFromRaw(rawText) {
       const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
       return lines.map(line => {
-        // 絵文字と名前の判定（スペース区切り）
         const parts = line.split(/\s+/);
         if (parts.length >= 2) {
           return { emoji: parts[0], name: parts.slice(1).join(' ') };
@@ -601,7 +587,7 @@
           players = parsed.map((p, idx) => ({
             ...DEFAULT_PLAYERS[idx],
             ...p,
-            emoji: p.emoji || DEFAULT_PLAYERS[idx].emoji,
+            emoji: EMOJI_OPTIONS.includes(p.emoji) ? p.emoji : DEFAULT_PLAYERS[idx].emoji,
             colorIdx: p.colorIdx !== undefined ? p.colorIdx : (idx % COLOR_OPTIONS.length)
           }));
         } else {
@@ -612,11 +598,7 @@
       }
 
       let loadedWords = localStorage.getItem(STORAGE_KEY_WORDS);
-      if (loadedWords) {
-        rawWordInputText = loadedWords;
-      } else {
-        rawWordInputText = DEFAULT_WORDS_RAW;
-      }
+      rawWordInputText = loadedWords ? loadedWords : DEFAULT_WORDS_RAW;
       parsedWordList = parseWordListFromRaw(rawWordInputText);
 
       try {
@@ -826,6 +808,7 @@
       usedWordIndices.clear();
 
       roundScores = {};
+      roundDrawingsHistory = []; // ラウンド描画履歴のクリア
       players.forEach(p => { roundScores[p.id] = 0; });
 
       document.getElementById('btn-start').innerText = "中断";
@@ -840,7 +823,7 @@
 
       updateTimerDisplay();
       timerInterval = setInterval(() => {
-        if (isPaused) return; // 一時停止ガード
+        if (isPaused) return;
 
         timerSeconds--;
         updateTimerDisplay();
@@ -871,10 +854,12 @@
     }
 
     function finishRound() {
+      // タイムアップ直前のキャンバスも保存
+      saveCurrentCanvasToHistory(null);
       stopGame();
       playSound('finish');
       speakText(getRandomPhrase('finish'));
-      showResultModal(); // タイムアップモーダル表示
+      showResultModal();
     }
 
     function updateTimerDisplay(overrideSec) {
@@ -886,6 +871,22 @@
 
       const percentage = (sec / 60) * 100;
       document.getElementById('timer-progress-bar').style.width = `${percentage}%`;
+    }
+
+    function saveCurrentCanvasToHistory(winnerPlayer) {
+      if (!canvas || !currentWordObj) return;
+      try {
+        const dataUrl = canvas.toDataURL('image/png');
+        roundDrawingsHistory.push({
+          dataUrl,
+          wordName: currentWordObj.name,
+          wordEmoji: currentWordObj.emoji,
+          winnerName: winnerPlayer ? winnerPlayer.name : null,
+          winnerEmoji: winnerPlayer ? winnerPlayer.emoji : null
+        });
+      } catch (e) {
+        console.error("Canvas save error:", e);
+      }
     }
 
     function nextWord() {
@@ -901,35 +902,34 @@
       usedWordIndices.add(randomIndex);
       currentWordObj = parsedWordList[randomIndex];
       
-      // 描き手画面（フッター）のお題表示：テキストのみ表示
       document.getElementById('word-display').innerText = currentWordObj.name;
       clearCanvas();
     }
 
     function skipWord() {
       if (!isGaming) return;
+      saveCurrentCanvasToHistory(null); // パスされた絵も保存
       speakText(getRandomPhrase('pass'));
       nextWord();
     }
 
     // ----------------------------------------------------
-    // 🎉 正解モーダル制御（タイマー一時停止）
+    // 🎉 正解モーダル制御
     // ----------------------------------------------------
     function openAnswerModal() {
       if (!isGaming) return;
       unlockAudioAndSpeech();
-      isPaused = true; // タイマー一時停止
+      isPaused = true;
 
       const displayContainer = document.getElementById('modal-word-display');
       
-      // 左右2分割左エリアでの表示：絵文字が存在すれば超巨大表示
       if (currentWordObj.emoji) {
         displayContainer.innerHTML = `
-          <span class="text-7xl md:text-9xl leading-none block my-1 drop-shadow-md shrink-0">${currentWordObj.emoji}</span>
-          <span class="text-2xl md:text-4xl font-black text-amber-200 block">${currentWordObj.name}</span>
+          <span class="text-8xl md:text-[11rem] leading-none block my-2 drop-shadow-lg shrink-0">${currentWordObj.emoji}</span>
+          <span class="text-3xl md:text-5xl font-black text-amber-200 block">${currentWordObj.name}</span>
         `;
       } else {
-        displayContainer.innerHTML = `<span class="text-3xl md:text-5xl font-black text-amber-200">${currentWordObj.name}</span>`;
+        displayContainer.innerHTML = `<span class="text-4xl md:text-6xl font-black text-amber-200">${currentWordObj.name}</span>`;
       }
 
       speakText(getRandomPhrase('correctAnswerOpen'));
@@ -940,9 +940,10 @@
 
     function closeAnswerModal() {
       document.getElementById('answer-modal').classList.add('hidden');
-      isPaused = false; // タイマー再開
+      isPaused = false;
     }
 
+    // 右側プレイヤー選択グリッド：アイコン・名前・獲得ポイントを「縦並び」表示
     function renderAnswerModalGrid() {
       const grid = document.getElementById('answer-modal-grid');
       grid.innerHTML = '';
@@ -955,19 +956,23 @@
 
         const colorStyle = COLOR_OPTIONS[player.colorIdx % COLOR_OPTIONS.length] || COLOR_OPTIONS[0];
         const isArtist = currentArtist && currentArtist.id === player.id;
+        const currentRoundPt = roundScores[player.id] || 0;
 
         const btn = document.createElement('button');
         btn.onclick = () => submitCorrectWinner(player.id);
         
-        btn.className = `p-3.5 rounded-xl border-2 flex items-center justify-between transition active:scale-95 shadow-lg relative ${colorStyle.bg} ${colorStyle.border} ${isArtist ? 'ring-4 ring-amber-400 font-black' : ''}`;
+        btn.className = `p-2 rounded-2xl border-2 flex flex-col items-center justify-between transition active:scale-95 shadow-lg relative ${colorStyle.bg} ${colorStyle.border} ${isArtist ? 'ring-4 ring-amber-400 font-black' : ''}`;
 
         btn.innerHTML = `
-          ${isArtist ? '<span class="absolute -top-2 -right-1 bg-amber-400 text-black text-[9px] font-black px-1.5 py-0.2 rounded-full shadow z-10">描き手</span>' : ''}
-          <div class="flex items-center space-x-2 truncate min-w-0">
-            <span class="text-2xl md:text-3xl shrink-0">${player.emoji}</span>
-            <span class="text-xs md:text-sm font-extrabold text-white truncate">${player.name}</span>
-          </div>
-          <span class="text-xs font-mono font-bold text-white/80 bg-black/30 px-1.5 py-0.5 rounded shrink-0">${player.score}pt</span>
+          ${isArtist ? '<span class="absolute top-1 right-1 bg-amber-400 text-black text-[9px] font-black px-1.5 py-0.2 rounded-full shadow z-10">描き手</span>' : ''}
+          <!-- アイコン（巨大表示） -->
+          <span class="text-4xl md:text-5xl my-1 shrink-0 drop-shadow">${player.emoji}</span>
+          <!-- 名前 -->
+          <span class="text-xs md:text-sm font-extrabold text-white truncate w-full text-center px-1">${player.name}</span>
+          <!-- このラウンド獲得ポイント -->
+          <span class="mt-1 text-[11px] font-mono font-bold text-amber-300 bg-black/40 px-2 py-0.5 rounded-full border border-white/20">
+            +${currentRoundPt} pt
+          </span>
         `;
 
         grid.appendChild(btn);
@@ -991,12 +996,15 @@
         roundScores[winner.id] = (roundScores[winner.id] || 0) + 1;
       }
 
+      // 絵を履歴ギャラリーに保存
+      saveCurrentCanvasToHistory(winner);
+
       if (winner) {
         speakText(getRandomPhrase('correctWinner', winner.name));
       }
 
       saveStorageData();
-      closeAnswerModal(); // モーダル閉じる & タイマー再開
+      closeAnswerModal();
       
       renderTvRankingsWithAnimation();
       triggerScoreAnimation(winnerPlayerId, artist ? artist.id : null);
@@ -1056,7 +1064,6 @@
       });
     }
 
-    // 左側テレビ用ランキング表示（メダル＆順位表記：4位以降は 4位、5位）
     function renderTvRankings() {
       const container = document.getElementById('tv-rankings-container');
       container.innerHTML = '';
@@ -1150,8 +1157,8 @@
       } else {
         tabPlayers.classList.add('hidden');
         tabWords.classList.remove('hidden');
-        btnWords.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white";
         btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400";
+        btnWords.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white";
       }
     }
 
@@ -1273,13 +1280,16 @@
 
     document.getElementById('words-input').addEventListener('input', updateWordsCountDisplay);
 
-    // 1分間（1ラウンド）獲得ポイントのランキング発表モーダル
+    // 1分間タイムアップ結果 ＆ ギャラリー一覧モーダル表示
     function showResultModal() {
       const list = document.getElementById('result-ranking-list');
+      const gallery = document.getElementById('result-drawings-gallery');
       list.innerHTML = '';
+      gallery.innerHTML = '';
 
       const activePlayers = players.filter(p => p.active);
 
+      // 1分間の獲得ポイントランキング
       const roundRanked = activePlayers.map(p => ({
         ...p,
         roundScore: roundScores[p.id] || 0
@@ -1287,25 +1297,49 @@
 
       roundRanked.forEach((player, rank) => {
         const item = document.createElement('div');
-        item.className = "flex justify-between items-center bg-slate-900 px-3 py-2 rounded-lg border border-slate-800 text-sm";
+        item.className = "flex justify-between items-center bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 text-sm";
         
-        let rankBadge = `<span class="font-bold text-xs text-amber-400 w-12 text-left">${rank + 1}位</span>`;
-        if (rank === 0) rankBadge = `<span class="font-bold text-xs text-amber-400 w-12 text-left">🥇 1位</span>`;
-        if (rank === 1) rankBadge = `<span class="font-bold text-xs text-amber-400 w-12 text-left">🥈 2位</span>`;
-        if (rank === 2) rankBadge = `<span class="font-bold text-xs text-amber-400 w-12 text-left">🥉 3位</span>`;
+        let rankBadge = `<span class="font-bold text-xs text-amber-400 w-10 text-left">${rank + 1}位</span>`;
+        if (rank === 0) rankBadge = `<span class="font-bold text-xs text-amber-400 w-10 text-left">🥇 1位</span>`;
+        if (rank === 1) rankBadge = `<span class="font-bold text-xs text-amber-400 w-10 text-left">🥈 2位</span>`;
+        if (rank === 2) rankBadge = `<span class="font-bold text-xs text-amber-400 w-10 text-left">🥉 3位</span>`;
 
         item.innerHTML = `
-          <div class="flex items-center space-x-2">
+          <div class="flex items-center space-x-1.5 truncate">
             ${rankBadge}
-            <span class="text-xl">${player.emoji}</span>
-            <span class="text-white font-bold">${player.name}</span>
+            <span class="text-lg">${player.emoji}</span>
+            <span class="text-white font-bold text-xs truncate max-w-[80px]">${player.name}</span>
           </div>
-          <div class="text-right font-mono font-black text-amber-300 text-base">
-            +${player.roundScore} <span class="text-xs text-slate-400">pt (累計 ${player.score}pt)</span>
+          <div class="text-right font-mono font-black text-amber-300 text-xs shrink-0">
+            +${player.roundScore} <span class="text-[9px] text-slate-400">(累計${player.score}pt)</span>
           </div>
         `;
         list.appendChild(item);
       });
+
+      // この1分間で描かれたイラストギャラリーの生成
+      if (roundDrawingsHistory.length === 0) {
+        gallery.innerHTML = `<div class="col-span-2 text-slate-500 text-xs py-8">このラウンドで描かれた作品はありません</div>`;
+      } else {
+        roundDrawingsHistory.forEach((item, idx) => {
+          const card = document.createElement('div');
+          card.className = "bg-slate-900 border border-slate-800 rounded-xl p-2 flex flex-col items-center space-y-1 text-center shadow";
+          
+          card.innerHTML = `
+            <div class="w-full h-24 bg-white rounded-lg overflow-hidden border border-slate-700 flex items-center justify-center">
+              <img src="${item.dataUrl}" class="max-w-full max-h-full object-contain">
+            </div>
+            <div class="text-xs font-bold text-amber-300 truncate w-full flex items-center justify-center space-x-1">
+              ${item.wordEmoji ? `<span class="text-base">${item.wordEmoji}</span>` : ''}
+              <span>${item.wordName}</span>
+            </div>
+            <div class="text-[10px] text-slate-400 truncate w-full">
+              ${item.winnerName ? `<span class="text-emerald-400 font-bold">🎉 正解: ${item.winnerEmoji || ''}${item.winnerName}</span>` : '<span>（パス / 未回答）</span>'}
+            </div>
+          `;
+          gallery.appendChild(card);
+        });
+      }
 
       // 次の描き手へ交代
       if (activePlayers.length > 0) {
