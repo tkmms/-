@@ -76,6 +76,11 @@
       animation: floatUp 1.2s ease-out forwards;
       pointer-events: none;
     }
+
+    /* モーダル確実非表示用 */
+    .modal-hidden {
+      display: none !important;
+    }
   </style>
 </head>
 <body class="h-[100dvh] w-vw flex flex-col justify-between font-sans overflow-hidden relative">
@@ -83,7 +88,7 @@
   <!-- 0. テレビ枠外（iPad画面最上部）のツールコントロール -->
   <header class="absolute top-0.5 left-0 right-0 z-30 px-[5vw] flex items-center justify-between pointer-events-auto">
     <div class="flex items-center space-x-3">
-      <button onclick="openSettingsWithSE()" class="bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1 rounded-xl text-xs font-bold shadow-lg flex items-center space-x-1 active:scale-95 transition">
+      <button onclick="openSettingsWithSE()" class="bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1 rounded-xl text-xs font-bold shadow-lg flex items-center space-x-1 active:scale-95 transition touch-action-none">
         <span>⚙️ 設定</span>
       </button>
       <span class="text-base md:text-lg font-black text-amber-300 tracking-wider drop-shadow">アテテ！</span>
@@ -94,7 +99,7 @@
         <!-- JSで動的生成 -->
       </div>
 
-      <button onclick="clearCanvasWithSE()" class="px-2.5 py-1 rounded-lg font-bold text-xs bg-rose-900/80 hover:bg-rose-800 text-rose-200 border border-rose-700 active:scale-95 transition shadow">
+      <button onclick="clearCanvasWithSE()" class="px-2.5 py-1 rounded-lg font-bold text-xs bg-rose-900/80 hover:bg-rose-800 text-rose-200 border border-rose-700 active:scale-95 transition shadow touch-action-none">
         🗑️ 全消し
       </button>
     </div>
@@ -126,7 +131,7 @@
               <div id="center-artist-display" class="flex items-center justify-center space-x-3 bg-slate-900 border-2 border-amber-500/60 px-6 py-4 rounded-3xl shadow-2xl">
                 <!-- アーティスト絵文字と名前 -->
               </div>
-              <button onclick="toggleGameWithSE()" class="mt-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-4 px-12 rounded-3xl text-2xl md:text-3xl border-4 border-emerald-300 shadow-2xl active:scale-95 transition animate-bounce">
+              <button onclick="toggleGameWithSE()" class="mt-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-4 px-12 rounded-3xl text-2xl md:text-3xl border-4 border-emerald-300 shadow-2xl active:scale-95 transition animate-bounce touch-action-none">
                 ▶️ スタート！
               </button>
             </div>
@@ -147,10 +152,10 @@
     <div class="w-full bg-amber-500/10 border-2 border-amber-500/50 rounded-2xl px-4 py-1.5 flex items-center justify-between relative shadow-inner h-full overflow-hidden gap-3">
       
       <div id="footer-active-controls-left" class="flex items-center space-x-2 shrink-0 opacity-0 pointer-events-none transition-opacity duration-300">
-        <button id="btn-start" onclick="toggleGameWithSE()" class="bg-rose-600 hover:bg-rose-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs md:text-sm border border-rose-400 shadow active:scale-95 transition">
+        <button id="btn-start" onclick="toggleGameWithSE()" class="bg-rose-600 hover:bg-rose-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs md:text-sm border border-rose-400 shadow active:scale-95 transition touch-action-none">
           中断
         </button>
-        <button id="btn-skip" onclick="skipWordWithSE()" disabled class="bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white font-bold py-2.5 px-3 rounded-xl text-xs border border-slate-600 active:scale-95 transition">
+        <button id="btn-skip" onclick="skipWordWithSE()" disabled class="bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white font-bold py-2.5 px-3 rounded-xl text-xs border border-slate-600 active:scale-95 transition touch-action-none">
           パス
         </button>
       </div>
@@ -162,7 +167,7 @@
       </div>
 
       <div id="footer-active-controls-right" class="flex items-center shrink-0 opacity-0 pointer-events-none transition-opacity duration-300">
-        <button id="btn-correct-trigger" onclick="openAnswerModalWithSE()" disabled class="bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black font-black py-2.5 px-6 rounded-xl text-xs md:text-base border border-amber-300 shadow-lg active:scale-95 transition">
+        <button id="btn-correct-trigger" onclick="openAnswerModalWithSE()" disabled class="bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black font-black py-2.5 px-6 rounded-xl text-xs md:text-base border border-amber-300 shadow-lg active:scale-95 transition touch-action-none">
           🎉 正解！
         </button>
       </div>
@@ -171,7 +176,7 @@
   </footer>
 
   <!-- 3. 🎉 正解選択モーダル -->
-  <div id="answer-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden items-center justify-center p-3">
+  <div id="answer-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 modal-hidden flex items-center justify-center p-3">
     <div class="bg-slate-900 border-2 border-amber-500/80 rounded-2xl w-full max-w-5xl h-[68vh] flex flex-col shadow-2xl overflow-hidden p-5 space-y-2 relative -top-6">
       
       <div class="flex items-center justify-between border-b border-slate-800 pb-2 shrink-0">
@@ -194,7 +199,7 @@
       </div>
 
       <div class="flex justify-end pt-1 border-t border-slate-800 shrink-0">
-        <button onclick="closeAnswerModalWithSE()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-6 py-1.5 rounded-xl text-xs font-bold border border-slate-700 active:scale-95 transition">
+        <button onclick="closeAnswerModalWithSE()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-6 py-1.5 rounded-xl text-xs font-bold border border-slate-700 active:scale-95 transition touch-action-none">
           キャンセル（ゲーム再開）
         </button>
       </div>
@@ -202,22 +207,22 @@
   </div>
 
   <!-- 4. モーダル：設定＆プレイヤー・お題登録 -->
-  <div id="settings-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+  <div id="settings-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 modal-hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[88vh] flex flex-col shadow-2xl">
       <div class="p-4 border-b border-slate-800 flex justify-between items-center">
         <h2 class="text-xl font-bold text-white flex items-center space-x-2">
           <span>⚙️ ゲーム設定＆お題編集</span>
         </h2>
-        <button onclick="closeSettingsWithSE()" class="text-slate-400 hover:text-white text-2xl font-bold px-2">✕</button>
+        <button onclick="closeSettingsWithSE()" class="text-slate-400 hover:text-white text-2xl font-bold px-2 touch-action-none">✕</button>
       </div>
 
       <div class="p-6 scrollable-content overflow-y-auto space-y-6 flex-1 text-sm">
         <div class="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 gap-2">
           <div class="flex space-x-2">
-            <button id="tab-btn-players" onclick="switchTabWithSE('players')" class="px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white">
+            <button id="tab-btn-players" onclick="switchTabWithSE('players')" class="px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none">
               👥 プレイヤー編集
             </button>
-            <button id="tab-btn-words" onclick="switchTabWithSE('words')" class="px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400">
+            <button id="tab-btn-words" onclick="switchTabWithSE('words')" class="px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none">
               📝 お題一括登録（絵文字対応）
             </button>
           </div>
@@ -233,7 +238,7 @@
             <p class="text-slate-400 text-xs">
               プレイヤーの名前、アイコン絵文字、テーマカラーを選択できます（最大9名）。
             </p>
-            <button onclick="resetScoresWithSE()" class="text-xs bg-rose-900/50 hover:bg-rose-800 text-rose-300 border border-rose-700 px-3 py-1 rounded">
+            <button onclick="resetScoresWithSE()" class="text-xs bg-rose-900/50 hover:bg-rose-800 text-rose-300 border border-rose-700 px-3 py-1 rounded touch-action-none">
               スコアをリセット
             </button>
           </div>
@@ -243,7 +248,7 @@
           </div>
         </div>
 
-        <div id="tab-content-words" class="space-y-3 hidden">
+        <div id="tab-content-words" class="space-y-3 modal-hidden">
           <div class="bg-indigo-950/60 border border-indigo-500/40 p-3 rounded-xl">
             <span class="text-xs font-bold text-indigo-200 block mb-1">お題の入力形式について</span>
             <p class="text-[11px] text-slate-300">
@@ -255,13 +260,13 @@
           
           <div class="flex justify-between items-center text-xs text-slate-500">
             <span id="words-count-display">現在のお題数: 0個</span>
-            <button onclick="loadDefaultWordsWithSE()" class="text-indigo-400 hover:underline font-bold">デフォルトのお題を読み込む</button>
+            <button onclick="loadDefaultWordsWithSE()" class="text-indigo-400 hover:underline font-bold touch-action-none">デフォルトのお題を読み込む</button>
           </div>
         </div>
       </div>
 
       <div class="p-4 border-t border-slate-800 flex justify-end">
-        <button onclick="saveAndCloseSettingsWithSE()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2 rounded-xl shadow-lg">
+        <button onclick="saveAndCloseSettingsWithSE()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2 rounded-xl shadow-lg touch-action-none">
           設定を保存して閉じる
         </button>
       </div>
@@ -269,7 +274,7 @@
   </div>
 
   <!-- 5. モーダル：タイムアップ・ギャラリー展示 -->
-  <div id="result-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex flex-col justify-between p-4 pt-10">
+  <div id="result-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 modal-hidden flex flex-col justify-between p-4 pt-10">
     
     <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/60 rounded-3xl w-full max-w-5xl h-[68vh] mx-auto flex flex-col p-5 shadow-2xl space-y-3 relative overflow-hidden mt-8">
       
@@ -305,7 +310,7 @@
     </div>
 
     <div class="w-full max-w-xl mx-auto py-2 shrink-0">
-      <button onclick="closeResultModalWithSE()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-2xl shadow-2xl text-base md:text-lg border-2 border-emerald-400 active:scale-95 transition">
+      <button onclick="closeResultModalWithSE()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-2xl shadow-2xl text-base md:text-lg border-2 border-emerald-400 active:scale-95 transition touch-action-none">
         次のラウンドへ進む ➔
       </button>
     </div>
@@ -429,6 +434,16 @@
     let pencilNoiseNode = null;
     let pencilGainNode = null;
     let previousPositions = new Map();
+
+    // ダブルタップズーム防止
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e) {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) {
+        e.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, { passive: false });
 
     function startAudioKeepAlive() {
       if (keepAliveInterval) return;
@@ -720,7 +735,7 @@
         btn.onclick = () => { playButtonSE(); selectPenColor(c.id); };
         const isSelected = currentPenColor === c.id;
 
-        btn.className = `w-5 h-5 rounded-full ${c.bg} border-2 transition ${isSelected ? 'scale-125 border-white ring-2 ring-indigo-400 z-10' : 'border-transparent hover:scale-110 opacity-80'}`;
+        btn.className = `w-5 h-5 rounded-full ${c.bg} border-2 transition ${isSelected ? 'scale-125 border-white ring-2 ring-indigo-400 z-10' : 'border-transparent hover:scale-110 opacity-80'} touch-action-none`;
         container.appendChild(btn);
       });
     }
@@ -865,7 +880,7 @@
       document.getElementById('footer-active-controls-right').classList.remove('opacity-0', 'pointer-events-none');
 
       document.getElementById('btn-start').innerText = "中断";
-      document.getElementById('btn-start').className = "bg-rose-600 hover:bg-rose-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs md:text-sm border border-rose-400 shadow active:scale-95 transition";
+      document.getElementById('btn-start').className = "bg-rose-600 hover:bg-rose-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs md:text-sm border border-rose-400 shadow active:scale-95 transition touch-action-none";
       document.getElementById('btn-skip').disabled = false;
       document.getElementById('btn-correct-trigger').disabled = false;
 
@@ -911,7 +926,7 @@
       document.getElementById('footer-active-controls-right').classList.add('opacity-0', 'pointer-events-none');
 
       document.getElementById('btn-start').innerText = "スタート";
-      document.getElementById('btn-start').className = "bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-5 rounded-xl text-xs md:text-sm border border-emerald-400 shadow-md active:scale-95 transition";
+      document.getElementById('btn-start').className = "bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-5 rounded-xl text-xs md:text-sm border border-emerald-400 shadow-md active:scale-95 transition touch-action-none";
       document.getElementById('btn-skip').disabled = true;
       document.getElementById('btn-correct-trigger').disabled = true;
       document.getElementById('word-display').innerText = "「スタート」を押してね！";
@@ -1019,7 +1034,7 @@
       }
 
       renderAnswerModalGrid();
-      document.getElementById('answer-modal').classList.remove('hidden');
+      document.getElementById('answer-modal').classList.remove('modal-hidden');
     }
 
     function closeAnswerModalWithSE() {
@@ -1028,7 +1043,7 @@
     }
 
     function closeAnswerModal() {
-      document.getElementById('answer-modal').classList.add('hidden');
+      document.getElementById('answer-modal').classList.add('modal-hidden');
       isPaused = false;
     }
 
@@ -1049,7 +1064,7 @@
         const btn = document.createElement('button');
         btn.onclick = () => submitCorrectWinner(player.id);
         
-        btn.className = `p-2 rounded-2xl border-2 flex flex-col items-center justify-between transition active:scale-95 shadow-lg relative ${colorStyle.bg} ${colorStyle.border} ${isArtist ? 'ring-4 ring-amber-400 font-black' : ''}`;
+        btn.className = `p-2 rounded-2xl border-2 flex flex-col items-center justify-between transition active:scale-95 shadow-lg relative ${colorStyle.bg} ${colorStyle.border} ${isArtist ? 'ring-4 ring-amber-400 font-black' : ''} touch-action-none`;
 
         btn.innerHTML = `
           ${isArtist ? '<span class="absolute top-2 left-2 bg-amber-400 text-black text-[9px] font-black px-2 py-0.5 rounded-full shadow z-30">アーティスト</span>' : ''}
@@ -1234,7 +1249,7 @@
       }
     }
 
-    // ===== 設定モーダル関連（WithSEラッパー追加） =====
+    // ===== 設定モーダル関連（WithSEラッパー） =====
     function openSettingsWithSE() {
       playButtonSE();
       openSettings();
@@ -1271,11 +1286,11 @@
       renderPlayersSettingsList();
       document.getElementById('words-input').value = rawWordInputText;
       updateWordsCountDisplay();
-      document.getElementById('settings-modal').classList.remove('hidden');
+      document.getElementById('settings-modal').classList.remove('modal-hidden');
     }
 
     function closeSettings() {
-      document.getElementById('settings-modal').classList.add('hidden');
+      document.getElementById('settings-modal').classList.add('modal-hidden');
     }
 
     function saveAndCloseSettings() {
@@ -1307,15 +1322,15 @@
       const btnWords = document.getElementById('tab-btn-words');
 
       if (tabName === 'players') {
-        tabPlayers.classList.remove('hidden');
-        tabWords.classList.add('hidden');
-        btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white";
-        btnWords.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400";
+        tabPlayers.classList.remove('modal-hidden');
+        tabWords.classList.add('modal-hidden');
+        btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none";
+        btnWords.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none";
       } else {
-        tabPlayers.classList.add('hidden');
-        tabWords.classList.remove('hidden');
-        btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400";
-        btnWords.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white";
+        tabPlayers.classList.add('modal-hidden');
+        tabWords.classList.remove('modal-hidden');
+        btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none";
+        btnWords.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none";
       }
     }
 
@@ -1352,7 +1367,7 @@
             <span class="text-[10px] text-slate-400 block">テーマカラー:</span>
             <div class="flex flex-wrap gap-1">
               ${COLOR_OPTIONS.map((c, i) => `
-                <button onclick="updatePlayerColor(${player.id}, ${i})" class="w-4 h-4 rounded-full ${c.bg} border ${i === player.colorIdx ? 'border-white ring-2 ring-indigo-400 scale-110 z-10' : 'border-transparent opacity-70 hover:opacity-100'}"></button>
+                <button onclick="updatePlayerColor(${player.id}, ${i})" class="w-4 h-4 rounded-full ${c.bg} border ${i === player.colorIdx ? 'border-white ring-2 ring-indigo-400 scale-110 z-10' : 'border-transparent opacity-70 hover:opacity-100'} touch-action-none"></button>
               `).join('')}
             </div>
           </div>
@@ -1360,7 +1375,7 @@
           <div class="flex items-center justify-between pt-1 border-t border-slate-800 text-xs">
             <span class="font-mono text-amber-400 font-bold">${player.score} pt</span>
             ${player.active ? `
-              <button onclick="setArtistByPlayerId(${player.id})" class="px-2 py-0.5 rounded text-[10px] font-bold ${isArtist ? 'bg-amber-500 text-black' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}">
+              <button onclick="setArtistByPlayerId(${player.id})" class="px-2 py-0.5 rounded text-[10px] font-bold ${isArtist ? 'bg-amber-500 text-black' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'} touch-action-none">
                 ${isArtist ? '★ アーティスト' : 'アーティストに指定'}
               </button>
             ` : '<span></span>'}
@@ -1560,7 +1575,7 @@
                 <span class="text-[10px] font-mono bg-amber-500/20 text-amber-300 px-1 py-0.2 rounded border border-amber-500/30">
                   ${item.timeTaken}秒
                 </span>
-                <button onclick="saveDrawingAsImage('${item.dataUrl}', '${item.wordName}', '${artistName}', ${item.timeTaken})" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow border border-indigo-400 active:scale-95 transition">
+                <button onclick="saveDrawingAsImage('${item.dataUrl}', '${item.wordName}', '${artistName}', ${item.timeTaken})" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow border border-indigo-400 active:scale-95 transition touch-action-none">
                   📥
                 </button>
               </div>
@@ -1584,7 +1599,7 @@
         renderTvRankings();
       }
 
-      document.getElementById('result-modal').classList.remove('hidden');
+      document.getElementById('result-modal').classList.remove('modal-hidden');
     }
 
     function closeResultModalWithSE() {
@@ -1593,7 +1608,7 @@
     }
 
     function closeResultModal() {
-      document.getElementById('result-modal').classList.add('hidden');
+      document.getElementById('result-modal').classList.add('modal-hidden');
 
       const activePlayers = players.filter(p => p.active);
       const nextArtist = activePlayers[currentArtistIndex % activePlayers.length];
