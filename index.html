@@ -88,11 +88,26 @@
 <body class="h-[100dvh] w-vw flex flex-col justify-between font-sans overflow-hidden relative">
 
   <!-- ========================================== -->
-  <!-- 0. テレビ枠外（iPad右上表示）の設定ボタン -->
+  <!-- 0. テレビ枠外（iPad画面最上部 0%〜5%）に配置するツールコントロール -->
+  <!-- テレビには映らない安全領域に「設定ボタン」と「ペンの色・全消し」を集約 -->
   <!-- ========================================== -->
-  <button onclick="openSettings()" class="absolute top-2 right-4 z-30 bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1.5 rounded-xl text-xs font-bold shadow-lg flex items-center space-x-1 active:scale-95 transition">
-    <span>⚙️ 設定</span>
-  </button>
+  <header class="absolute top-1 left-0 right-0 z-30 px-[5vw] flex items-center justify-between pointer-events-auto">
+    <!-- カラーパレット & 全消しボタン (テレビ非表示・キャンバスの上) -->
+    <div class="flex items-center space-x-2 bg-slate-950/90 border border-slate-700/80 px-2.5 py-1 rounded-xl shadow-lg backdrop-blur">
+      <div id="color-palette" class="flex items-center space-x-1.5 pr-2 border-r border-slate-800">
+        <!-- JSで動的生成 -->
+      </div>
+
+      <button onclick="clearCanvas()" class="px-2.5 py-1 rounded-lg font-bold text-xs bg-rose-900/80 hover:bg-rose-800 text-rose-200 border border-rose-700 active:scale-95 transition">
+        🗑️ 全消し
+      </button>
+    </div>
+
+    <!-- 設定ボタン（さらに上位置へ微調整） -->
+    <button onclick="openSettings()" class="bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1 rounded-xl text-xs font-bold shadow-lg flex items-center space-x-1 active:scale-95 transition">
+      <span>⚙️ 設定</span>
+    </button>
+  </header>
 
   <!-- ========================================== -->
   <!-- 1. テレビに映るメイン領域 -->
@@ -100,7 +115,7 @@
   <div class="flex-1 flex flex-col pt-[8.5dvh] px-[5vw] pb-[2.5dvh] min-h-0 relative">
     <div class="w-full h-full flex flex-row gap-3 min-h-0">
       
-      <!-- テレビ左側：プレイヤーランキング縦並び（スタート前はタップでアーティスト選択可能） -->
+      <!-- テレビ左側：プレイヤーランキング縦並び（スタート前はタップでアーティスト手動変更可能） -->
       <aside id="tv-rankings-container" class="w-44 md:w-56 h-full flex flex-col gap-1.5 shrink-0 relative select-none">
         <!-- JavaScriptで動的生成 -->
       </aside>
@@ -128,63 +143,50 @@
 
   <!-- ========================================== -->
   <!-- 2. テレビには絶対映らない秘密の領域（画面最下部：14dvh固定） -->
+  <!-- ツール類を上部に移したことで、お題枠を横幅いっぱいに大拡張！ -->
   <!-- ========================================== -->
-  <footer class="h-[14dvh] w-full bg-slate-900 border-t-2 border-slate-800 px-3 py-1.5 flex items-center justify-between gap-2 shrink-0 z-20 shadow-2xl overflow-hidden relative">
+  <footer class="h-[14dvh] w-full bg-slate-900 border-t-2 border-slate-800 px-4 py-1.5 flex items-center justify-between gap-2 shrink-0 z-20 shadow-2xl overflow-hidden relative">
     
     <!-- 正解者タップ用ヒントガイド -->
-    <div class="absolute -top-5 left-4 text-[10px] text-amber-300/80 font-bold tracking-wider pointer-events-none flex items-center space-x-1">
+    <div class="absolute -top-5 left-6 text-[10px] text-amber-300/80 font-bold tracking-wider pointer-events-none flex items-center space-x-1">
       <span>正解したら右側の「🎉 正解！」ボタンをタップ！</span>
     </div>
 
-    <!-- お題 ＆ コントロールエリア -->
-    <div class="flex-1 bg-amber-500/10 border-2 border-amber-500/50 rounded-xl px-3 py-1 flex items-center justify-between relative shadow-inner h-full overflow-hidden gap-2">
+    <!-- お題 ＆ コントロールエリア（横幅いっぱいに拡大） -->
+    <div class="w-full bg-amber-500/10 border-2 border-amber-500/50 rounded-2xl px-4 py-1.5 flex items-center justify-between relative shadow-inner h-full overflow-hidden gap-3">
       
       <!-- 左側：スタート/中断/パスボタン -->
-      <div class="flex items-center space-x-1.5 shrink-0">
-        <button id="btn-start" onclick="toggleGame()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-3.5 rounded-xl text-xs md:text-sm border border-emerald-400 shadow active:scale-95 transition">
+      <div class="flex items-center space-x-2 shrink-0">
+        <button id="btn-start" onclick="toggleGame()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-5 rounded-xl text-xs md:text-sm border border-emerald-400 shadow-md active:scale-95 transition">
           スタート
         </button>
-        <button id="btn-skip" onclick="skipWord()" disabled class="bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white font-bold py-2 px-2.5 rounded-xl text-xs border border-slate-600 active:scale-95 transition">
+        <button id="btn-skip" onclick="skipWord()" disabled class="bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white font-bold py-2.5 px-3.5 rounded-xl text-xs border border-slate-600 active:scale-95 transition">
           パス
         </button>
       </div>
 
-      <!-- 中央：お題表示 -->
-      <div class="flex-1 flex items-center justify-center h-full min-w-0 px-2">
-        <div id="word-display" class="font-black tracking-wider text-amber-300 text-center truncate w-full" style="font-size: clamp(1rem, 2.5vw, 2rem);">
+      <!-- 中央：お題表示（最大サイズで表示） -->
+      <div class="flex-1 flex items-center justify-center h-full min-w-0 px-3">
+        <div id="word-display" class="font-black tracking-wider text-amber-300 text-center truncate w-full" style="font-size: clamp(1.2rem, 3vw, 2.4rem);">
           「スタート」を押してね！
         </div>
       </div>
 
-      <!-- 右側：正解ボタン -->
+      <!-- 右側：🎉 正解！ボタン -->
       <div class="flex items-center shrink-0">
-        <button id="btn-correct-trigger" onclick="openAnswerModal()" disabled class="bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black font-black py-2 px-4 rounded-xl text-xs md:text-sm border border-amber-300 shadow-lg active:scale-95 transition">
+        <button id="btn-correct-trigger" onclick="openAnswerModal()" disabled class="bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black font-black py-2.5 px-6 rounded-xl text-xs md:text-base border border-amber-300 shadow-lg active:scale-95 transition">
           🎉 正解！
         </button>
       </div>
 
     </div>
-
-    <!-- 描画ツール（多色対応・白色含む） -->
-    <div class="h-full flex items-center space-x-2 py-0.5 shrink-0">
-      <div class="flex items-center space-x-1.5 bg-slate-950 border border-slate-700 p-2 rounded-xl">
-        <div id="color-palette" class="flex items-center space-x-1.5 pr-2 border-r border-slate-800">
-          <!-- JSで動的生成 -->
-        </div>
-
-        <button onclick="clearCanvas()" class="px-3 py-1.5 rounded-lg font-bold text-xs bg-rose-900/80 hover:bg-rose-800 text-rose-200 border border-rose-700 active:scale-95 transition">
-          🗑️ 全消し
-        </button>
-      </div>
-    </div>
   </footer>
 
 
   <!-- ========================================== -->
-  <!-- 3. 🎉 正解選択モーダル（黄色枠線の切れ修正・上方シフト） -->
+  <!-- 3. 🎉 正解選択モーダル -->
   <!-- ========================================== -->
   <div id="answer-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-3">
-    <!-- パディング（p-5）を十分に持たせて外枠の黄色リングが切り取られない設計 -->
     <div class="bg-slate-900 border-2 border-amber-500/80 rounded-2xl w-full max-w-5xl h-[68vh] flex flex-col shadow-2xl overflow-hidden p-5 space-y-2 relative -top-6">
       
       <div class="flex items-center justify-between border-b border-slate-800 pb-2 shrink-0">
@@ -201,7 +203,7 @@
           </div>
         </div>
 
-        <!-- 右エリア：プレイヤー選択（黄色リング枠が切れないようp-2パディング付き） -->
+        <!-- 右エリア：プレイヤー選択（アーティストバッジ内側配置） -->
         <div id="answer-modal-grid" class="w-full md:w-1/2 grid grid-cols-3 gap-3 h-full overflow-y-auto p-2">
           <!-- 動的生成 -->
         </div>
@@ -289,7 +291,6 @@
 
   <!-- ========================================== -->
   <!-- 5. モーダル：「〇〇さんのアート作品」タイムアップ・ギャラリー展示 -->
-  <!-- 下にずらして余白確保＆枠高さを拡大 -->
   <!-- ========================================== -->
   <div id="result-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex flex-col justify-between p-4 pt-10">
     
@@ -308,7 +309,7 @@
         </span>
       </div>
 
-      <!-- 左右逆配置（左：ギャラリー、右：ランキング） -->
+      <!-- 左右反転配置（左：ギャラリー、右：ランキング） -->
       <div class="flex-1 flex flex-col md:flex-row gap-4 min-h-0 overflow-hidden">
         
         <!-- 左側：ギャラリー -->
@@ -342,16 +343,15 @@
 
   <!-- JavaScript ロジック -->
   <script>
-    const STORAGE_KEY_PLAYERS = 'oekaki_app_players_v15';
-    const STORAGE_KEY_WORDS = 'oekaki_app_words_v15';
-    const STORAGE_KEY_SETTINGS = 'oekaki_app_settings_v15';
+    const STORAGE_KEY_PLAYERS = 'oekaki_app_players_v16';
+    const STORAGE_KEY_WORDS = 'oekaki_app_words_v16';
+    const STORAGE_KEY_SETTINGS = 'oekaki_app_settings_v16';
 
-    const OLD_PLAYER_KEYS = ['oekaki_app_players_v14', 'oekaki_app_players_v13'];
-    const OLD_WORD_KEYS = ['oekaki_app_words_v14', 'oekaki_app_words_v13'];
+    const OLD_PLAYER_KEYS = ['oekaki_app_players_v15', 'oekaki_app_players_v14'];
+    const OLD_WORD_KEYS = ['oekaki_app_words_v15', 'oekaki_app_words_v14'];
 
     const EMOJI_OPTIONS = ["🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐮", "🐦", "🐣"];
 
-    // 虹色順ペンカラー（黒色＋白カラー追加）
     const PEN_COLORS = [
       { id: "#000000", name: "黒", bg: "bg-black border-2 border-white/90 ring-1 ring-black" },
       { id: "#ef4444", name: "赤", bg: "bg-red-500" },
@@ -460,21 +460,6 @@
     let pencilGainNode = null;
     let previousPositions = new Map();
 
-    // 徹底したダブルタップ＆ピンチ拡大防止
-    document.addEventListener('gesturestart', (e) => e.preventDefault());
-    document.addEventListener('touchstart', (e) => {
-      if (e.touches.length > 1) e.preventDefault();
-    }, { passive: false });
-
-    let lastTouchEnd = 0;
-    document.addEventListener('touchend', (e) => {
-      const now = (new Date()).getTime();
-      if (now - lastTouchEnd <= 300) {
-        e.preventDefault();
-      }
-      lastTouchEnd = now;
-    }, false);
-
     function startAudioKeepAlive() {
       if (keepAliveInterval) return;
       keepAliveInterval = setInterval(() => {
@@ -488,7 +473,7 @@
           osc.start();
           osc.stop(audioCtx.currentTime + 0.05);
         } catch (e) {}
-      }, 4000); // 4秒間隔のキープアライブ
+      }, 4000);
     }
 
     function initPencilSoundNode() {
@@ -534,7 +519,7 @@
       pencilGainNode.gain.setValueAtTime(0, audioCtx.currentTime);
     }
 
-    // 実況音声ボイスバリエーション
+    // プレイヤー名をふんだんに使ったバリエーション豊かな実況ボイス
     const VOICE_PHRASES = {
       start: [
         (artist) => `よーい、スタート！${artist}さん、キャンバスに描いてね！`,
@@ -992,7 +977,9 @@
       unlockAudioAndSpeech();
       isPaused = true;
 
+      // ① 正解ボタンを押した瞬間に「ピンポン♪」効果音
       playSound('correct');
+      // ② 正解ボタンを押した瞬間に即座に実況ボイスを再生
       speakText(getRandomPhrase('correctAnswerOpen', currentWordObj.name));
 
       const displayContainer = document.getElementById('modal-word-display');
@@ -1065,6 +1052,7 @@
 
       saveCurrentCanvasToHistory(winner, false);
 
+      // ③ 正解者選択直後の実況（お祝い＆進行）
       if (winner) {
         speakText(getRandomPhrase('afterCorrectWinner', winner.name));
       }
@@ -1130,7 +1118,6 @@
       });
     }
 
-    // 左側テレビ用ランキング描画（スタート前はタップでアーティスト手動変更可能）
     function renderTvRankings() {
       const container = document.getElementById('tv-rankings-container');
       container.innerHTML = '';
@@ -1161,7 +1148,6 @@
         const card = document.createElement('div');
         card.id = `player-card-${player.id}`;
         
-        // スタート前ならタップイベントでアーティスト変更
         if (!isGaming) {
           card.onclick = () => selectArtistByCardTap(player.id);
           card.style.cursor = 'pointer';
@@ -1190,7 +1176,6 @@
       });
     }
 
-    // スタート前：左側プレイヤーカードタップ時のアーティスト切替
     function selectArtistByCardTap(playerId) {
       if (isGaming) return;
       unlockAudioAndSpeech();
@@ -1378,7 +1363,7 @@
 
     document.getElementById('words-input').addEventListener('input', updateWordsCountDisplay);
 
-    // お気に入り作品の画像保存（1:1 スクエアレンダリング化）
+    // お気に入り作品の画像保存（1:1 スクエアレンダリング）
     function saveDrawingAsImage(dataUrl, wordName, artistName, timeTaken) {
       const img = new Image();
       img.onload = () => {
@@ -1387,22 +1372,18 @@
         c.height = 1080;
         const cx = c.getContext('2d');
 
-        // 背景
         const grad = cx.createLinearGradient(0, 0, 0, 1080);
         grad.addColorStop(0, '#0f172a');
         grad.addColorStop(1, '#1e1b4b');
         cx.fillStyle = grad;
         cx.fillRect(0, 0, 1080, 1080);
 
-        // 白い額縁枠（スクエア）
         cx.fillStyle = '#ffffff';
         cx.roundRect(60, 60, 960, 800, 24);
         cx.fill();
 
-        // 絵を描画
         cx.drawImage(img, 90, 90, 900, 740);
 
-        // メタデータ文字描画
         cx.fillStyle = '#fef3c7';
         cx.font = 'bold 36px sans-serif';
         cx.fillText(`🎨 お題: ${wordName}`, 70, 920);
@@ -1424,7 +1405,6 @@
       img.src = dataUrl;
     }
 
-    // タイムアップギャラリー表示
     function showResultModal() {
       const list = document.getElementById('result-ranking-list');
       const gallery = document.getElementById('result-drawings-gallery');
