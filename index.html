@@ -8,7 +8,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="アテテ！">
   <meta name="theme-color" content="#020617">
-  <link rel="manifest" href='data:application/manifest+json,{"name":"アテテ！","short_name":"アテテ！","start_url":".","display":"standalone","background_color":"#020617","theme_color":"#020617"}'>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
@@ -67,10 +68,10 @@
       <button id="header-main-btn" onclick="headerMainBtnWithSE()" class="bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1 rounded-xl text-xs font-bold shadow-lg flex items-center space-x-1 active:scale-95 transition touch-action-none">
         <span>⚙️ 設定</span>
       </button>
+      <button onclick="undoCanvasWithSE()" class="bg-slate-800/80 hover:bg-slate-700 text-white px-2 py-1 rounded-lg text-xs font-bold border border-slate-600 shadow active:scale-95 transition touch-action-none">↩️ 戻る</button>
       <span class="text-base md:text-lg font-black text-amber-300 tracking-wider drop-shadow">アテテ！</span>
     </div>
     <div class="flex items-center space-x-2">
-      <button onclick="undoCanvasWithSE()" class="bg-slate-800/80 hover:bg-slate-700 text-white px-2 py-1 rounded-lg text-xs font-bold border border-slate-600 shadow active:scale-95 transition touch-action-none">↩️ 戻る</button>
       <div id="color-palette" class="flex items-center space-x-1.5"></div>
       <button id="palette-toggle-btn" onclick="togglePaletteWithSE()" class="px-2 py-1 rounded-lg font-bold text-xs border active:scale-95 transition touch-action-none"></button>
       <button onclick="clearCanvasWithSE()" class="ml-4 px-2.5 py-1 rounded-lg font-bold text-xs bg-rose-900/80 hover:bg-rose-800 text-rose-200 border border-rose-700 active:scale-95 transition shadow touch-action-none">🗑️ 全消し</button>
@@ -215,7 +216,6 @@
   </div>
 
   <script>
-    // ===== 定数・データ =====
     const STORAGE_KEY_PLAYERS = 'atete_app_players_v18';
     const STORAGE_KEY_GROUPS = 'atete_app_word_groups_v1';
     const STORAGE_KEY_SETTINGS = 'atete_app_settings_v18';
@@ -224,7 +224,6 @@
 
     const EMOJI_OPTIONS = ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐦","🐣"];
 
-    // 基本カラーパレット（通常色）
     const BASE_PEN_COLORS = [
       { id: "#000000", name: "黒", bg: "bg-black border-2 border-white/90 ring-1 ring-black", isOverlayColor: false },
       { id: "#4b5563", name: "濃い灰色", bg: "bg-gray-600", isOverlayColor: true },
@@ -241,7 +240,6 @@
       { id: "#ffffff", name: "白（消しゴム）", bg: "bg-white border border-gray-400", isOverlayColor: false }
     ];
 
-    // プレイヤーカラーテーマ
     const COLOR_OPTIONS = [
       { id: "red", name: "レッド", bg: "bg-red-600", border: "border-red-400" },
       { id: "orange", name: "オレンジ", bg: "bg-orange-600", border: "border-orange-400" },
@@ -339,15 +337,14 @@
     let pencilGainNode = null;
     let previousPositions = new Map();
 
-    // 長押し塗りつぶし・Undo用
     let longPressTimer = null;
     let longPressTriggered = false;
     let startPos = { x: 0, y: 0 };
     let isPointerDown = false;
     let undoStack = [];
-    let usePastelColors = false; // パステルモード
+    let usePastelColors = false;
 
-    // ===== 不要な操作防止 =====
+    // 不要な操作防止
     let lastTouchEnd = 0;
     document.addEventListener('touchend', function(e) {
       const now = Date.now();
@@ -358,7 +355,7 @@
     document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
     document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
 
-    // ===== 音声関連 =====
+    // 音声関連
     function startAudioKeepAlive() {
       if (keepAliveInterval) return;
       keepAliveInterval = setInterval(() => {
@@ -459,7 +456,6 @@
       } catch(e) { console.error(e); }
     }
 
-    // ===== しゃべりバリエーション =====
     const VOICE_PHRASES = {
       start: [
         (artist) => `よーい、スタート！${artist}画伯、魂の一作をお願いします！`,
@@ -551,7 +547,7 @@
       return typeof item === 'function' ? item(p1, p2) : item;
     }
 
-    // ===== ストレージ =====
+    // ストレージ
     function loadStorageData() {
       let loadedPlayers = localStorage.getItem(STORAGE_KEY_PLAYERS);
       if (!loadedPlayers) {
@@ -609,7 +605,7 @@
     function toggleSpeech(checked) { enableSpeech = checked; saveStorageData(); }
     function toggleArtistPoint(checked) { artistPointEnabled = checked; saveStorageData(); }
 
-    // ===== お題グループ管理 =====
+    // お題グループ
     function updateParsedWordList() {
       if (wordGroups.length > 0 && wordGroups[currentGroupIndex]) parsedWordList = parseWordListFromRaw(wordGroups[currentGroupIndex].rawText);
       else parsedWordList = [];
@@ -677,7 +673,7 @@
     function switchGroupNextWithSE() { playButtonSE(); if (wordGroups.length === 0) return; currentGroupIndex = (currentGroupIndex + 1) % wordGroups.length; updateParsedWordList(); updateStartGroupDisplay(); saveStorageData(); }
     function updateStartGroupDisplay() { const el = document.getElementById('start-group-title'); if (el && wordGroups.length > 0) el.innerText = wordGroups[currentGroupIndex].title; }
 
-    // ===== キャンバス・レイヤー =====
+    // キャンバス
     function initCanvas() {
       colorCanvas = document.getElementById('color-canvas');
       blackCanvas = document.getElementById('black-canvas');
@@ -710,7 +706,6 @@
       return { x: e.clientX - rect.left, y: e.clientY - rect.top };
     }
 
-    // 描画開始（長押し判定・Undo保存）
     function startDrawing(e) {
       unlockAudioAndSpeech();
       isPointerDown = true;
@@ -797,7 +792,6 @@
       }
     }
 
-    // フラッドフィル（黒線を境界として扱う）
     function performFill(x, y) {
       if (currentPenColor === '#ffffff') return;
       if (currentPenColor === '#000000') {
@@ -850,23 +844,20 @@
       return result ? { r: parseInt(result[1],16), g: parseInt(result[2],16), b: parseInt(result[3],16) } : { r:0, g:0, b:0 };
     }
 
-    // パステル色の生成（白と混ぜて明るく）
     function getPastelColor(hex) {
       const rgb = hexToRgb(hex);
-      const mix = 0.6; // 60% white
+      const mix = 0.6;
       const r = Math.round(rgb.r + (255 - rgb.r) * mix);
       const g = Math.round(rgb.g + (255 - rgb.g) * mix);
       const b = Math.round(rgb.b + (255 - rgb.b) * mix);
       return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
     }
 
-    // 現在のパレットから色オブジェクトを取得
     function getCurrentPaletteColor(hex) {
       const colors = usePastelColors ? getPastelPalette() : BASE_PEN_COLORS;
       return colors.find(c => c.id === hex);
     }
 
-    // パステルパレットを生成（黒・白は通常のまま）
     function getPastelPalette() {
       return BASE_PEN_COLORS.map(c => {
         if (c.id === '#000000' || c.id === '#ffffff') return c;
@@ -875,7 +866,6 @@
       });
     }
 
-    // Undo機能
     function saveStateForUndo() {
       if (!colorCanvas || !blackCanvas) return;
       if (undoStack.length >= 20) undoStack.shift();
@@ -935,7 +925,6 @@
       clearCanvas();
     }
 
-    // ヘッダーボタン
     function headerMainBtnWithSE() {
       playButtonSE();
       if (isGaming) stopGame();
@@ -952,7 +941,7 @@
       }
     }
 
-    // ===== ゲーム進行 =====
+    // ゲーム進行
     function toggleGameWithSE() { playButtonSE(); toggleGame(); }
     function toggleGame() {
       unlockAudioAndSpeech();
@@ -1329,7 +1318,13 @@
         cx.fillStyle = grad; cx.fillRect(0,0,1080,1080);
         cx.fillStyle = '#fef3c7'; cx.font = 'bold 48px sans-serif'; cx.textAlign = 'center'; cx.fillText(`${wordName}`, 540, 85);
         cx.fillStyle = '#ffffff'; cx.roundRect(90,110,900,780,24); cx.fill();
-        cx.drawImage(img, 110,130,860,740);
+        const maxW = 860, maxH = 740;
+        let drawW = img.naturalWidth, drawH = img.naturalHeight;
+        const scale = Math.min(maxW / drawW, maxH / drawH);
+        drawW = drawW * scale; drawH = drawH * scale;
+        const dx = 110 + (maxW - drawW) / 2;
+        const dy = 130 + (maxH - drawH) / 2;
+        cx.drawImage(img, dx, dy, drawW, drawH);
         cx.fillStyle = '#fbbf24'; cx.font = 'bold 44px sans-serif'; cx.textAlign = 'center'; cx.fillText(`${artistName}`, 540, 955);
         const now = new Date(); const days = ['日','月','火','水','木','金','土'];
         const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日(${days[now.getDay()]}) ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}  所要時間 ${timeTaken}秒`;
@@ -1350,7 +1345,6 @@
       const currentArtist = activePlayers[currentArtistIndex % activePlayers.length];
       const artistName = currentArtist ? currentArtist.name : "アーティスト";
       galleryTitle.innerText = `${artistName}さんのアート作品`;
-
       const detectives = activePlayers.filter(p => !currentArtist || p.id !== currentArtist.id);
       const roundRanked = detectives.map(p => ({...p, roundScore: roundScores[p.id] || 0})).sort((a,b) => b.roundScore - a.roundScore || b.id - a.id);
       let currentRank = 1;
@@ -1419,7 +1413,7 @@
       if (nextArtist) speakText(getRandomPhrase('nextArtist', nextArtist.name));
     }
 
-    // ===== パレット切替・描画色 =====
+    // パレット・カラー
     function togglePaletteWithSE() {
       playButtonSE();
       usePastelColors = !usePastelColors;
@@ -1430,11 +1424,10 @@
     function updatePaletteToggleButton() {
       const btn = document.getElementById('palette-toggle-btn');
       if (btn) {
+        btn.innerText = 'パステル';
         if (usePastelColors) {
-          btn.innerText = 'パステル';
           btn.className = 'px-2 py-1 rounded-lg font-bold text-xs border bg-pink-300 text-pink-900 border-pink-400 active:scale-95 transition touch-action-none';
         } else {
-          btn.innerText = 'パステル';
           btn.className = 'px-2 py-1 rounded-lg font-bold text-xs border bg-slate-800 text-slate-300 border-slate-600 active:scale-95 transition touch-action-none';
         }
       }
@@ -1448,7 +1441,6 @@
         btn.onclick = () => { playButtonSE(); selectPenColor(c.id); };
         const isSelected = currentPenColor === c.id;
         btn.className = `w-5 h-5 rounded-full ${c.bg} border-2 transition ${isSelected ? 'scale-125 border-white ring-2 ring-indigo-400 z-10' : 'border-transparent hover:scale-110 opacity-80'} touch-action-none`;
-        // 背景色を動的に設定（パステル色の場合）
         if (c.id.startsWith('#')) {
           btn.style.backgroundColor = c.id;
           if (c.id === '#ffffff') btn.style.borderColor = '#d1d5db';
@@ -1461,7 +1453,7 @@
       renderColorPalette();
     }
 
-    // ===== 初期化 =====
+    // 初期化
     window.addEventListener('DOMContentLoaded', () => {
       loadStorageData();
       initCanvas();
