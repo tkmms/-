@@ -4,15 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>アテテ！</title>
-
   <!-- PWA & iOS Safari フルスクリーン対応設定 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="アテテ！">
   <meta name="theme-color" content="#020617">
-  
   <link rel="manifest" href='data:application/manifest+json,{"name":"アテテ！","short_name":"アテテ！","start_url":".","display":"standalone","background_color":"#020617","theme_color":"#020617"}'>
-
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
@@ -29,62 +26,51 @@
       color: #f8fafc;
       -webkit-tap-highlight-color: transparent;
     }
-
     canvas {
       touch-action: none;
       cursor: crosshair;
     }
-
     .scrollable-content {
       touch-action: pan-y;
       -webkit-overflow-scrolling: touch;
     }
-
     .player-card-move {
       transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-
     @keyframes scorePop {
       0% { transform: scale(1); filter: brightness(1); }
-      50% { transform: scale(1.08); filter: brightness(1.6); ring-color: #f59e0b; }
+      50% { transform: scale(1.08); filter: brightness(1.6); }
       100% { transform: scale(1); filter: brightness(1); }
     }
-
     .animate-score-pop {
       animation: scorePop 0.6s ease-out;
     }
-
     @keyframes periodicJump {
       0%, 80%, 100% { transform: translateY(0); }
       85% { transform: translateY(-15px) scale(1.05); }
       90% { transform: translateY(0); }
       95% { transform: translateY(-8px) scale(1.02); }
     }
-
     .animate-periodic-jump {
       animation: periodicJump 3s infinite ease-in-out;
     }
-
     @keyframes floatUp {
       0% { opacity: 0; transform: translateY(10px) scale(0.5); }
       30% { opacity: 1; transform: translateY(-12px) scale(1.3); }
       80% { opacity: 1; transform: translateY(-28px) scale(1); }
       100% { opacity: 0; transform: translateY(-38px) scale(0.8); }
     }
-
     .float-score-text {
       animation: floatUp 1.2s ease-out forwards;
       pointer-events: none;
     }
-
     .modal-hidden {
       display: none !important;
     }
   </style>
 </head>
 <body class="h-[100dvh] w-vw flex flex-col justify-between font-sans overflow-hidden relative">
-
-  <!-- 0. テレビ枠外（iPad画面最上部）のツールコントロール -->
+  <!-- ヘッダー -->
   <header class="absolute top-0.5 left-0 right-0 z-30 px-[5vw] flex items-center justify-between pointer-events-auto">
     <div class="flex items-center space-x-3">
       <button id="header-main-btn" onclick="headerMainBtnWithSE()" class="bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1 rounded-xl text-xs font-bold shadow-lg flex items-center space-x-1 active:scale-95 transition touch-action-none">
@@ -92,148 +78,90 @@
       </button>
       <span class="text-base md:text-lg font-black text-amber-300 tracking-wider drop-shadow">アテテ！</span>
     </div>
-
     <div class="flex items-center space-x-2">
-      <div id="color-palette" class="flex items-center space-x-1.5">
-        <!-- JSで動的生成 -->
-      </div>
-
-      <button onclick="clearCanvasWithSE()" class="px-2.5 py-1 rounded-lg font-bold text-xs bg-rose-900/80 hover:bg-rose-800 text-rose-200 border border-rose-700 active:scale-95 transition shadow touch-action-none">
-        🗑️ 全消し
-      </button>
+      <div id="color-palette" class="flex items-center space-x-1.5"></div>
+      <button onclick="clearCanvasWithSE()" class="px-2.5 py-1 rounded-lg font-bold text-xs bg-rose-900/80 hover:bg-rose-800 text-rose-200 border border-rose-700 active:scale-95 transition shadow touch-action-none">🗑️ 全消し</button>
     </div>
   </header>
 
-  <!-- 1. テレビに映るメイン領域 -->
+  <!-- メイン -->
   <div class="flex-1 flex flex-col pt-[8.5dvh] px-[5vw] pb-[2.5dvh] min-h-0 relative">
     <div class="w-full h-full flex flex-row gap-3 min-h-0">
-      
-      <aside id="tv-rankings-container" class="w-44 md:w-56 h-full flex flex-col gap-1.5 shrink-0 relative select-none">
-        <!-- JavaScriptで動的生成 -->
-      </aside>
-
+      <aside id="tv-rankings-container" class="w-44 md:w-56 h-full flex flex-col gap-1.5 shrink-0 relative select-none"></aside>
       <main class="flex-1 h-full flex flex-col gap-2 min-h-0 min-w-0 relative">
-        
         <div class="w-full bg-slate-800/90 rounded-full h-4 overflow-hidden border border-slate-700 relative shrink-0 shadow-inner">
           <div id="timer-progress-bar" class="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-500 rounded-full transition-all duration-200 ease-linear w-full"></div>
-          <span id="timer-text-overlay" class="absolute inset-0 flex items-center justify-center text-[11px] font-black text-white drop-shadow font-mono">
-            01:00
-          </span>
+          <span id="timer-text-overlay" class="absolute inset-0 flex items-center justify-center text-[11px] font-black text-white drop-shadow font-mono">01:00</span>
         </div>
-
         <div id="canvas-container" class="flex-1 w-full relative bg-white rounded-2xl overflow-hidden shadow-2xl border-2 border-slate-800 min-h-0">
           <canvas id="color-canvas" class="absolute inset-0 w-full h-full"></canvas>
           <canvas id="black-canvas" class="absolute inset-0 w-full h-full"></canvas>
-
           <div id="center-start-overlay" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 z-20 transition-opacity duration-300">
-            <div class="text-center space-y-4">
-              <span class="text-xs font-bold tracking-widest text-amber-400 block uppercase">現在のアーティスト</span>
-              <div id="center-artist-display" class="flex items-center justify-center space-x-3 bg-slate-900 border-2 border-amber-500/60 px-6 py-4 rounded-3xl shadow-2xl">
-                <!-- アーティスト絵文字と名前 -->
-              </div>
-
-              <div class="bg-slate-900/80 border border-slate-700 px-3 py-1 rounded-full flex items-center space-x-2 w-fit mx-auto">
+            <div class="text-center space-y-6">
+              <span class="text-xs font-bold tracking-widest text-amber-400 block uppercase">次のアーティスト</span>
+              <div id="center-artist-display" class="flex items-center justify-center space-x-3 bg-slate-900 border-2 border-amber-500/60 px-6 py-4 rounded-3xl shadow-2xl"></div>
+              <div class="bg-slate-900/80 border border-slate-700 px-4 py-2 rounded-full flex items-center justify-center space-x-3 w-fit mx-auto">
                 <button onclick="switchGroupPrevWithSE()" class="text-slate-300 hover:text-white text-lg font-black touch-action-none">◀</button>
-                <span id="start-group-title" class="text-xs font-bold text-white whitespace-nowrap">デフォルト</span>
+                <span id="start-group-title" class="text-lg md:text-xl font-bold text-white whitespace-nowrap">デフォルト</span>
                 <button onclick="switchGroupNextWithSE()" class="text-slate-300 hover:text-white text-lg font-black touch-action-none">▶</button>
               </div>
-
-              <button onclick="toggleGameWithSE()" class="mt-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-4 px-12 rounded-3xl text-2xl md:text-3xl border-4 border-emerald-300 shadow-2xl active:scale-95 transition animate-bounce touch-action-none">
-                ▶️ スタート！
-              </button>
+              <button onclick="toggleGameWithSE()" class="mt-6 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-4 px-12 rounded-3xl text-2xl md:text-3xl border-4 border-emerald-300 shadow-2xl active:scale-95 transition animate-bounce touch-action-none">▶️ スタート！</button>
             </div>
           </div>
         </div>
       </main>
-
     </div>
   </div>
 
-  <!-- 2. テレビには絶対映らない秘密の領域（画面最下部：14dvh固定） -->
+  <!-- フッター -->
   <footer class="h-[14dvh] w-full bg-slate-900 border-t-2 border-slate-800 px-4 py-1.5 flex items-center justify-between gap-2 shrink-0 z-20 shadow-2xl overflow-hidden relative">
-    
-    <div class="absolute -top-5 left-6 text-[10px] text-amber-300/80 font-bold tracking-wider pointer-events-none flex items-center space-x-1">
-      <span>正解したら右側の「🎉 正解！」ボタンをタップ！</span>
-    </div>
-
+    <div class="absolute -top-5 left-6 text-[10px] text-amber-300/80 font-bold tracking-wider pointer-events-none">正解したら右側の「🎉 正解！」ボタンをタップ！</div>
     <div class="w-full bg-amber-500/10 border-2 border-amber-500/50 rounded-2xl px-4 py-1.5 flex items-center justify-between relative shadow-inner h-full overflow-hidden gap-3">
-      
       <div id="footer-active-controls-left" class="flex items-center space-x-2 shrink-0 opacity-0 pointer-events-none transition-opacity duration-300">
-        <button id="btn-skip" onclick="skipWordWithSE()" disabled class="bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white font-black py-4 px-8 rounded-2xl text-base md:text-lg border border-slate-600 shadow-lg active:scale-95 transition touch-action-none">
-          パス
-        </button>
+        <button id="btn-skip" onclick="skipWordWithSE()" disabled class="bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white font-black py-4 px-8 rounded-2xl text-base md:text-lg border border-slate-600 shadow-lg active:scale-95 transition touch-action-none">パス</button>
       </div>
-
       <div class="flex-1 flex items-center justify-center h-full min-w-0 px-3">
-        <div id="word-display" class="font-black tracking-wider text-amber-300 text-center truncate w-full" style="font-size: clamp(1.2rem, 3vw, 2.4rem);">
-          「スタート」を押してね！
-        </div>
+        <div id="word-display" class="font-black tracking-wider text-amber-300 text-center truncate w-full" style="font-size: clamp(1.2rem, 3vw, 2.4rem);">「スタート」を押してね！</div>
       </div>
-
       <div id="footer-active-controls-right" class="flex items-center shrink-0 opacity-0 pointer-events-none transition-opacity duration-300">
-        <button id="btn-correct-trigger" onclick="openAnswerModalWithSE()" disabled class="bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black font-black py-4 px-8 rounded-2xl text-base md:text-lg border border-amber-300 shadow-lg active:scale-95 transition touch-action-none">
-          🎉 正解！
-        </button>
+        <button id="btn-correct-trigger" onclick="openAnswerModalWithSE()" disabled class="bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black font-black py-4 px-8 rounded-2xl text-base md:text-lg border border-amber-300 shadow-lg active:scale-95 transition touch-action-none">🎉 正解！</button>
       </div>
-
     </div>
   </footer>
 
-  <!-- 3. 🎉 正解選択モーダル -->
+  <!-- 正解モーダル -->
   <div id="answer-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 modal-hidden flex items-center justify-center p-3">
     <div class="bg-slate-900 border-2 border-amber-500/80 rounded-2xl w-full max-w-5xl h-[68vh] flex flex-col shadow-2xl overflow-hidden p-5 space-y-2 relative -top-6">
-      
       <div class="flex items-center justify-between border-b border-slate-800 pb-2 shrink-0">
         <span class="text-xs md:text-sm font-bold text-amber-400">🎉 正解発表！正解したプレイヤーをタップ</span>
         <span class="text-[11px] text-slate-400">※タップすると+1pt入って次のお題へ！</span>
       </div>
-
       <div class="flex-1 flex flex-col md:flex-row gap-4 min-h-0 overflow-hidden items-stretch">
-        
         <div class="w-full md:w-1/2 bg-gradient-to-b from-amber-500/20 to-slate-900/80 border-2 border-amber-500/40 rounded-2xl p-4 flex flex-col items-center justify-center h-full text-center relative overflow-hidden shadow-inner">
-          <div id="modal-word-display" class="flex flex-col items-center justify-center h-full w-full">
-            <!-- 動的生成 -->
-          </div>
+          <div id="modal-word-display" class="flex flex-col items-center justify-center h-full w-full"></div>
         </div>
-
-        <div id="answer-modal-grid" class="w-full md:w-1/2 grid grid-cols-3 gap-3 h-full overflow-y-auto p-2">
-          <!-- 動的生成 -->
-        </div>
-
+        <div id="answer-modal-grid" class="w-full md:w-1/2 grid grid-cols-3 gap-3 h-full overflow-y-auto p-2"></div>
       </div>
-
-      <div class="flex justify-end pt-1 border-t border-slate-800 shrink-0 gap-2">
-        <button onclick="imageSearchWithSE()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-1.5 rounded-xl text-xs font-bold border border-indigo-400 active:scale-95 transition touch-action-none">
-          🔍 画像検索
-        </button>
-        <button onclick="closeAnswerModalWithSE()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-6 py-1.5 rounded-xl text-xs font-bold border border-slate-700 active:scale-95 transition touch-action-none">
-          キャンセル（ゲーム再開）
-        </button>
+      <div class="flex justify-between pt-1 border-t border-slate-800 shrink-0 gap-2">
+        <button onclick="imageSearchWithSE()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-1.5 rounded-xl text-xs font-bold border border-indigo-400 active:scale-95 transition touch-action-none">🔍 画像検索</button>
+        <button onclick="closeAnswerModalWithSE()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-6 py-1.5 rounded-xl text-xs font-bold border border-slate-700 active:scale-95 transition touch-action-none">キャンセル（ゲーム再開）</button>
       </div>
     </div>
   </div>
 
-  <!-- 4. モーダル：設定＆プレイヤー・お題登録 -->
+  <!-- 設定モーダル -->
   <div id="settings-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 modal-hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[88vh] flex flex-col shadow-2xl">
       <div class="p-4 border-b border-slate-800 flex justify-between items-center">
-        <h2 class="text-xl font-bold text-white flex items-center space-x-2">
-          <span>⚙️ ゲーム設定＆お題編集</span>
-        </h2>
+        <h2 class="text-xl font-bold text-white">⚙️ ゲーム設定＆お題編集</h2>
         <button onclick="closeSettingsWithSE()" class="text-slate-400 hover:text-white text-2xl font-bold px-2 touch-action-none">✕</button>
       </div>
-
       <div class="p-6 scrollable-content overflow-y-auto space-y-6 flex-1 text-sm">
         <div class="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 gap-2">
           <div class="flex space-x-2">
-            <button id="tab-btn-players" onclick="switchTabWithSE('players')" class="px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none">
-              👥 プレイヤー編集
-            </button>
-            <button id="tab-btn-words" onclick="switchTabWithSE('words')" class="px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none">
-              📝 お題グループ編集
-            </button>
+            <button id="tab-btn-players" onclick="switchTabWithSE('players')" class="px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none">👥 プレイヤー編集</button>
+            <button id="tab-btn-words" onclick="switchTabWithSE('words')" class="px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none">📝 お題グループ編集</button>
           </div>
-
           <div class="flex items-center gap-3">
             <label class="flex items-center space-x-2 cursor-pointer bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
               <span class="text-xs text-slate-300 font-bold">🔊 実況音声</span>
@@ -245,118 +173,78 @@
             </label>
           </div>
         </div>
-
         <div id="tab-content-players" class="space-y-4">
           <div class="flex justify-between items-center">
-            <p class="text-slate-400 text-xs">
-              プレイヤーの名前、アイコン絵文字、テーマカラーを選択できます（最大9名）。
-            </p>
-            <button onclick="resetScoresWithSE()" class="text-xs bg-rose-900/50 hover:bg-rose-800 text-rose-300 border border-rose-700 px-3 py-1 rounded touch-action-none">
-              スコアをリセット
-            </button>
+            <p class="text-slate-400 text-xs">プレイヤーの名前、アイコン絵文字、テーマカラーを選択できます（最大9名）。</p>
+            <button onclick="resetScoresWithSE()" class="text-xs bg-rose-900/50 hover:bg-rose-800 text-rose-300 border border-rose-700 px-3 py-1 rounded touch-action-none">スコアをリセット</button>
           </div>
-
-          <div id="players-list-container" class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <!-- 動的生成 -->
-          </div>
+          <div id="players-list-container" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
         </div>
-
         <div id="tab-content-words" class="space-y-3 modal-hidden">
           <div class="bg-indigo-950/60 border border-indigo-500/40 p-3 rounded-xl">
             <span class="text-xs font-bold text-indigo-200 block mb-1">お題の入力形式について</span>
-            <p class="text-[11px] text-slate-300">
-              「<span class="text-amber-300 font-bold">🎺 トランペット</span>」のように、絵文字と名前をスペース区切りで1行ずつ入力してください。<br>
-              グループごとにお題を保存でき、スタート画面で切り替えられます。
-            </p>
+            <p class="text-[11px] text-slate-300">「<span class="text-amber-300 font-bold">🎺 トランペット</span>」のように、絵文字と名前をスペース区切りで1行ずつ入力してください。<br>グループごとにお題を保存でき、スタート画面で切り替えられます。</p>
           </div>
-
-          <div id="word-groups-container" class="space-y-4">
-            <!-- 動的生成 -->
-          </div>
-
-          <button onclick="addWordGroupWithSE()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-lg border border-slate-600 active:scale-95 transition touch-action-none">
-            ＋ グループを追加
-          </button>
+          <div id="word-groups-container" class="space-y-4"></div>
+          <button onclick="addWordGroupWithSE()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-lg border border-slate-600 active:scale-95 transition touch-action-none">＋ グループを追加</button>
         </div>
       </div>
-
       <div class="p-4 border-t border-slate-800 flex justify-end">
-        <button onclick="saveAndCloseSettingsWithSE()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2 rounded-xl shadow-lg touch-action-none">
-          設定を保存して閉じる
-        </button>
+        <button onclick="saveAndCloseSettingsWithSE()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2 rounded-xl shadow-lg touch-action-none">設定を保存して閉じる</button>
       </div>
     </div>
   </div>
 
-  <!-- 5. モーダル：タイムアップ・ギャラリー展示 -->
+  <!-- 結果モーダル -->
   <div id="result-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 modal-hidden flex flex-col justify-between p-4 pt-10">
-    
     <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/60 rounded-3xl w-full max-w-5xl h-[68vh] mx-auto flex flex-col p-5 shadow-2xl space-y-3 relative overflow-hidden mt-8">
-      
       <div class="flex items-center justify-between border-b border-amber-500/30 pb-3 shrink-0">
         <div class="flex items-center space-x-3">
           <span class="text-3xl">🎨</span>
-          <h2 id="result-gallery-title" class="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100 tracking-wider">
-            〇〇さんのアート作品
-          </h2>
+          <h2 id="result-gallery-title" class="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100 tracking-wider">〇〇さんのアート作品</h2>
         </div>
-        <span class="text-xs font-bold text-amber-400/80 bg-amber-950/80 border border-amber-500/40 px-3 py-1 rounded-full">
-          ✨ ラウンド終了
-        </span>
+        <span class="text-xs font-bold text-amber-400/80 bg-amber-950/80 border border-amber-500/40 px-3 py-1 rounded-full">✨ ラウンド終了</span>
       </div>
-
       <div class="flex-1 flex flex-col md:flex-row gap-4 min-h-0 overflow-hidden">
-        
         <div class="w-full md:w-8/12 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 flex flex-col min-h-0 shadow-inner">
           <h3 class="text-xs font-bold text-amber-300 border-b border-slate-800 pb-1.5 shrink-0 mb-2">🖼️ 展示ギャラリー</h3>
-          <div id="result-drawings-gallery" class="flex-1 grid grid-cols-2 md:grid-cols-3 gap-3 scrollable-content overflow-y-auto pr-1">
-            <!-- 作品カード挿入 -->
-          </div>
+          <div id="result-drawings-gallery" class="flex-1 grid grid-cols-2 md:grid-cols-3 gap-3 scrollable-content overflow-y-auto pr-1"></div>
         </div>
-
         <div class="w-full md:w-4/12 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 flex flex-col min-h-0 shadow-inner">
           <h3 class="text-xs font-bold text-amber-300 border-b border-slate-800 pb-1.5 shrink-0 mb-2">🏆 ランキング</h3>
-          <div id="result-ranking-list" class="flex-1 space-y-2 scrollable-content overflow-y-auto pr-1">
-            <!-- 動的生成 -->
-          </div>
+          <div id="result-ranking-list" class="flex-1 space-y-2 scrollable-content overflow-y-auto pr-1"></div>
         </div>
-
       </div>
     </div>
-
     <div class="w-full max-w-xl mx-auto py-2 shrink-0">
-      <button onclick="closeResultModalWithSE()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-2xl shadow-2xl text-base md:text-lg border-2 border-emerald-400 active:scale-95 transition touch-action-none">
-        次のラウンドへ進む ➔
-      </button>
+      <button onclick="closeResultModalWithSE()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-2xl shadow-2xl text-base md:text-lg border-2 border-emerald-400 active:scale-95 transition touch-action-none">次のラウンドへ進む ➔</button>
     </div>
-
   </div>
 
   <script>
     const STORAGE_KEY_PLAYERS = 'atete_app_players_v18';
-    const STORAGE_KEY_WORDS = 'atete_app_words_v18';
     const STORAGE_KEY_GROUPS = 'atete_app_word_groups_v1';
     const STORAGE_KEY_SETTINGS = 'atete_app_settings_v18';
-
     const OLD_PLAYER_KEYS = ['atete_app_players_v17', 'oekaki_app_players_v16'];
     const OLD_WORD_KEYS = ['atete_app_words_v17', 'oekaki_app_words_v16'];
 
-    const EMOJI_OPTIONS = ["🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐮", "🐦", "🐣"];
+    const EMOJI_OPTIONS = ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐦","🐣"];
 
+    // 色相順（黒→グレー→茶→赤→オレンジ→肌色→黄→緑→シアン→青→紫→ピンク→白）
     const PEN_COLORS = [
       { id: "#000000", name: "黒", bg: "bg-black border-2 border-white/90 ring-1 ring-black", isOverlayColor: false },
+      { id: "#4b5563", name: "濃い灰色", bg: "bg-gray-600", isOverlayColor: true },
+      { id: "#92400e", name: "茶色", bg: "bg-amber-800", isOverlayColor: true },
       { id: "#ef4444", name: "赤", bg: "bg-red-500", isOverlayColor: true },
       { id: "#f97316", name: "オレンジ", bg: "bg-orange-500", isOverlayColor: true },
+      { id: "#fdba74", name: "肌色", bg: "bg-orange-300", isOverlayColor: true },
       { id: "#eab308", name: "黄", bg: "bg-yellow-500", isOverlayColor: true },
       { id: "#22c55e", name: "緑", bg: "bg-green-500", isOverlayColor: true },
       { id: "#06b6d4", name: "シアン", bg: "bg-cyan-500", isOverlayColor: true },
       { id: "#3b82f6", name: "青", bg: "bg-blue-500", isOverlayColor: true },
       { id: "#a855f7", name: "紫", bg: "bg-purple-500", isOverlayColor: true },
       { id: "#ec4899", name: "ピンク", bg: "bg-pink-500", isOverlayColor: true },
-      { id: "#4b5563", name: "濃い灰色", bg: "bg-gray-600", isOverlayColor: true },
-      { id: "#92400e", name: "茶色", bg: "bg-amber-800", isOverlayColor: true },
-      { id: "#fdba74", name: "肌色", bg: "bg-orange-300", isOverlayColor: true },
-      { id: "#ffffff", name: "白（消しゴム）", bg: "bg-white border border-gray-400", isOverlayColor: false },
+      { id: "#ffffff", name: "白（消しゴム）", bg: "bg-white border border-gray-400", isOverlayColor: false }
     ];
 
     const COLOR_OPTIONS = [
@@ -413,15 +301,15 @@
 🐧 ペンギン`;
 
     const DEFAULT_PLAYERS = [
-      { id: 0, name: "プレイヤー1", emoji: "🐶", colorIdx: 0, active: true, score: 0 },
-      { id: 1, name: "プレイヤー2", emoji: "🐱", colorIdx: 1, active: true, score: 0 },
-      { id: 2, name: "プレイヤー3", emoji: "🐰", colorIdx: 2, active: true, score: 0 },
-      { id: 3, name: "プレイヤー4", emoji: "🦊", colorIdx: 3, active: false, score: 0 },
-      { id: 4, name: "プレイヤー5", emoji: "🐻", colorIdx: 4, active: false, score: 0 },
-      { id: 5, name: "プレイヤー6", emoji: "🐼", colorIdx: 5, active: false, score: 0 },
-      { id: 6, name: "プレイヤー7", emoji: "🐨", colorIdx: 6, active: false, score: 0 },
-      { id: 7, name: "プレイヤー8", emoji: "🦁", colorIdx: 7, active: false, score: 0 },
-      { id: 8, name: "プレイヤー9", emoji: "🐣", colorIdx: 8, active: false, score: 0 },
+      { id:0, name:"プレイヤー1", emoji:"🐶", colorIdx:0, active:true, score:0 },
+      { id:1, name:"プレイヤー2", emoji:"🐱", colorIdx:1, active:true, score:0 },
+      { id:2, name:"プレイヤー3", emoji:"🐰", colorIdx:2, active:true, score:0 },
+      { id:3, name:"プレイヤー4", emoji:"🦊", colorIdx:3, active:false, score:0 },
+      { id:4, name:"プレイヤー5", emoji:"🐻", colorIdx:4, active:false, score:0 },
+      { id:5, name:"プレイヤー6", emoji:"🐼", colorIdx:5, active:false, score:0 },
+      { id:6, name:"プレイヤー7", emoji:"🐨", colorIdx:6, active:false, score:0 },
+      { id:7, name:"プレイヤー8", emoji:"🦁", colorIdx:7, active:false, score:0 },
+      { id:8, name:"プレイヤー9", emoji:"🐣", colorIdx:8, active:false, score:0 }
     ];
 
     let players = [];
@@ -434,13 +322,11 @@
     let usedWordIndices = new Set();
     let currentWordObj = null;
     let currentWordStartTime = 60;
-    
     let isGaming = false;
     let isPaused = false;
     let timerSeconds = 60;
     let timerInterval = null;
     let keepAliveInterval = null;
-
     let roundScores = {};
     let roundDrawingsHistory = [];
 
@@ -458,19 +344,22 @@
     let pencilGainNode = null;
     let previousPositions = new Map();
 
+    // 長押し塗りつぶし用
+    let longPressTimer = null;
+    let longPressTriggered = false;
+    let startPos = { x: 0, y: 0 };
+    let isPointerDown = false;
+
     // ===== 不要な操作防止 =====
     let lastTouchEnd = 0;
     document.addEventListener('touchend', function(e) {
       const now = Date.now();
-      if (now - lastTouchEnd <= 300) {
-        e.preventDefault();
-      }
+      if (now - lastTouchEnd <= 300) e.preventDefault();
       lastTouchEnd = now;
     }, { passive: false });
-
-    document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
-    document.addEventListener('gesturechange', function(e) { e.preventDefault(); }, { passive: false });
-    document.addEventListener('dblclick', function(e) { e.preventDefault(); }, { passive: false });
+    document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
+    document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
+    document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
 
     // ===== 音声関連 =====
     function startAudioKeepAlive() {
@@ -481,138 +370,192 @@
           const osc = audioCtx.createOscillator();
           const gain = audioCtx.createGain();
           gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.start();
-          osc.stop(audioCtx.currentTime + 0.05);
-        } catch (e) {}
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+        } catch(e) {}
       }, 4000);
     }
-
     function initPencilSoundNode() {
       if (!audioCtx) return;
       try {
         const bufferSize = audioCtx.sampleRate * 2;
         const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
         const output = noiseBuffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-          output[i] = Math.random() * 2 - 1;
-        }
-
+        for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
         pencilNoiseNode = audioCtx.createBufferSource();
         pencilNoiseNode.buffer = noiseBuffer;
         pencilNoiseNode.loop = true;
-
         const filter = audioCtx.createBiquadFilter();
         filter.type = 'bandpass';
         filter.frequency.setValueAtTime(1800, audioCtx.currentTime);
         filter.Q.setValueAtTime(3.0, audioCtx.currentTime);
-
         pencilGainNode = audioCtx.createGain();
         pencilGainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-
-        pencilNoiseNode.connect(filter);
-        filter.connect(pencilGainNode);
-        pencilGainNode.connect(audioCtx.destination);
+        pencilNoiseNode.connect(filter); filter.connect(pencilGainNode); pencilGainNode.connect(audioCtx.destination);
         pencilNoiseNode.start();
-      } catch (e) {
-        console.error("Pencil sound error:", e);
-      }
+      } catch(e) { console.error("Pencil sound error:", e); }
     }
-
     function startPencilSound() {
       if (!pencilGainNode || !audioCtx) return;
       pencilGainNode.gain.cancelScheduledValues(audioCtx.currentTime);
       pencilGainNode.gain.setValueAtTime(0.03, audioCtx.currentTime);
     }
-
     function stopPencilSound() {
       if (!pencilGainNode || !audioCtx) return;
       pencilGainNode.gain.cancelScheduledValues(audioCtx.currentTime);
       pencilGainNode.gain.setValueAtTime(0, audioCtx.currentTime);
     }
-
     function unlockAudioAndSpeech() {
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         initPencilSoundNode();
         startAudioKeepAlive();
       }
-      if (audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-      if ('speechSynthesis' in window && window.speechSynthesis.paused) {
-        window.speechSynthesis.resume();
-      }
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      if ('speechSynthesis' in window && window.speechSynthesis.paused) window.speechSynthesis.resume();
     }
-
     function speakText(text) {
       if (!enableSpeech || !('speechSynthesis' in window)) return;
       try {
         window.speechSynthesis.cancel();
         const uttr = new SpeechSynthesisUtterance(text);
-        uttr.lang = 'ja-JP';
-        uttr.rate = 1.15;
-        uttr.pitch = 1.1;
+        uttr.lang = 'ja-JP'; uttr.rate = 1.15; uttr.pitch = 1.1;
         window.speechSynthesis.speak(uttr);
-      } catch (e) {
-        console.error("Speech error:", e);
-      }
+      } catch(e) { console.error("Speech error:", e); }
     }
-
     function playSound(type) {
       unlockAudioAndSpeech();
       if (!audioCtx) return;
       try {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-
+        osc.connect(gain); gain.connect(audioCtx.destination);
         if (type === 'correct') {
           osc.type = 'sine';
           osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
           osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.15);
           gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
           gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-          osc.start(audioCtx.currentTime);
-          osc.stop(audioCtx.currentTime + 0.4);
+          osc.start(); osc.stop(audioCtx.currentTime + 0.4);
         } else if (type === 'finish') {
           osc.type = 'triangle';
           osc.frequency.setValueAtTime(392.00, audioCtx.currentTime);
           osc.frequency.setValueAtTime(261.63, audioCtx.currentTime + 0.2);
           gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
           gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
-          osc.start(audioCtx.currentTime);
-          osc.stop(audioCtx.currentTime + 0.6);
+          osc.start(); osc.stop(audioCtx.currentTime + 0.6);
         }
-      } catch (e) {
-        console.error(e);
-      }
+      } catch(e) { console.error(e); }
     }
-
     function playButtonSE() {
       unlockAudioAndSpeech();
       if (!audioCtx) return;
       try {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
+        osc.connect(gain); gain.connect(audioCtx.destination);
         osc.type = 'sine';
         osc.frequency.setValueAtTime(800, audioCtx.currentTime);
         gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-        osc.start(audioCtx.currentTime);
-        osc.stop(audioCtx.currentTime + 0.1);
-      } catch (e) {
-        console.error(e);
-      }
+        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+      } catch(e) { console.error(e); }
+    }
+
+    // ===== しゃべりバリエーション拡大 =====
+    const VOICE_PHRASES = {
+      start: [
+        (artist) => `よーい、スタート！${artist}画伯、魂の一作をお願いします！`,
+        (artist) => `お絵描きタイム、スタート〜！アーティスト${artist}さんの登場です！`,
+        (artist) => `${artist}さん、ペンを持ってスタート！最高の一枚を描いてね！`,
+        (artist) => `さあ ${artist}さん、気合を入れてお絵描き開始です！`,
+        (artist) => `${artist}さん、本気出しちゃってください。例のアレ、期待してます！`,
+        (artist) => `次は${artist}画伯！みんなをあっと驚かせる絵、待ってます！`,
+        (artist) => `${artist}さん、焦らずゆっくり。ただし時間は60秒！`,
+        (artist) => `${artist}さんの右手に注目！いや左手かも？スタート！`
+      ],
+      selectArtistManual: [
+        (artist) => `${artist}さんがアーティストに選ばれました！よろしくね！`,
+        (artist) => `次のお絵描きは${artist}さん！頑張ってください！`,
+        (artist) => `${artist}画伯の登場です！どんな名作を描くかな？`,
+        (artist) => `${artist}さんに決定！勝手に期待値が上がります！`,
+        (artist) => `${artist}さん、今日の主役です。プレッシャー？気にしない！`
+      ],
+      correctAnswerOpen: [
+        (word) => `正解は${word}でした！お見事！`,
+        (word) => `答えはこちら、${word}でした！分かったかな？`,
+        (word) => `正解発表！${word}でした！ナイス推理！`,
+        (word) => `見事に描けていましたね！正解は${word}です！`,
+        (word) => `正解は${word}！当てた人、物凄い洞察力！`,
+        (word) => `答えは${word}。外した人もドンマイ！`
+      ],
+      afterCorrectWinner: [
+        (name) => `${name}さん大正解！鋭い洞察力に拍手！`,
+        (name) => `${name}さんお見事！次のお題もこの調子でいきましょう！`,
+        (name) => `${name}さんナイス推理！次は何が飛び出すかな？`,
+        (name) => `素晴らしいヒラメキです！${name}さん大正解！`,
+        (name) => `${name}さん、天才かよ！おめでとう！`,
+        (name) => `${name}さん、答えを当てる才能がすごい！また次も！`
+      ],
+      pass: [
+        (artist) => `パス！${artist}さん、次のお題へいくよ〜！`,
+        (artist) => `うーん難しかった！${artist}さん、次いってみよう！`,
+        (artist) => `パス！どんどん描いていこう${artist}さん！`,
+        (artist) => `パス！気持ちを切り替えて次の問題！`,
+        (artist) => `${artist}さん、ドンマイ！次のお題は簡単かも？`
+      ],
+      time30: [
+        (artist) => `残り、30秒だよ！${artist}さん急いで！`,
+        (artist) => `折り返し！あと30秒です${artist}さん！`,
+        (artist) => `30秒切った！${artist}さん、ラストスパート！`,
+        (artist) => `半分！${artist}さん、もう少し！`
+      ],
+      time10: [
+        (artist) => `残り10秒！${artist}さん急いで急いで！`,
+        (artist) => `ラスト10秒！${artist}さんラストスパート！`,
+        (artist) => `10秒前！${artist}さん、手が止まってますよ！`,
+        (artist) => `あと10秒！${artist}さん、フィニッシュ！`
+      ],
+      finishRound: [
+        (name, score) => `${name}さん、${score}ポイント獲得って凄いですね！素晴らしい作品集です！`,
+        (name, score) => `${name}さん、${score}ポイント獲得！画伯の才能が光っていましたね！`,
+        (name, score) => `${name}さん、${score}ポイント獲得！見事なキャンバスさばきでした！`,
+        (name, score) => `${name}さん、${score}ポイント獲得！芸術が爆発しましたね！`,
+        (name, score) => `${name}さん、${score}ポイント獲得！まさにアーティスト！`
+      ],
+      nextArtist: [
+        (name) => `次のアーティストは${name}さん。頑張ってね！`,
+        (name) => `次は${name}さんのターンです！名作を期待しています！`,
+        (name) => `さあ、アーティスト${name}さんの登場です！楽しんで描いてね！`,
+        (name) => `${name}さん、いよいよあなたの番ですよ！`,
+        (name) => `次は${name}さん。ドキドキしますね！`
+      ],
+      drawingTimeComment: [
+        (name, sec) => `${name}のイラスト、わずか${sec}秒で完成！スピード違反レベルです！`,
+        (name, sec) => `${name}のイラストは${sec}秒かかりましたが大健闘です！`,
+        (name, sec) => `${name}は${sec}秒のスピード作成！お見事です！`,
+        (name, sec) => `${name}のイラスト！時間をじっくりかけて見事に仕上げましたね！`,
+        (name, sec) => `${name}の作品、${sec}秒の芸術！記録更新！`,
+        (name, sec) => `${name}さん、${sec}秒でこれ？天才でしょ！`
+      ],
+      unfinishedComment: [
+        (name) => `${name}のイラスト！途中の描画ですが${name}画伯の情熱がひしひしと伝わります！`,
+        (name) => `${name}の作品！タイムアップとなりましたが個性あふれる一枚ですね！`,
+        (name) => `${name}のイラスト！途中の状態も味わい深くて素敵です！`,
+        (name) => `${name}さん、時間切れ！でもここからが本番だったかも？`,
+        (name) => `${name}さんの未完の大作、想像力で補完しましょう！`
+      ]
+    };
+
+    function getRandomPhrase(key, p1, p2) {
+      const list = VOICE_PHRASES[key];
+      if (!list || list.length === 0) return "";
+      const item = list[Math.floor(Math.random() * list.length)];
+      return typeof item === 'function' ? item(p1, p2) : item;
     }
 
     // ===== ストレージ =====
     function loadStorageData() {
-      // プレイヤー
       let loadedPlayers = localStorage.getItem(STORAGE_KEY_PLAYERS);
       if (!loadedPlayers) {
         for (const oldKey of OLD_PLAYER_KEYS) {
@@ -620,62 +563,40 @@
           if (oldData) { loadedPlayers = oldData; break; }
         }
       }
-
       try {
         if (loadedPlayers) {
           const parsed = JSON.parse(loadedPlayers);
-          players = parsed.map((p, idx) => ({
-            ...DEFAULT_PLAYERS[idx],
-            ...p,
-            emoji: EMOJI_OPTIONS.includes(p.emoji) ? p.emoji : DEFAULT_PLAYERS[idx].emoji,
-            colorIdx: p.colorIdx !== undefined ? p.colorIdx : (idx % COLOR_OPTIONS.length)
-          }));
+          players = parsed.map((p, idx) => ({ ...DEFAULT_PLAYERS[idx], ...p, emoji: EMOJI_OPTIONS.includes(p.emoji) ? p.emoji : DEFAULT_PLAYERS[idx].emoji, colorIdx: p.colorIdx !== undefined ? p.colorIdx : (idx % COLOR_OPTIONS.length) }));
         } else {
           players = JSON.parse(JSON.stringify(DEFAULT_PLAYERS));
         }
-      } catch (e) {
-        players = JSON.parse(JSON.stringify(DEFAULT_PLAYERS));
-      }
+      } catch(e) { players = JSON.parse(JSON.stringify(DEFAULT_PLAYERS)); }
 
-      // お題グループ
       const savedGroups = localStorage.getItem(STORAGE_KEY_GROUPS);
       if (savedGroups) {
         try {
           const parsed = JSON.parse(savedGroups);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            wordGroups = parsed;
-          } else {
-            wordGroups = [{ id: Date.now(), title: 'デフォルト', rawText: DEFAULT_WORDS_RAW }];
-          }
-        } catch (e) {
-          wordGroups = [{ id: Date.now(), title: 'デフォルト', rawText: DEFAULT_WORDS_RAW }];
-        }
+          if (Array.isArray(parsed) && parsed.length > 0) wordGroups = parsed;
+          else wordGroups = [{ id: Date.now(), title: 'デフォルト', rawText: DEFAULT_WORDS_RAW }];
+        } catch(e) { wordGroups = [{ id: Date.now(), title: 'デフォルト', rawText: DEFAULT_WORDS_RAW }]; }
       } else {
-        // 旧データ移行
         const oldWords = localStorage.getItem(STORAGE_KEY_WORDS);
-        if (oldWords) {
-          wordGroups = [{ id: Date.now(), title: '旧お題グループ', rawText: oldWords }];
-        } else {
-          wordGroups = [{ id: Date.now(), title: 'デフォルト', rawText: DEFAULT_WORDS_RAW }];
-        }
+        if (oldWords) wordGroups = [{ id: Date.now(), title: '旧お題グループ', rawText: oldWords }];
+        else wordGroups = [{ id: Date.now(), title: 'デフォルト', rawText: DEFAULT_WORDS_RAW }];
       }
 
-      // 設定
       try {
         const savedSettings = localStorage.getItem(STORAGE_KEY_SETTINGS);
         if (savedSettings) {
           const settings = JSON.parse(savedSettings);
           enableSpeech = settings.enableSpeech !== undefined ? settings.enableSpeech : true;
           artistPointEnabled = settings.artistPointEnabled !== undefined ? settings.artistPointEnabled : true;
-          if (settings.currentGroupIndex !== undefined && settings.currentGroupIndex >= 0 && settings.currentGroupIndex < wordGroups.length) {
-            currentGroupIndex = settings.currentGroupIndex;
-          }
+          if (settings.currentGroupIndex !== undefined && settings.currentGroupIndex >= 0 && settings.currentGroupIndex < wordGroups.length) currentGroupIndex = settings.currentGroupIndex;
         }
-      } catch (e) {}
+      } catch(e) {}
 
       document.getElementById('speech-toggle').checked = enableSpeech;
       document.getElementById('artist-point-toggle').checked = artistPointEnabled;
-
       updateParsedWordList();
       saveStorageData();
     }
@@ -684,97 +605,53 @@
       try {
         localStorage.setItem(STORAGE_KEY_PLAYERS, JSON.stringify(players));
         localStorage.setItem(STORAGE_KEY_GROUPS, JSON.stringify(wordGroups));
-        localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify({ 
-          enableSpeech, 
-          artistPointEnabled,
-          currentGroupIndex 
-        }));
-      } catch (e) {
-        console.error("Storage save failed:", e);
-      }
+        localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify({ enableSpeech, artistPointEnabled, currentGroupIndex }));
+      } catch(e) { console.error("Storage save failed:", e); }
     }
 
-    function toggleSpeech(checked) {
-      enableSpeech = checked;
-      saveStorageData();
-    }
-
-    function toggleArtistPoint(checked) {
-      artistPointEnabled = checked;
-      saveStorageData();
-    }
+    function toggleSpeech(checked) { enableSpeech = checked; saveStorageData(); }
+    function toggleArtistPoint(checked) { artistPointEnabled = checked; saveStorageData(); }
 
     // ===== お題グループ管理 =====
     function updateParsedWordList() {
-      if (wordGroups.length > 0 && wordGroups[currentGroupIndex]) {
-        parsedWordList = parseWordListFromRaw(wordGroups[currentGroupIndex].rawText);
-      } else {
-        parsedWordList = [];
-      }
+      if (wordGroups.length > 0 && wordGroups[currentGroupIndex]) parsedWordList = parseWordListFromRaw(wordGroups[currentGroupIndex].rawText);
+      else parsedWordList = [];
     }
-
     function parseWordListFromRaw(rawText) {
       const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
       return lines.map(line => {
         const parts = line.split(/\s+/);
-        if (parts.length >= 2) {
-          return { emoji: parts[0], name: parts.slice(1).join(' ') };
-        } else {
-          return { emoji: null, name: line };
-        }
+        if (parts.length >= 2) return { emoji: parts[0], name: parts.slice(1).join(' ') };
+        else return { emoji: null, name: line };
       });
     }
-
     function renderWordGroups() {
       const container = document.getElementById('word-groups-container');
       container.innerHTML = '';
-
       wordGroups.forEach((group, idx) => {
         const card = document.createElement('div');
         card.className = "bg-slate-950 border border-slate-700 rounded-xl p-3 space-y-2";
-
         const isCurrent = idx === currentGroupIndex;
         const count = parseWordListFromRaw(group.rawText).length;
-
         card.innerHTML = `
           <div class="flex items-center justify-between gap-2">
             <div class="flex items-center gap-2 flex-1">
-              <input type="text" value="${group.title}" 
-                     oninput="updateGroupTitle(${group.id}, this.value)" 
-                     class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-xs focus:outline-none focus:border-indigo-500" 
-                     placeholder="グループ名">
+              <input type="text" value="${group.title}" oninput="updateGroupTitle(${group.id}, this.value)" class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-xs focus:outline-none focus:border-indigo-500" placeholder="グループ名">
               ${isCurrent ? '<span class="text-[10px] font-bold text-amber-400 bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 rounded-full">使用中</span>' : ''}
             </div>
-            <button onclick="setCurrentGroupWithSE(${group.id})" class="text-[10px] font-bold px-2 py-1 rounded bg-indigo-700 hover:bg-indigo-600 text-white touch-action-none">
-              使う
-            </button>
-            <button onclick="deleteWordGroupWithSE(${group.id})" class="text-[10px] font-bold px-2 py-1 rounded bg-rose-900/70 hover:bg-rose-800 text-rose-200 border border-rose-700 touch-action-none">
-              ✕
-            </button>
+            <button onclick="setCurrentGroupWithSE(${group.id})" class="text-[10px] font-bold px-2 py-1 rounded bg-indigo-700 hover:bg-indigo-600 text-white touch-action-none">使う</button>
+            <button onclick="deleteWordGroupWithSE(${group.id})" class="text-[10px] font-bold px-2 py-1 rounded bg-rose-900/70 hover:bg-rose-800 text-rose-200 border border-rose-700 touch-action-none">✕</button>
           </div>
-
-          <textarea rows="5" 
-                    oninput="updateGroupRaw(${group.id}, this.value)"
-                    class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-white font-mono text-xs focus:outline-none focus:border-indigo-500 leading-relaxed">${group.rawText}</textarea>
-
+          <textarea rows="5" oninput="updateGroupRaw(${group.id}, this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-white font-mono text-xs focus:outline-none focus:border-indigo-500 leading-relaxed">${group.rawText}</textarea>
           <div class="flex items-center justify-between">
             <span id="group-count-${group.id}" class="text-[11px] text-slate-500">お題数: ${count}個</span>
             <button onclick="loadDefaultToGroupWithSE(${group.id})" class="text-[10px] text-indigo-400 hover:underline font-bold touch-action-none">デフォルトを読み込む</button>
           </div>
         `;
-
         container.appendChild(card);
       });
     }
-
-    function updateGroupTitle(id, value) {
-      const group = wordGroups.find(g => g.id === id);
-      if (group) {
-        group.title = value.trim() || '無題グループ';
-        // 保存は閉じる時にまとめて行う
-      }
-    }
-
+    function updateGroupTitle(id, value) { const group = wordGroups.find(g => g.id === id); if (group) group.title = value.trim() || '無題グループ'; }
     function updateGroupRaw(id, value) {
       const group = wordGroups.find(g => g.id === id);
       if (group) {
@@ -784,98 +661,37 @@
         if (countEl) countEl.innerText = `お題数: ${count}個`;
       }
     }
-
-    function addWordGroupWithSE() {
-      playButtonSE();
-      wordGroups.push({
-        id: Date.now(),
-        title: '新しいグループ',
-        rawText: ''
-      });
-      renderWordGroups();
-    }
-
+    function addWordGroupWithSE() { playButtonSE(); wordGroups.push({ id: Date.now(), title: '新しいグループ', rawText: '' }); renderWordGroups(); }
     function deleteWordGroupWithSE(id) {
       playButtonSE();
-      if (wordGroups.length <= 1) {
-        alert('グループは最低1つ必要です。');
-        return;
-      }
+      if (wordGroups.length <= 1) { alert('グループは最低1つ必要です。'); return; }
       if (confirm('このグループを削除しますか？')) {
         const idx = wordGroups.findIndex(g => g.id === id);
         if (idx !== -1) {
           wordGroups.splice(idx, 1);
-          if (currentGroupIndex >= wordGroups.length) {
-            currentGroupIndex = wordGroups.length - 1;
-          }
-          renderWordGroups();
-          updateParsedWordList();
-          updateStartGroupDisplay();
-          saveStorageData();
+          if (currentGroupIndex >= wordGroups.length) currentGroupIndex = wordGroups.length - 1;
+          renderWordGroups(); updateParsedWordList(); updateStartGroupDisplay(); saveStorageData();
         }
       }
     }
+    function setCurrentGroupWithSE(id) { playButtonSE(); const idx = wordGroups.findIndex(g => g.id === id); if (idx !== -1) { currentGroupIndex = idx; renderWordGroups(); updateParsedWordList(); updateStartGroupDisplay(); saveStorageData(); } }
+    function loadDefaultToGroupWithSE(id) { playButtonSE(); const group = wordGroups.find(g => g.id === id); if (group) { group.rawText = DEFAULT_WORDS_RAW; renderWordGroups(); } }
+    function switchGroupPrevWithSE() { playButtonSE(); if (wordGroups.length === 0) return; currentGroupIndex = (currentGroupIndex - 1 + wordGroups.length) % wordGroups.length; updateParsedWordList(); updateStartGroupDisplay(); saveStorageData(); }
+    function switchGroupNextWithSE() { playButtonSE(); if (wordGroups.length === 0) return; currentGroupIndex = (currentGroupIndex + 1) % wordGroups.length; updateParsedWordList(); updateStartGroupDisplay(); saveStorageData(); }
+    function updateStartGroupDisplay() { const el = document.getElementById('start-group-title'); if (el && wordGroups.length > 0) el.innerText = wordGroups[currentGroupIndex].title; }
 
-    function setCurrentGroupWithSE(id) {
-      playButtonSE();
-      const idx = wordGroups.findIndex(g => g.id === id);
-      if (idx !== -1) {
-        currentGroupIndex = idx;
-        renderWordGroups();
-        updateParsedWordList();
-        updateStartGroupDisplay();
-        saveStorageData();
-      }
-    }
-
-    function loadDefaultToGroupWithSE(id) {
-      playButtonSE();
-      const group = wordGroups.find(g => g.id === id);
-      if (group) {
-        group.rawText = DEFAULT_WORDS_RAW;
-        renderWordGroups();
-      }
-    }
-
-    function switchGroupPrevWithSE() {
-      playButtonSE();
-      if (wordGroups.length === 0) return;
-      currentGroupIndex = (currentGroupIndex - 1 + wordGroups.length) % wordGroups.length;
-      updateParsedWordList();
-      updateStartGroupDisplay();
-      saveStorageData();
-    }
-
-    function switchGroupNextWithSE() {
-      playButtonSE();
-      if (wordGroups.length === 0) return;
-      currentGroupIndex = (currentGroupIndex + 1) % wordGroups.length;
-      updateParsedWordList();
-      updateStartGroupDisplay();
-      saveStorageData();
-    }
-
-    function updateStartGroupDisplay() {
-      const el = document.getElementById('start-group-title');
-      if (el && wordGroups.length > 0) {
-        el.innerText = wordGroups[currentGroupIndex].title;
-      }
-    }
-
-    // ===== キャンバス初期化 =====
+    // ===== キャンバス・レイヤー =====
     function initCanvas() {
       colorCanvas = document.getElementById('color-canvas');
       blackCanvas = document.getElementById('black-canvas');
       colorCtx = colorCanvas.getContext('2d');
       blackCtx = blackCanvas.getContext('2d');
       resizeCanvas();
-
       blackCanvas.addEventListener('pointerdown', startDrawing);
       blackCanvas.addEventListener('pointermove', draw);
       blackCanvas.addEventListener('pointerup', stopDrawing);
       blackCanvas.addEventListener('pointercancel', stopDrawing);
     }
-
     function resizeCanvas() {
       const container = document.getElementById('canvas-container');
       if (!container) return;
@@ -883,84 +699,62 @@
       resizeLayer(colorCanvas, colorCtx, rect);
       resizeLayer(blackCanvas, blackCtx, rect);
     }
-
     function resizeLayer(cv, c, rect) {
       const temp = document.createElement('canvas');
-      temp.width = cv.width;
-      temp.height = cv.height;
+      temp.width = cv.width; temp.height = cv.height;
       const tctx = temp.getContext('2d');
-      if (cv.width > 0) {
-        tctx.drawImage(cv, 0, 0);
-      }
-
-      cv.width = rect.width;
-      cv.height = rect.height;
+      if (cv.width > 0) tctx.drawImage(cv, 0, 0);
+      cv.width = rect.width; cv.height = rect.height;
       c.clearRect(0, 0, cv.width, cv.height);
-
-      if (temp.width > 0) {
-        c.drawImage(temp, 0, 0, cv.width, cv.height);
-      }
+      if (temp.width > 0) c.drawImage(temp, 0, 0, cv.width, cv.height);
     }
-
     function getCanvasCoordinates(e) {
       const rect = blackCanvas.getBoundingClientRect();
-      return {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      };
+      return { x: e.clientX - rect.left, y: e.clientY - rect.top };
     }
 
+    // 描画開始（長押し判定付き）
     function startDrawing(e) {
       unlockAudioAndSpeech();
-      isDrawing = true;
-      startPencilSound();
-
-      const pos = getCanvasCoordinates(e);
-      const colorObj = PEN_COLORS.find(c => c.id === currentPenColor);
+      isPointerDown = true;
+      longPressTriggered = false;
+      startPos = getCanvasCoordinates(e);
+      isDrawing = false;
       drawCtxs = [];
-
-      if (currentPenColor === '#ffffff') {
-        drawCtxs = [colorCtx, blackCtx];
+      longPressTimer = setTimeout(() => {
+        longPressTriggered = true;
+        performFill(startPos.x, startPos.y);
+        stopPencilSound();
+        longPressTimer = null;
+      }, 500);
+    }
+    function draw(e) {
+      if (!isPointerDown || longPressTriggered) return;
+      const pos = getCanvasCoordinates(e);
+      const dx = pos.x - startPos.x, dy = pos.y - startPos.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (longPressTimer && dist > 3) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+        beginDrawing(startPos);
+      }
+      if (isDrawing) {
         drawCtxs.forEach(c => {
-          c.globalCompositeOperation = 'destination-out';
-          c.lineWidth = ERASER_LINE_WIDTH;
-          c.strokeStyle = 'rgba(0,0,0,1)';
-          c.beginPath();
-          c.moveTo(pos.x, pos.y);
-          c.lineCap = 'round';
-          c.lineJoin = 'round';
+          c.lineTo(pos.x, pos.y);
+          c.stroke();
         });
-      } else if (colorObj && colorObj.isOverlayColor) {
-        drawCtxs = [colorCtx];
-        colorCtx.globalCompositeOperation = 'source-over';
-        colorCtx.lineWidth = COLOR_LINE_WIDTH;
-        colorCtx.strokeStyle = currentPenColor;
-        colorCtx.beginPath();
-        colorCtx.moveTo(pos.x, pos.y);
-        colorCtx.lineCap = 'round';
-        colorCtx.lineJoin = 'round';
-      } else {
-        drawCtxs = [blackCtx];
-        blackCtx.globalCompositeOperation = 'source-over';
-        blackCtx.lineWidth = BLACK_LINE_WIDTH;
-        blackCtx.strokeStyle = currentPenColor;
-        blackCtx.beginPath();
-        blackCtx.moveTo(pos.x, pos.y);
-        blackCtx.lineCap = 'round';
-        blackCtx.lineJoin = 'round';
       }
     }
-
-    function draw(e) {
-      if (!isDrawing) return;
-      const pos = getCanvasCoordinates(e);
-      drawCtxs.forEach(c => {
-        c.lineTo(pos.x, pos.y);
-        c.stroke();
-      });
-    }
-
     function stopDrawing() {
+      if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+      if (!longPressTriggered && !isDrawing) {
+        // タップでドットを描く
+        beginDrawing(startPos);
+        drawCtxs.forEach(c => {
+          c.lineTo(startPos.x, startPos.y);
+          c.stroke();
+        });
+      }
       if (isDrawing) {
         drawCtxs.forEach(c => {
           c.closePath();
@@ -969,17 +763,95 @@
         isDrawing = false;
         stopPencilSound();
       }
+      isPointerDown = false;
+    }
+
+    function beginDrawing(pos) {
+      isDrawing = true;
+      startPencilSound();
+      const colorObj = PEN_COLORS.find(c => c.id === currentPenColor);
+      drawCtxs = [];
+      if (currentPenColor === '#ffffff') {
+        drawCtxs = [colorCtx, blackCtx];
+        drawCtxs.forEach(c => {
+          c.globalCompositeOperation = 'destination-out';
+          c.lineWidth = ERASER_LINE_WIDTH;
+          c.strokeStyle = 'rgba(0,0,0,1)';
+          c.beginPath();
+          c.moveTo(pos.x, pos.y);
+          c.lineCap = 'round'; c.lineJoin = 'round';
+        });
+      } else if (colorObj && colorObj.isOverlayColor) {
+        drawCtxs = [colorCtx];
+        colorCtx.globalCompositeOperation = 'source-over';
+        colorCtx.lineWidth = COLOR_LINE_WIDTH;
+        colorCtx.strokeStyle = currentPenColor;
+        colorCtx.beginPath();
+        colorCtx.moveTo(pos.x, pos.y);
+        colorCtx.lineCap = 'round'; colorCtx.lineJoin = 'round';
+      } else {
+        drawCtxs = [blackCtx];
+        blackCtx.globalCompositeOperation = 'source-over';
+        blackCtx.lineWidth = BLACK_LINE_WIDTH;
+        blackCtx.strokeStyle = currentPenColor;
+        blackCtx.beginPath();
+        blackCtx.moveTo(pos.x, pos.y);
+        blackCtx.lineCap = 'round'; blackCtx.lineJoin = 'round';
+      }
+    }
+
+    // フラッドフィル
+    function performFill(x, y) {
+      if (currentPenColor === '#ffffff') return; // 消しゴムでは塗りつぶししない
+      const ctx = currentPenColor === '#000000' ? blackCtx : colorCtx;
+      floodFill(ctx, x, y, currentPenColor);
+      playButtonSE();
+    }
+    function floodFill(ctx, x, y, hexColor) {
+      const w = ctx.canvas.width, h = ctx.canvas.height;
+      if (w === 0 || h === 0) return;
+      const ix = Math.floor(x), iy = Math.floor(y);
+      if (ix < 0 || ix >= w || iy < 0 || iy >= h) return;
+      const imageData = ctx.getImageData(0, 0, w, h);
+      const data = imageData.data;
+      const startIdx = (iy * w + ix) * 4;
+      const sr = data[startIdx], sg = data[startIdx+1], sb = data[startIdx+2], sa = data[startIdx+3];
+      const rgb = hexToRgb(hexColor);
+      const tolerance = 30;
+      const visited = new Uint8Array(w * h);
+      const queue = [iy * w + ix];
+      visited[iy * w + ix] = 1;
+      const match = (idx) => Math.abs(data[idx] - sr) <= tolerance && Math.abs(data[idx+1] - sg) <= tolerance && Math.abs(data[idx+2] - sb) <= tolerance && Math.abs(data[idx+3] - sa) <= tolerance;
+      while (queue.length) {
+        const p = queue.shift();
+        const xp = p % w;
+        const yp = Math.floor(p / w);
+        const idx = p * 4;
+        if (match(idx)) {
+          data[idx] = rgb.r;
+          data[idx+1] = rgb.g;
+          data[idx+2] = rgb.b;
+          data[idx+3] = 255;
+          if (xp > 0 && !visited[p-1]) { visited[p-1]=1; queue.push(p-1); }
+          if (xp < w-1 && !visited[p+1]) { visited[p+1]=1; queue.push(p+1); }
+          if (yp > 0 && !visited[p-w]) { visited[p-w]=1; queue.push(p-w); }
+          if (yp < h-1 && !visited[p+w]) { visited[p+w]=1; queue.push(p+w); }
+        }
+      }
+      ctx.putImageData(imageData, 0, 0);
+    }
+    function hexToRgb(hex) {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? { r: parseInt(result[1],16), g: parseInt(result[2],16), b: parseInt(result[3],16) } : { r:0, g:0, b:0 };
     }
 
     function clearCanvas() {
       colorCtx.clearRect(0, 0, colorCanvas.width, colorCanvas.height);
       blackCtx.clearRect(0, 0, blackCanvas.width, blackCanvas.height);
     }
-
     function getCombinedCanvasDataURL() {
       const temp = document.createElement('canvas');
-      temp.width = colorCanvas.width;
-      temp.height = colorCanvas.height;
+      temp.width = colorCanvas.width; temp.height = colorCanvas.height;
       const tctx = temp.getContext('2d');
       tctx.fillStyle = '#ffffff';
       tctx.fillRect(0, 0, temp.width, temp.height);
@@ -987,22 +859,14 @@
       tctx.drawImage(blackCanvas, 0, 0);
       return temp.toDataURL('image/png');
     }
+    function clearCanvasWithSE() { playButtonSE(); clearCanvas(); }
 
-    function clearCanvasWithSE() {
-      playButtonSE();
-      clearCanvas();
-    }
-
-    // ===== ヘッダーボタン =====
+    // ヘッダーボタン
     function headerMainBtnWithSE() {
       playButtonSE();
-      if (isGaming) {
-        stopGame();
-      } else {
-        openSettings();
-      }
+      if (isGaming) stopGame();
+      else openSettings();
     }
-
     function updateHeaderButton() {
       const btn = document.getElementById('header-main-btn');
       if (isGaming) {
@@ -1015,63 +879,35 @@
     }
 
     // ===== ゲーム進行 =====
-    function toggleGameWithSE() {
-      playButtonSE();
-      toggleGame();
-    }
-
+    function toggleGameWithSE() { playButtonSE(); toggleGame(); }
     function toggleGame() {
       unlockAudioAndSpeech();
-      if (isGaming) {
-        stopGame();
-      } else {
-        startGame();
-      }
+      if (isGaming) stopGame();
+      else startGame();
     }
-
     function startGame() {
-      if (parsedWordList.length === 0) {
-        alert("お題が登録されていません。設定からお題を追加してください。");
-        return;
-      }
-
+      if (parsedWordList.length === 0) { alert("お題が登録されていません。設定からお題を追加してください。"); return; }
       const activePlayers = players.filter(p => p.active);
-      if (activePlayers.length < 1) {
-        alert("ゲームに参加するプレイヤーを最低1名以上設定してください。");
-        return;
-      }
-
-      isGaming = true;
-      isPaused = false;
-      timerSeconds = 60;
-      usedWordIndices.clear();
-
-      roundScores = {};
-      roundDrawingsHistory = [];
+      if (activePlayers.length < 1) { alert("ゲームに参加するプレイヤーを最低1名以上設定してください。"); return; }
+      isGaming = true; isPaused = false; timerSeconds = 60; usedWordIndices.clear();
+      roundScores = {}; roundDrawingsHistory = [];
       players.forEach(p => { roundScores[p.id] = 0; });
-
       document.getElementById('center-start-overlay').classList.add('opacity-0', 'pointer-events-none');
       document.getElementById('footer-active-controls-left').classList.remove('opacity-0', 'pointer-events-none');
       document.getElementById('footer-active-controls-right').classList.remove('opacity-0', 'pointer-events-none');
-
       document.getElementById('btn-skip').disabled = false;
       document.getElementById('btn-correct-trigger').disabled = false;
-
       updateHeaderButton();
       clearCanvas();
       nextWord();
-
       const activePlayersList = players.filter(p => p.active);
       const currentArtist = activePlayersList[currentArtistIndex % activePlayersList.length];
       speakText(getRandomPhrase('start', currentArtist ? currentArtist.name : "アーティスト"));
-
       updateTimerDisplay();
       timerInterval = setInterval(() => {
         if (isPaused) return;
-
         timerSeconds--;
         updateTimerDisplay();
-
         if (timerSeconds === 3) speakText("3");
         else if (timerSeconds === 2) speakText("2");
         else if (timerSeconds === 1) speakText("1");
@@ -1080,22 +916,14 @@
           const art = act[currentArtistIndex % act.length];
           speakText(getRandomPhrase('time30', art ? art.name : "アーティスト"));
         }
-
-        if (timerSeconds <= 0) {
-          finishRound();
-        }
+        if (timerSeconds <= 0) finishRound();
       }, 1000);
     }
-
     function stopGame() {
-      isGaming = false;
-      isPaused = false;
-      clearInterval(timerInterval);
-      
+      isGaming = false; isPaused = false; clearInterval(timerInterval);
       document.getElementById('center-start-overlay').classList.remove('opacity-0', 'pointer-events-none');
       document.getElementById('footer-active-controls-left').classList.add('opacity-0', 'pointer-events-none');
       document.getElementById('footer-active-controls-right').classList.add('opacity-0', 'pointer-events-none');
-
       document.getElementById('btn-skip').disabled = true;
       document.getElementById('btn-correct-trigger').disabled = true;
       document.getElementById('word-display').innerText = "「スタート」を押してね！";
@@ -1103,20 +931,16 @@
       updateCenterArtistDisplay();
       updateHeaderButton();
     }
-
     function finishRound() {
       saveCurrentCanvasToHistory(null, true);
       stopGame();
       playSound('finish');
-      
       const activePlayers = players.filter(p => p.active);
       const artist = activePlayers[currentArtistIndex % activePlayers.length];
       const artistRoundPt = artist ? (roundScores[artist.id] || 0) : 0;
-
       speakText(getRandomPhrase('finishRound', artist ? artist.name : "アーティスト", artistRoundPt));
       showResultModal();
     }
-
     function updateTimerDisplay(overrideSec) {
       const sec = overrideSec !== undefined ? overrideSec : timerSeconds;
       const mm = String(Math.floor(sec / 60)).padStart(2, '0');
@@ -1124,7 +948,6 @@
       document.getElementById('timer-text-overlay').innerText = `${mm}:${ss}`;
       document.getElementById('timer-progress-bar').style.width = `${(sec / 60) * 100}%`;
     }
-
     function saveCurrentCanvasToHistory(winnerPlayer, isUnfinished = false) {
       if (!colorCanvas || !currentWordObj) return;
       try {
@@ -1139,37 +962,21 @@
           winnerName: winnerPlayer ? winnerPlayer.name : null,
           winnerEmoji: winnerPlayer ? winnerPlayer.emoji : null
         });
-      } catch (e) {
-        console.error("Canvas save error:", e);
-      }
+      } catch(e) { console.error("Canvas save error:", e); }
     }
-
     function nextWord() {
-      if (usedWordIndices.size >= parsedWordList.length) {
-        usedWordIndices.clear();
-      }
-
+      if (usedWordIndices.size >= parsedWordList.length) usedWordIndices.clear();
       let randomIndex;
-      do {
-        randomIndex = Math.floor(Math.random() * parsedWordList.length);
-      } while (usedWordIndices.has(randomIndex) && usedWordIndices.size < parsedWordList.length);
-
+      do { randomIndex = Math.floor(Math.random() * parsedWordList.length); } while (usedWordIndices.has(randomIndex) && usedWordIndices.size < parsedWordList.length);
       usedWordIndices.add(randomIndex);
       currentWordObj = parsedWordList[randomIndex];
       currentWordStartTime = timerSeconds;
-      
       document.getElementById('word-display').innerText = currentWordObj.name;
       clearCanvas();
-      // ペンを黒に戻す
       currentPenColor = '#000000';
       renderColorPalette();
     }
-
-    function skipWordWithSE() {
-      playButtonSE();
-      skipWord();
-    }
-
+    function skipWordWithSE() { playButtonSE(); skipWord(); }
     function skipWord() {
       if (!isGaming) return;
       saveCurrentCanvasToHistory(null, true);
@@ -1178,45 +985,26 @@
       speakText(getRandomPhrase('pass', art ? art.name : "アーティスト"));
       nextWord();
     }
-
-    function openAnswerModalWithSE() {
-      playButtonSE();
-      openAnswerModal();
-    }
-
+    function openAnswerModalWithSE() { playButtonSE(); openAnswerModal(); }
     function openAnswerModal() {
       if (!isGaming) return;
       unlockAudioAndSpeech();
       isPaused = true;
-
       playSound('correct');
       speakText(getRandomPhrase('correctAnswerOpen', currentWordObj.name));
-
       const displayContainer = document.getElementById('modal-word-display');
-      
       if (currentWordObj.emoji) {
         displayContainer.innerHTML = `
           <span class="text-9xl md:text-[14rem] leading-none block my-2 drop-shadow-2xl shrink-0 animate-periodic-jump">${currentWordObj.emoji}</span>
-          <span class="text-3xl md:text-5xl font-black text-amber-200 block drop-shadow">${currentWordObj.name}</span>
-        `;
+          <span class="text-3xl md:text-5xl font-black text-amber-200 block drop-shadow">${currentWordObj.name}</span>`;
       } else {
         displayContainer.innerHTML = `<span class="text-5xl md:text-7xl font-black text-amber-200 drop-shadow">${currentWordObj.name}</span>`;
       }
-
       renderAnswerModalGrid();
       document.getElementById('answer-modal').classList.remove('modal-hidden');
     }
-
-    function closeAnswerModalWithSE() {
-      playButtonSE();
-      closeAnswerModal();
-    }
-
-    function closeAnswerModal() {
-      document.getElementById('answer-modal').classList.add('modal-hidden');
-      isPaused = false;
-    }
-
+    function closeAnswerModalWithSE() { playButtonSE(); closeAnswerModal(); }
+    function closeAnswerModal() { document.getElementById('answer-modal').classList.add('modal-hidden'); isPaused = false; }
     function imageSearchWithSE() {
       playButtonSE();
       if (currentWordObj) {
@@ -1224,66 +1012,54 @@
         window.open(`https://www.google.com/search?tbm=isch&q=${query}`, '_blank');
       }
     }
+    function imageSearchByWordWithSE(wordName) {
+      playButtonSE();
+      const query = encodeURIComponent(wordName);
+      window.open(`https://www.google.com/search?tbm=isch&q=${query}`, '_blank');
+    }
 
     function renderAnswerModalGrid() {
       const grid = document.getElementById('answer-modal-grid');
       grid.innerHTML = '';
-
       const activePlayers = players.filter(p => p.active);
       const currentArtist = activePlayers[currentArtistIndex % activePlayers.length];
-
       players.forEach((player) => {
         if (!player.active) return;
-
         const colorStyle = COLOR_OPTIONS[player.colorIdx % COLOR_OPTIONS.length] || COLOR_OPTIONS[0];
         const isArtist = currentArtist && currentArtist.id === player.id;
         const currentRoundPt = roundScores[player.id] || 0;
-
         const btn = document.createElement('button');
         btn.onclick = () => submitCorrectWinner(player.id);
         btn.className = `p-2 rounded-2xl border-2 flex flex-col items-center justify-between transition active:scale-95 shadow-lg relative ${colorStyle.bg} ${colorStyle.border} ${isArtist ? 'ring-4 ring-amber-400 font-black' : ''} touch-action-none`;
-
         btn.innerHTML = `
           ${isArtist ? '<span class="absolute top-2 left-2 bg-amber-400 text-black text-[9px] font-black px-2 py-0.5 rounded-full shadow z-30">アーティスト</span>' : ''}
           <span class="text-4xl md:text-5xl my-1 shrink-0 drop-shadow">${player.emoji}</span>
           <span class="text-xs md:text-sm font-extrabold text-white truncate w-full text-center px-1">${player.name}</span>
-          <span class="mt-1 text-[11px] font-mono font-bold text-amber-300 bg-black/40 px-2 py-0.5 rounded-full border border-white/20">
-            +${currentRoundPt} pt
-          </span>
-        `;
+          <span class="mt-1 text-[11px] font-mono font-bold text-amber-300 bg-black/40 px-2 py-0.5 rounded-full border border-white/20">+${currentRoundPt} pt</span>`;
         grid.appendChild(btn);
       });
     }
-
     function submitCorrectWinner(winnerPlayerId) {
       if (!isGaming) return;
-
       const activePlayers = players.filter(p => p.active);
       const artist = activePlayers[currentArtistIndex % activePlayers.length];
-      
       if (artist && artistPointEnabled) {
         artist.score += 1;
         roundScores[artist.id] = (roundScores[artist.id] || 0) + 1;
       }
-
       const winner = players.find(p => p.id === winnerPlayerId);
       if (winner && winner.id !== artist.id) {
         winner.score += 1;
         roundScores[winner.id] = (roundScores[winner.id] || 0) + 1;
       }
-
       saveCurrentCanvasToHistory(winner, false);
-
       if (winner) speakText(getRandomPhrase('afterCorrectWinner', winner.name));
-
       saveStorageData();
       closeAnswerModal();
-      
       renderTvRankingsWithAnimation();
       triggerScoreAnimation(winnerPlayerId, artist ? artist.id : null);
       nextWord();
     }
-
     function triggerScoreAnimation(winnerId, artistId) {
       const idsToAnimate = new Set([winnerId, artistId].filter(id => id !== null));
       idsToAnimate.forEach(id => {
@@ -1301,17 +1077,11 @@
         }
       });
     }
-
     function renderTvRankingsWithAnimation() {
       const container = document.getElementById('tv-rankings-container');
       const children = Array.from(container.children);
-      children.forEach(child => {
-        const id = child.id;
-        if (id) previousPositions.set(id, child.getBoundingClientRect());
-      });
-
+      children.forEach(child => { const id = child.id; if (id) previousPositions.set(id, child.getBoundingClientRect()); });
       renderTvRankings();
-
       const newChildren = Array.from(container.children);
       newChildren.forEach(child => {
         const id = child.id;
@@ -1330,42 +1100,30 @@
         }
       });
     }
-
     function renderTvRankings() {
       const container = document.getElementById('tv-rankings-container');
       container.innerHTML = '';
-
       const activePlayers = players.filter(p => p.active);
       if (activePlayers.length === 0) return;
-
       const currentArtist = activePlayers[currentArtistIndex % activePlayers.length];
-      const sorted = activePlayers.map((p, originalIndex) => ({...p, originalIndex}))
-        .sort((a, b) => b.score - a.score || a.id - b.id);
-
+      const sorted = activePlayers.map((p, originalIndex) => ({...p, originalIndex})).sort((a,b) => b.score - a.score || a.id - b.id);
       let currentRank = 1;
       const rankedPlayers = sorted.map((player, idx, arr) => {
-        if (idx > 0 && player.score < arr[idx - 1].score) currentRank = idx + 1;
+        if (idx > 0 && player.score < arr[idx-1].score) currentRank = idx + 1;
         return { ...player, displayRank: currentRank };
       });
-
       rankedPlayers.forEach((player) => {
         const colorStyle = COLOR_OPTIONS[player.colorIdx % COLOR_OPTIONS.length] || COLOR_OPTIONS[0];
         const isArtist = currentArtist && currentArtist.id === player.id;
         const rank = player.displayRank;
-
         const card = document.createElement('div');
         card.id = `player-card-${player.id}`;
-        if (!isGaming) {
-          card.onclick = () => selectArtistByCardTap(player.id);
-          card.style.cursor = 'pointer';
-        }
+        if (!isGaming) { card.onclick = () => selectArtistByCardTap(player.id); card.style.cursor = 'pointer'; }
         card.className = `player-card-move w-full flex-1 rounded-xl p-2 flex items-center justify-between border-2 transition relative overflow-hidden shadow-md ${colorStyle.bg} ${colorStyle.border} ${isArtist ? 'ring-4 ring-amber-400 font-black' : 'opacity-90'}`;
-
         let rankBadge = `<span class="text-xs font-bold w-6 text-center text-white/90">${rank}位</span>`;
         if (rank === 1) rankBadge = `<span class="text-sm font-black w-6 text-center">🥇</span>`;
         if (rank === 2) rankBadge = `<span class="text-sm font-black w-6 text-center">🥈</span>`;
         if (rank === 3) rankBadge = `<span class="text-sm font-black w-6 text-center">🥉</span>`;
-
         card.innerHTML = `
           ${isArtist ? '<span class="absolute top-0 right-0 bg-amber-400 text-black text-[8px] font-black px-1.5 py-0.2 rounded-bl-md shadow z-30">アーティスト</span>' : ''}
           <div class="flex items-center space-x-1.5 truncate flex-1 min-w-0 pr-1">
@@ -1375,26 +1133,19 @@
           </div>
           <div class="text-right shrink-0">
             <span class="text-sm md:text-base font-black text-white font-mono bg-black/30 px-1.5 py-0.5 rounded border border-white/20">${player.score} <span class="text-[9px]">pt</span></span>
-          </div>
-        `;
+          </div>`;
         container.appendChild(card);
       });
-
       updateCenterArtistDisplay();
     }
-
     function updateCenterArtistDisplay() {
       const activePlayers = players.filter(p => p.active);
       const currentArtist = activePlayers[currentArtistIndex % activePlayers.length];
       const displayEl = document.getElementById('center-artist-display');
       if (displayEl && currentArtist) {
-        displayEl.innerHTML = `
-          <span class="text-5xl md:text-6xl">${currentArtist.emoji}</span>
-          <span class="text-xl md:text-2xl font-black text-white">${currentArtist.name}</span>
-        `;
+        displayEl.innerHTML = `<span class="text-5xl md:text-6xl">${currentArtist.emoji}</span><span class="text-xl md:text-2xl font-black text-white">${currentArtist.name}</span>`;
       }
     }
-
     function selectArtistByCardTap(playerId) {
       if (isGaming) return;
       playButtonSE();
@@ -1408,32 +1159,12 @@
       }
     }
 
-    // ===== 設定モーダル =====
-    function openSettingsWithSE() {
-      playButtonSE();
-      openSettings();
-    }
-
-    function closeSettingsWithSE() {
-      playButtonSE();
-      closeSettings();
-    }
-
-    function saveAndCloseSettingsWithSE() {
-      playButtonSE();
-      saveAndCloseSettings();
-    }
-
-    function switchTabWithSE(tabName) {
-      playButtonSE();
-      switchTab(tabName);
-    }
-
-    function resetScoresWithSE() {
-      playButtonSE();
-      resetScores();
-    }
-
+    // 設定モーダル
+    function openSettingsWithSE() { playButtonSE(); openSettings(); }
+    function closeSettingsWithSE() { playButtonSE(); closeSettings(); }
+    function saveAndCloseSettingsWithSE() { playButtonSE(); saveAndCloseSettings(); }
+    function switchTabWithSE(tabName) { playButtonSE(); switchTab(tabName); }
+    function resetScoresWithSE() { playButtonSE(); resetScores(); }
     function openSettings() {
       if (isGaming) stopGame();
       renderPlayersSettingsList();
@@ -1441,61 +1172,41 @@
       updateStartGroupDisplay();
       document.getElementById('settings-modal').classList.remove('modal-hidden');
     }
-
-    function closeSettings() {
-      document.getElementById('settings-modal').classList.add('modal-hidden');
-    }
-
+    function closeSettings() { document.getElementById('settings-modal').classList.add('modal-hidden'); }
     function saveAndCloseSettings() {
-      // グループの情報はoninputで逐次更新済み
-      if (wordGroups.length === 0) {
-        alert('お題グループがありません。');
-        return;
-      }
-      if (wordGroups[currentGroupIndex] && parseWordListFromRaw(wordGroups[currentGroupIndex].rawText).length === 0) {
-        alert('現在選択中のお題グループにお題がありません。');
-        return;
-      }
-
+      if (wordGroups.length === 0) { alert('お題グループがありません。'); return; }
+      if (wordGroups[currentGroupIndex] && parseWordListFromRaw(wordGroups[currentGroupIndex].rawText).length === 0) { alert('現在選択中のお題グループにお題がありません。'); return; }
       updateParsedWordList();
       saveStorageData();
       renderTvRankings();
       updateStartGroupDisplay();
       closeSettings();
     }
-
     function switchTab(tabName) {
       const tabPlayers = document.getElementById('tab-content-players');
       const tabWords = document.getElementById('tab-content-words');
       const btnPlayers = document.getElementById('tab-btn-players');
       const btnWords = document.getElementById('tab-btn-words');
-
       if (tabName === 'players') {
-        tabPlayers.classList.remove('modal-hidden');
-        tabWords.classList.add('modal-hidden');
+        tabPlayers.classList.remove('modal-hidden'); tabWords.classList.add('modal-hidden');
         btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none";
         btnWords.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none";
       } else {
-        tabPlayers.classList.add('modal-hidden');
-        tabWords.classList.remove('modal-hidden');
+        tabPlayers.classList.add('modal-hidden'); tabWords.classList.remove('modal-hidden');
         btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none";
         btnWords.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none";
         renderWordGroups();
       }
     }
-
     function renderPlayersSettingsList() {
       const container = document.getElementById('players-list-container');
       container.innerHTML = '';
       const activePlayers = players.filter(p => p.active);
-
       players.forEach((player) => {
         const activeIdx = activePlayers.findIndex(p => p.id === player.id);
         const isArtist = activeIdx === (currentArtistIndex % (activePlayers.length || 1));
-
         const card = document.createElement('div');
         card.className = `p-3 rounded-xl border flex flex-col justify-between space-y-2 bg-slate-950 ${player.active ? 'border-slate-700' : 'border-slate-800 opacity-50'}`;
-
         card.innerHTML = `
           <div class="flex items-center justify-between">
             <span class="font-bold text-slate-300 text-xs">P${player.id + 1}</span>
@@ -1504,199 +1215,50 @@
               <input type="checkbox" ${player.active ? 'checked' : ''} onchange="togglePlayerActive(${player.id})" class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0">
             </label>
           </div>
-
           <div class="flex space-x-2">
             <select onchange="updatePlayerEmoji(${player.id}, this.value)" class="bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-lg text-white focus:outline-none">
               ${EMOJI_OPTIONS.map(e => `<option value="${e}" ${e === player.emoji ? 'selected' : ''}>${e}</option>`).join('')}
             </select>
             <input type="text" value="${player.name}" onchange="updatePlayerName(${player.id}, this.value)" class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-xs focus:outline-none focus:border-indigo-500" placeholder="名前">
           </div>
-
           <div class="space-y-1">
             <span class="text-[10px] text-slate-400 block">テーマカラー:</span>
             <div class="flex flex-wrap gap-1">
-              ${COLOR_OPTIONS.map((c, i) => `
-                <button onclick="updatePlayerColor(${player.id}, ${i})" class="w-4 h-4 rounded-full ${c.bg} border ${i === player.colorIdx ? 'border-white ring-2 ring-indigo-400 scale-110 z-10' : 'border-transparent opacity-70 hover:opacity-100'} touch-action-none"></button>
-              `).join('')}
+              ${COLOR_OPTIONS.map((c, i) => `<button onclick="updatePlayerColor(${player.id}, ${i})" class="w-4 h-4 rounded-full ${c.bg} border ${i === player.colorIdx ? 'border-white ring-2 ring-indigo-400 scale-110 z-10' : 'border-transparent opacity-70 hover:opacity-100'} touch-action-none"></button>`).join('')}
             </div>
           </div>
-
           <div class="flex items-center justify-between pt-1 border-t border-slate-800 text-xs">
             <span class="font-mono text-amber-400 font-bold">${player.score} pt</span>
-            ${player.active ? `
-              <button onclick="setArtistByPlayerId(${player.id})" class="px-2 py-0.5 rounded text-[10px] font-bold ${isArtist ? 'bg-amber-500 text-black' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'} touch-action-none">
-                ${isArtist ? '★ アーティスト' : 'アーティストに指定'}
-              </button>
-            ` : '<span></span>'}
-          </div>
-        `;
+            ${player.active ? `<button onclick="setArtistByPlayerId(${player.id})" class="px-2 py-0.5 rounded text-[10px] font-bold ${isArtist ? 'bg-amber-500 text-black' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'} touch-action-none">${isArtist ? '★ アーティスト' : 'アーティストに指定'}</button>` : '<span></span>'}
+          </div>`;
         container.appendChild(card);
       });
     }
+    function togglePlayerActive(playerId) { playButtonSE(); const p = players.find(x => x.id === playerId); if (p) { p.active = !p.active; saveStorageData(); renderPlayersSettingsList(); } }
+    function updatePlayerName(playerId, newName) { const p = players.find(x => x.id === playerId); if (p) { p.name = newName.trim() || `プレイヤー${playerId + 1}`; saveStorageData(); } }
+    function updatePlayerEmoji(playerId, emoji) { playButtonSE(); const p = players.find(x => x.id === playerId); if (p) { p.emoji = emoji; saveStorageData(); } }
+    function updatePlayerColor(playerId, colorIdx) { playButtonSE(); const p = players.find(x => x.id === playerId); if (p) { p.colorIdx = colorIdx; saveStorageData(); renderPlayersSettingsList(); } }
+    function setArtistByPlayerId(playerId) { playButtonSE(); const activePlayers = players.filter(p => p.active); const idx = activePlayers.findIndex(p => p.id === playerId); if (idx !== -1) { currentArtistIndex = idx; renderPlayersSettingsList(); } }
+    function resetScores() { if (confirm("全員のスコアを 0 pt にリセットしますか？")) { players.forEach(p => p.score = 0); roundScores = {}; saveStorageData(); renderPlayersSettingsList(); renderTvRankings(); } }
 
-    function togglePlayerActive(playerId) {
-      playButtonSE();
-      const p = players.find(x => x.id === playerId);
-      if (p) {
-        p.active = !p.active;
-        saveStorageData();
-        renderPlayersSettingsList();
-      }
-    }
-
-    function updatePlayerName(playerId, newName) {
-      const p = players.find(x => x.id === playerId);
-      if (p) {
-        p.name = newName.trim() || `プレイヤー${playerId + 1}`;
-        saveStorageData();
-      }
-    }
-
-    function updatePlayerEmoji(playerId, emoji) {
-      playButtonSE();
-      const p = players.find(x => x.id === playerId);
-      if (p) {
-        p.emoji = emoji;
-        saveStorageData();
-      }
-    }
-
-    function updatePlayerColor(playerId, colorIdx) {
-      playButtonSE();
-      const p = players.find(x => x.id === playerId);
-      if (p) {
-        p.colorIdx = colorIdx;
-        saveStorageData();
-        renderPlayersSettingsList();
-      }
-    }
-
-    function setArtistByPlayerId(playerId) {
-      playButtonSE();
-      const activePlayers = players.filter(p => p.active);
-      const idx = activePlayers.findIndex(p => p.id === playerId);
-      if (idx !== -1) {
-        currentArtistIndex = idx;
-        renderPlayersSettingsList();
-      }
-    }
-
-    function resetScores() {
-      if (confirm("全員のスコアを 0 pt にリセットしますか？")) {
-        players.forEach(p => p.score = 0);
-        roundScores = {};
-        saveStorageData();
-        renderPlayersSettingsList();
-        renderTvRankings();
-      }
-    }
-
-    // ===== 音声フレーズ =====
-    const VOICE_PHRASES = {
-      start: [
-        (artist) => `よーい、スタート！${artist}画伯、魂の一作をお願いします！`,
-        (artist) => `お絵描きタイム、スタート〜！アーティスト${artist}さんの登場です！`,
-        (artist) => `${artist}さん、ペンを持ってスタート！最高の一枚を描いてね！`,
-        (artist) => `さあ ${artist}さん、気合を入れてお絵描き開始です！`
-      ],
-      selectArtistManual: [
-        (artist) => `${artist}さんがアーティストに選ばれました！よろしくね！`,
-        (artist) => `次のお絵描きは${artist}さん！頑張ってください！`,
-        (artist) => `${artist}画伯の登場です！どんな名作を描くかな？`
-      ],
-      correctAnswerOpen: [
-        (word) => `正解は${word}でした！お見事！`,
-        (word) => `答えはこちら、${word}でした！分かったかな？`,
-        (word) => `正解発表！${word}でした！ナイス推理！`,
-        (word) => `見事に描けていましたね！正解は${word}です！`
-      ],
-      afterCorrectWinner: [
-        (name) => `${name}さん大正解！鋭い洞察力に拍手！`,
-        (name) => `${name}さんお見事！次のお題もこの調子でいきましょう！`,
-        (name) => `${name}さんナイス推理！次は何が飛び出すかな？`,
-        (name) => `素晴らしいヒラメキです！${name}さん大正解！`
-      ],
-      pass: [
-        (artist) => `パス！${artist}さん、次のお題へいくよ〜！`,
-        (artist) => `うーん難しかった！${artist}さん、次いってみよう！`,
-        (artist) => `パス！どんどん描いていこう${artist}さん！`
-      ],
-      time30: [
-        (artist) => `残り、30秒だよ！${artist}さん急いで！`,
-        (artist) => `折り返し！あと30秒です${artist}さん！`
-      ],
-      time10: [
-        (artist) => `残り10秒！${artist}さん急いで急いで！`,
-        (artist) => `ラスト10秒！${artist}さんラストスパート！`
-      ],
-      finishRound: [
-        (name, score) => `${name}さん、${score}ポイント獲得って凄いですね！素晴らしい作品集です！`,
-        (name, score) => `${name}さん、${score}ポイント獲得！画伯の才能が光っていましたね！`,
-        (name, score) => `${name}さん、${score}ポイント獲得！見事なキャンバスさばきでした！`
-      ],
-      nextArtist: [
-        (name) => `次のアーティストは${name}さん。頑張ってね！`,
-        (name) => `次は${name}さんのターンです！名作を期待しています！`,
-        (name) => `さあ、アーティスト${name}さんの登場です！楽しんで描いてね！`
-      ],
-      drawingTimeComment: [
-        (name, sec) => `${name}のイラスト、わずか${sec}秒で完成！スピード違反レベルです！`,
-        (name, sec) => `${name}のイラストは${sec}秒かかりましたが大健闘です！`,
-        (name, sec) => `${name}は${sec}秒のスピード作成！お見事です！`,
-        (name, sec) => `${name}のイラスト！時間をじっくりかけて見事に仕上げましたね！`
-      ],
-      unfinishedComment: [
-        (name) => `${name}のイラスト！途中の描画ですが${name}画伯の情熱がひしひしと伝わります！`,
-        (name) => `${name}の作品！タイムアップとなりましたが個性あふれる一枚ですね！`,
-        (name) => `${name}のイラスト！途中の状態も味わい深くて素敵です！`
-      ]
-    };
-
-    function getRandomPhrase(key, p1, p2) {
-      const list = VOICE_PHRASES[key];
-      if (!list || list.length === 0) return "";
-      const item = list[Math.floor(Math.random() * list.length)];
-      return typeof item === 'function' ? item(p1, p2) : item;
-    }
-
-    // ===== 結果モーダル =====
+    // 結果モーダル
     function saveDrawingAsImage(dataUrl, wordName, artistName, timeTaken) {
       playButtonSE();
       const img = new Image();
       img.onload = () => {
         const c = document.createElement('canvas');
-        c.width = 1080;
-        c.height = 1080;
+        c.width = 1080; c.height = 1080;
         const cx = c.getContext('2d');
-
-        const grad = cx.createLinearGradient(0, 0, 0, 1080);
-        grad.addColorStop(0, '#0f172a');
-        grad.addColorStop(1, '#1e1b4b');
-        cx.fillStyle = grad;
-        cx.fillRect(0, 0, 1080, 1080);
-
-        cx.fillStyle = '#fef3c7';
-        cx.font = 'bold 48px sans-serif';
-        cx.textAlign = 'center';
-        cx.fillText(`${wordName}`, 540, 85);
-
-        cx.fillStyle = '#ffffff';
-        cx.roundRect(90, 110, 900, 780, 24);
-        cx.fill();
-        cx.drawImage(img, 110, 130, 860, 740);
-
-        cx.fillStyle = '#fbbf24';
-        cx.font = 'bold 44px sans-serif';
-        cx.textAlign = 'center';
-        cx.fillText(`${artistName}`, 540, 955);
-
-        const now = new Date();
-        const days = ['日', '月', '火', '水', '木', '金', '土'];
+        const grad = cx.createLinearGradient(0,0,0,1080);
+        grad.addColorStop(0,'#0f172a'); grad.addColorStop(1,'#1e1b4b');
+        cx.fillStyle = grad; cx.fillRect(0,0,1080,1080);
+        cx.fillStyle = '#fef3c7'; cx.font = 'bold 48px sans-serif'; cx.textAlign = 'center'; cx.fillText(`${wordName}`, 540, 85);
+        cx.fillStyle = '#ffffff'; cx.roundRect(90,110,900,780,24); cx.fill();
+        cx.drawImage(img, 110,130,860,740);
+        cx.fillStyle = '#fbbf24'; cx.font = 'bold 44px sans-serif'; cx.textAlign = 'center'; cx.fillText(`${artistName}`, 540, 955);
+        const now = new Date(); const days = ['日','月','火','水','木','金','土'];
         const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日(${days[now.getDay()]}) ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}  所要時間 ${timeTaken}秒`;
-        cx.fillStyle = '#94a3b8';
-        cx.font = '22px sans-serif';
-        cx.fillText(dateStr, 540, 1015);
-
+        cx.fillStyle = '#94a3b8'; cx.font = '22px sans-serif'; cx.fillText(dateStr, 540, 1015);
         const link = document.createElement('a');
         link.download = `${wordName}_${artistName}.png`;
         link.href = c.toDataURL('image/png');
@@ -1704,31 +1266,23 @@
       };
       img.src = dataUrl;
     }
-
     function showResultModal() {
       const list = document.getElementById('result-ranking-list');
       const gallery = document.getElementById('result-drawings-gallery');
       const galleryTitle = document.getElementById('result-gallery-title');
-      
-      list.innerHTML = '';
-      gallery.innerHTML = '';
-
+      list.innerHTML = ''; gallery.innerHTML = '';
       const activePlayers = players.filter(p => p.active);
       const currentArtist = activePlayers[currentArtistIndex % activePlayers.length];
       const artistName = currentArtist ? currentArtist.name : "アーティスト";
-
       galleryTitle.innerText = `${artistName}さんのアート作品`;
 
       const detectives = activePlayers.filter(p => !currentArtist || p.id !== currentArtist.id);
-      const roundRanked = detectives.map(p => ({...p, roundScore: roundScores[p.id] || 0}))
-        .sort((a, b) => b.roundScore - a.roundScore || b.id - a.id);
-
+      const roundRanked = detectives.map(p => ({...p, roundScore: roundScores[p.id] || 0})).sort((a,b) => b.roundScore - a.roundScore || b.id - a.id);
       let currentRank = 1;
       const rankedRoundDetectives = roundRanked.map((player, idx, arr) => {
-        if (idx > 0 && player.roundScore < arr[idx - 1].roundScore) currentRank = idx + 1;
+        if (idx > 0 && player.roundScore < arr[idx-1].roundScore) currentRank = idx + 1;
         return { ...player, displayRank: currentRank };
       });
-
       rankedRoundDetectives.forEach((player) => {
         const item = document.createElement('div');
         const isZero = player.roundScore === 0;
@@ -1737,26 +1291,22 @@
         if (player.displayRank === 1) rankBadge = `<span class="font-bold text-xs text-amber-400 w-10 text-left">🥇 1位</span>`;
         if (player.displayRank === 2) rankBadge = `<span class="font-bold text-xs text-amber-400 w-10 text-left">🥈 2位</span>`;
         if (player.displayRank === 3) rankBadge = `<span class="font-bold text-xs text-amber-400 w-10 text-left">🥉 3位</span>`;
-
         item.innerHTML = `
           <div class="flex items-center space-x-1.5 truncate">
             ${rankBadge}
             <span class="text-lg">${player.emoji}</span>
             <span class="text-white font-bold text-xs truncate max-w-[80px]">${player.name}</span>
           </div>
-          <div class="text-right font-mono font-black ${isZero ? 'text-slate-500' : 'text-amber-300'} text-xs shrink-0">
-            +${player.roundScore} <span class="text-[9px] text-slate-400">(累計${player.score}pt)</span>
-          </div>
-        `;
+          <div class="text-right font-mono font-black ${isZero ? 'text-slate-500' : 'text-amber-300'} text-xs shrink-0">+${player.roundScore} <span class="text-[9px] text-slate-400">(累計${player.score}pt)</span></div>`;
         list.appendChild(item);
       });
-
       if (roundDrawingsHistory.length === 0) {
         gallery.innerHTML = `<div class="col-span-3 text-slate-500 text-xs py-12 text-center w-full">このラウンドで描かれた作品はありません</div>`;
       } else {
         roundDrawingsHistory.forEach((item, index) => {
           const card = document.createElement('div');
           card.className = "bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/30 rounded-xl p-2 flex flex-col items-center space-y-1.5 text-center shadow-lg relative";
+          const safeWordName = item.wordName.replace(/'/g, "\\'");
           card.innerHTML = `
             <div class="w-full h-24 md:h-28 bg-white rounded-lg overflow-hidden border-2 border-slate-800 shadow-inner flex items-center justify-center p-1 relative">
               <img src="${item.dataUrl}" class="max-w-full max-h-full object-contain">
@@ -1768,46 +1318,33 @@
               </div>
               <div class="flex items-center space-x-1 shrink-0">
                 <span class="text-[10px] font-mono bg-amber-500/20 text-amber-300 px-1 py-0.2 rounded border border-amber-500/30">${item.timeTaken}秒</span>
-                <button onclick="saveDrawingAsImage('${item.dataUrl}', '${item.wordName}', '${artistName}', ${item.timeTaken})" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow border border-indigo-400 active:scale-95 transition touch-action-none">📥</button>
+                <button onclick="saveDrawingAsImage('${item.dataUrl}', '${safeWordName}', '${artistName}', ${item.timeTaken})" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow border border-indigo-400 active:scale-95 transition touch-action-none">📥</button>
+                <button onclick="imageSearchByWordWithSE('${safeWordName}')" class="bg-slate-600 hover:bg-slate-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow border border-slate-400 active:scale-95 transition touch-action-none">🔍</button>
               </div>
             </div>
             <div class="text-[10px] text-slate-400 truncate w-full text-center border-t border-slate-800/80 pt-1">
               ${item.winnerName ? `<span class="text-emerald-400 font-bold">🎉 正解: ${item.winnerEmoji || ''}${item.winnerName}</span>` : '<span class="text-slate-500">（途中作品 / 未完成）</span>'}
-            </div>
-          `;
+            </div>`;
           gallery.appendChild(card);
-
-          if (index === roundDrawingsHistory.length - 1 && item.isUnfinished) {
-            speakText(getRandomPhrase('unfinishedComment', artistName));
-          } else {
-            speakText(getRandomPhrase('drawingTimeComment', artistName, item.timeTaken));
-          }
+          if (index === roundDrawingsHistory.length - 1 && item.isUnfinished) speakText(getRandomPhrase('unfinishedComment', artistName));
+          else speakText(getRandomPhrase('drawingTimeComment', artistName, item.timeTaken));
         });
       }
-
       if (activePlayers.length > 0) {
         currentArtistIndex = (currentArtistIndex + 1) % activePlayers.length;
         renderTvRankings();
       }
-
       document.getElementById('result-modal').classList.remove('modal-hidden');
     }
-
-    function closeResultModalWithSE() {
-      playButtonSE();
-      closeResultModal();
-    }
-
+    function closeResultModalWithSE() { playButtonSE(); closeResultModal(); }
     function closeResultModal() {
       document.getElementById('result-modal').classList.add('modal-hidden');
       const activePlayers = players.filter(p => p.active);
       const nextArtist = activePlayers[currentArtistIndex % activePlayers.length];
-      if (nextArtist) {
-        speakText(getRandomPhrase('nextArtist', nextArtist.name));
-      }
+      if (nextArtist) speakText(getRandomPhrase('nextArtist', nextArtist.name));
     }
 
-    // ===== 初期化 =====
+    // 初期化
     window.addEventListener('DOMContentLoaded', () => {
       loadStorageData();
       initCanvas();
@@ -1817,7 +1354,6 @@
       updateHeaderButton();
       window.addEventListener('resize', resizeCanvas);
     });
-
     function renderColorPalette() {
       const container = document.getElementById('color-palette');
       container.innerHTML = '';
@@ -1829,11 +1365,7 @@
         container.appendChild(btn);
       });
     }
-
-    function selectPenColor(hexColor) {
-      currentPenColor = hexColor;
-      renderColorPalette();
-    }
+    function selectPenColor(hexColor) { currentPenColor = hexColor; renderColorPalette(); }
   </script>
 </body>
 </html>
