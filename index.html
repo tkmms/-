@@ -11,7 +11,6 @@
   <meta name="apple-mobile-web-app-title" content="アテテ！">
   <meta name="theme-color" content="#020617">
   
-  <!-- PWA Web App Manifest -->
   <link rel="manifest" href='data:application/manifest+json,{"name":"アテテ！","short_name":"アテテ！","start_url":".","display":"standalone","background_color":"#020617","theme_color":"#020617"}'>
 
   <script src="https://cdn.tailwindcss.com"></script>
@@ -28,6 +27,7 @@
       overflow: hidden;
       background-color: #020617;
       color: #f8fafc;
+      -webkit-tap-highlight-color: transparent;
     }
 
     canvas {
@@ -77,7 +77,6 @@
       pointer-events: none;
     }
 
-    /* モーダル確実非表示用 */
     .modal-hidden {
       display: none !important;
     }
@@ -88,7 +87,7 @@
   <!-- 0. テレビ枠外（iPad画面最上部）のツールコントロール -->
   <header class="absolute top-0.5 left-0 right-0 z-30 px-[5vw] flex items-center justify-between pointer-events-auto">
     <div class="flex items-center space-x-3">
-      <button onclick="openSettingsWithSE()" class="bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1 rounded-xl text-xs font-bold shadow-lg flex items-center space-x-1 active:scale-95 transition touch-action-none">
+      <button id="header-main-btn" onclick="headerMainBtnWithSE()" class="bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1 rounded-xl text-xs font-bold shadow-lg flex items-center space-x-1 active:scale-95 transition touch-action-none">
         <span>⚙️ 設定</span>
       </button>
       <span class="text-base md:text-lg font-black text-amber-300 tracking-wider drop-shadow">アテテ！</span>
@@ -123,7 +122,8 @@
         </div>
 
         <div id="canvas-container" class="flex-1 w-full relative bg-white rounded-2xl overflow-hidden shadow-2xl border-2 border-slate-800 min-h-0">
-          <canvas id="paint-canvas" class="w-full h-full"></canvas>
+          <canvas id="color-canvas" class="absolute inset-0 w-full h-full"></canvas>
+          <canvas id="black-canvas" class="absolute inset-0 w-full h-full"></canvas>
 
           <div id="center-start-overlay" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 z-20 transition-opacity duration-300">
             <div class="text-center space-y-4">
@@ -131,6 +131,13 @@
               <div id="center-artist-display" class="flex items-center justify-center space-x-3 bg-slate-900 border-2 border-amber-500/60 px-6 py-4 rounded-3xl shadow-2xl">
                 <!-- アーティスト絵文字と名前 -->
               </div>
+
+              <div class="bg-slate-900/80 border border-slate-700 px-3 py-1 rounded-full flex items-center space-x-2 w-fit mx-auto">
+                <button onclick="switchGroupPrevWithSE()" class="text-slate-300 hover:text-white text-lg font-black touch-action-none">◀</button>
+                <span id="start-group-title" class="text-xs font-bold text-white whitespace-nowrap">デフォルト</span>
+                <button onclick="switchGroupNextWithSE()" class="text-slate-300 hover:text-white text-lg font-black touch-action-none">▶</button>
+              </div>
+
               <button onclick="toggleGameWithSE()" class="mt-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-4 px-12 rounded-3xl text-2xl md:text-3xl border-4 border-emerald-300 shadow-2xl active:scale-95 transition animate-bounce touch-action-none">
                 ▶️ スタート！
               </button>
@@ -152,10 +159,7 @@
     <div class="w-full bg-amber-500/10 border-2 border-amber-500/50 rounded-2xl px-4 py-1.5 flex items-center justify-between relative shadow-inner h-full overflow-hidden gap-3">
       
       <div id="footer-active-controls-left" class="flex items-center space-x-2 shrink-0 opacity-0 pointer-events-none transition-opacity duration-300">
-        <button id="btn-start" onclick="toggleGameWithSE()" class="bg-rose-600 hover:bg-rose-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs md:text-sm border border-rose-400 shadow active:scale-95 transition touch-action-none">
-          中断
-        </button>
-        <button id="btn-skip" onclick="skipWordWithSE()" disabled class="bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white font-bold py-2.5 px-3 rounded-xl text-xs border border-slate-600 active:scale-95 transition touch-action-none">
+        <button id="btn-skip" onclick="skipWordWithSE()" disabled class="bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white font-black py-4 px-8 rounded-2xl text-base md:text-lg border border-slate-600 shadow-lg active:scale-95 transition touch-action-none">
           パス
         </button>
       </div>
@@ -167,7 +171,7 @@
       </div>
 
       <div id="footer-active-controls-right" class="flex items-center shrink-0 opacity-0 pointer-events-none transition-opacity duration-300">
-        <button id="btn-correct-trigger" onclick="openAnswerModalWithSE()" disabled class="bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black font-black py-2.5 px-6 rounded-xl text-xs md:text-base border border-amber-300 shadow-lg active:scale-95 transition touch-action-none">
+        <button id="btn-correct-trigger" onclick="openAnswerModalWithSE()" disabled class="bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black font-black py-4 px-8 rounded-2xl text-base md:text-lg border border-amber-300 shadow-lg active:scale-95 transition touch-action-none">
           🎉 正解！
         </button>
       </div>
@@ -198,7 +202,10 @@
 
       </div>
 
-      <div class="flex justify-end pt-1 border-t border-slate-800 shrink-0">
+      <div class="flex justify-end pt-1 border-t border-slate-800 shrink-0 gap-2">
+        <button onclick="imageSearchWithSE()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-1.5 rounded-xl text-xs font-bold border border-indigo-400 active:scale-95 transition touch-action-none">
+          🔍 画像検索
+        </button>
         <button onclick="closeAnswerModalWithSE()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-6 py-1.5 rounded-xl text-xs font-bold border border-slate-700 active:scale-95 transition touch-action-none">
           キャンセル（ゲーム再開）
         </button>
@@ -223,14 +230,20 @@
               👥 プレイヤー編集
             </button>
             <button id="tab-btn-words" onclick="switchTabWithSE('words')" class="px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none">
-              📝 お題一括登録（絵文字対応）
+              📝 お題グループ編集
             </button>
           </div>
 
-          <label class="flex items-center space-x-2 cursor-pointer bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
-            <span class="text-xs text-slate-300 font-bold">🔊 実況音声</span>
-            <input type="checkbox" id="speech-toggle" onchange="toggleSpeech(this.checked)" checked class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0">
-          </label>
+          <div class="flex items-center gap-3">
+            <label class="flex items-center space-x-2 cursor-pointer bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+              <span class="text-xs text-slate-300 font-bold">🔊 実況音声</span>
+              <input type="checkbox" id="speech-toggle" onchange="toggleSpeech(this.checked)" checked class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0">
+            </label>
+            <label class="flex items-center space-x-2 cursor-pointer bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+              <span class="text-xs text-slate-300 font-bold">🎨 アーティストpt</span>
+              <input type="checkbox" id="artist-point-toggle" onchange="toggleArtistPoint(this.checked)" checked class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0">
+            </label>
+          </div>
         </div>
 
         <div id="tab-content-players" class="space-y-4">
@@ -252,16 +265,18 @@
           <div class="bg-indigo-950/60 border border-indigo-500/40 p-3 rounded-xl">
             <span class="text-xs font-bold text-indigo-200 block mb-1">お題の入力形式について</span>
             <p class="text-[11px] text-slate-300">
-              「<span class="text-amber-300 font-bold">🎺 トランペット</span>」のように、絵文字と名前をスペース区切りで1行ずつ入力してください。
+              「<span class="text-amber-300 font-bold">🎺 トランペット</span>」のように、絵文字と名前をスペース区切りで1行ずつ入力してください。<br>
+              グループごとにお題を保存でき、スタート画面で切り替えられます。
             </p>
           </div>
 
-          <textarea id="words-input" rows="10" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 leading-relaxed" placeholder="🎺 トランペット&#10;🎻 バイオリン&#10;🎤 マイク&#10;🚗 自動車&#10;⚽ サッカー"></textarea>
-          
-          <div class="flex justify-between items-center text-xs text-slate-500">
-            <span id="words-count-display">現在のお題数: 0個</span>
-            <button onclick="loadDefaultWordsWithSE()" class="text-indigo-400 hover:underline font-bold touch-action-none">デフォルトのお題を読み込む</button>
+          <div id="word-groups-container" class="space-y-4">
+            <!-- 動的生成 -->
           </div>
+
+          <button onclick="addWordGroupWithSE()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-lg border border-slate-600 active:scale-95 transition touch-action-none">
+            ＋ グループを追加
+          </button>
         </div>
       </div>
 
@@ -320,6 +335,7 @@
   <script>
     const STORAGE_KEY_PLAYERS = 'atete_app_players_v18';
     const STORAGE_KEY_WORDS = 'atete_app_words_v18';
+    const STORAGE_KEY_GROUPS = 'atete_app_word_groups_v1';
     const STORAGE_KEY_SETTINGS = 'atete_app_settings_v18';
 
     const OLD_PLAYER_KEYS = ['atete_app_players_v17', 'oekaki_app_players_v16'];
@@ -337,7 +353,10 @@
       { id: "#3b82f6", name: "青", bg: "bg-blue-500", isOverlayColor: true },
       { id: "#a855f7", name: "紫", bg: "bg-purple-500", isOverlayColor: true },
       { id: "#ec4899", name: "ピンク", bg: "bg-pink-500", isOverlayColor: true },
-      { id: "#ffffff", name: "白", bg: "bg-white border border-gray-400", isOverlayColor: false },
+      { id: "#4b5563", name: "濃い灰色", bg: "bg-gray-600", isOverlayColor: true },
+      { id: "#92400e", name: "茶色", bg: "bg-amber-800", isOverlayColor: true },
+      { id: "#fdba74", name: "肌色", bg: "bg-orange-300", isOverlayColor: true },
+      { id: "#ffffff", name: "白（消しゴム）", bg: "bg-white border border-gray-400", isOverlayColor: false },
     ];
 
     const COLOR_OPTIONS = [
@@ -406,9 +425,11 @@
     ];
 
     let players = [];
-    let rawWordInputText = DEFAULT_WORDS_RAW;
+    let wordGroups = [];
+    let currentGroupIndex = 0;
     let parsedWordList = [];
     let enableSpeech = true;
+    let artistPointEnabled = true;
     let currentArtistIndex = 0;
     let usedWordIndices = new Set();
     let currentWordObj = null;
@@ -423,7 +444,9 @@
     let roundScores = {};
     let roundDrawingsHistory = [];
 
-    let canvas, ctx;
+    let colorCanvas, blackCanvas;
+    let colorCtx, blackCtx;
+    let drawCtxs = [];
     let isDrawing = false;
     let currentPenColor = '#000000';
     const BLACK_LINE_WIDTH = 6;
@@ -435,7 +458,7 @@
     let pencilGainNode = null;
     let previousPositions = new Map();
 
-    // ダブルタップズーム防止
+    // ===== 不要な操作防止 =====
     let lastTouchEnd = 0;
     document.addEventListener('touchend', function(e) {
       const now = Date.now();
@@ -445,6 +468,11 @@
       lastTouchEnd = now;
     }, { passive: false });
 
+    document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
+    document.addEventListener('gesturechange', function(e) { e.preventDefault(); }, { passive: false });
+    document.addEventListener('dblclick', function(e) { e.preventDefault(); }, { passive: false });
+
+    // ===== 音声関連 =====
     function startAudioKeepAlive() {
       if (keepAliveInterval) return;
       keepAliveInterval = setInterval(() => {
@@ -504,6 +532,1066 @@
       pencilGainNode.gain.setValueAtTime(0, audioCtx.currentTime);
     }
 
+    function unlockAudioAndSpeech() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        initPencilSoundNode();
+        startAudioKeepAlive();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      if ('speechSynthesis' in window && window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+    }
+
+    function speakText(text) {
+      if (!enableSpeech || !('speechSynthesis' in window)) return;
+      try {
+        window.speechSynthesis.cancel();
+        const uttr = new SpeechSynthesisUtterance(text);
+        uttr.lang = 'ja-JP';
+        uttr.rate = 1.15;
+        uttr.pitch = 1.1;
+        window.speechSynthesis.speak(uttr);
+      } catch (e) {
+        console.error("Speech error:", e);
+      }
+    }
+
+    function playSound(type) {
+      unlockAudioAndSpeech();
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'correct') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+          osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.15);
+          gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+          osc.start(audioCtx.currentTime);
+          osc.stop(audioCtx.currentTime + 0.4);
+        } else if (type === 'finish') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(392.00, audioCtx.currentTime);
+          osc.frequency.setValueAtTime(261.63, audioCtx.currentTime + 0.2);
+          gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+          osc.start(audioCtx.currentTime);
+          osc.stop(audioCtx.currentTime + 0.6);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function playButtonSE() {
+      unlockAudioAndSpeech();
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.start(audioCtx.currentTime);
+        osc.stop(audioCtx.currentTime + 0.1);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // ===== ストレージ =====
+    function loadStorageData() {
+      // プレイヤー
+      let loadedPlayers = localStorage.getItem(STORAGE_KEY_PLAYERS);
+      if (!loadedPlayers) {
+        for (const oldKey of OLD_PLAYER_KEYS) {
+          const oldData = localStorage.getItem(oldKey);
+          if (oldData) { loadedPlayers = oldData; break; }
+        }
+      }
+
+      try {
+        if (loadedPlayers) {
+          const parsed = JSON.parse(loadedPlayers);
+          players = parsed.map((p, idx) => ({
+            ...DEFAULT_PLAYERS[idx],
+            ...p,
+            emoji: EMOJI_OPTIONS.includes(p.emoji) ? p.emoji : DEFAULT_PLAYERS[idx].emoji,
+            colorIdx: p.colorIdx !== undefined ? p.colorIdx : (idx % COLOR_OPTIONS.length)
+          }));
+        } else {
+          players = JSON.parse(JSON.stringify(DEFAULT_PLAYERS));
+        }
+      } catch (e) {
+        players = JSON.parse(JSON.stringify(DEFAULT_PLAYERS));
+      }
+
+      // お題グループ
+      const savedGroups = localStorage.getItem(STORAGE_KEY_GROUPS);
+      if (savedGroups) {
+        try {
+          const parsed = JSON.parse(savedGroups);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            wordGroups = parsed;
+          } else {
+            wordGroups = [{ id: Date.now(), title: 'デフォルト', rawText: DEFAULT_WORDS_RAW }];
+          }
+        } catch (e) {
+          wordGroups = [{ id: Date.now(), title: 'デフォルト', rawText: DEFAULT_WORDS_RAW }];
+        }
+      } else {
+        // 旧データ移行
+        const oldWords = localStorage.getItem(STORAGE_KEY_WORDS);
+        if (oldWords) {
+          wordGroups = [{ id: Date.now(), title: '旧お題グループ', rawText: oldWords }];
+        } else {
+          wordGroups = [{ id: Date.now(), title: 'デフォルト', rawText: DEFAULT_WORDS_RAW }];
+        }
+      }
+
+      // 設定
+      try {
+        const savedSettings = localStorage.getItem(STORAGE_KEY_SETTINGS);
+        if (savedSettings) {
+          const settings = JSON.parse(savedSettings);
+          enableSpeech = settings.enableSpeech !== undefined ? settings.enableSpeech : true;
+          artistPointEnabled = settings.artistPointEnabled !== undefined ? settings.artistPointEnabled : true;
+          if (settings.currentGroupIndex !== undefined && settings.currentGroupIndex >= 0 && settings.currentGroupIndex < wordGroups.length) {
+            currentGroupIndex = settings.currentGroupIndex;
+          }
+        }
+      } catch (e) {}
+
+      document.getElementById('speech-toggle').checked = enableSpeech;
+      document.getElementById('artist-point-toggle').checked = artistPointEnabled;
+
+      updateParsedWordList();
+      saveStorageData();
+    }
+
+    function saveStorageData() {
+      try {
+        localStorage.setItem(STORAGE_KEY_PLAYERS, JSON.stringify(players));
+        localStorage.setItem(STORAGE_KEY_GROUPS, JSON.stringify(wordGroups));
+        localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify({ 
+          enableSpeech, 
+          artistPointEnabled,
+          currentGroupIndex 
+        }));
+      } catch (e) {
+        console.error("Storage save failed:", e);
+      }
+    }
+
+    function toggleSpeech(checked) {
+      enableSpeech = checked;
+      saveStorageData();
+    }
+
+    function toggleArtistPoint(checked) {
+      artistPointEnabled = checked;
+      saveStorageData();
+    }
+
+    // ===== お題グループ管理 =====
+    function updateParsedWordList() {
+      if (wordGroups.length > 0 && wordGroups[currentGroupIndex]) {
+        parsedWordList = parseWordListFromRaw(wordGroups[currentGroupIndex].rawText);
+      } else {
+        parsedWordList = [];
+      }
+    }
+
+    function parseWordListFromRaw(rawText) {
+      const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      return lines.map(line => {
+        const parts = line.split(/\s+/);
+        if (parts.length >= 2) {
+          return { emoji: parts[0], name: parts.slice(1).join(' ') };
+        } else {
+          return { emoji: null, name: line };
+        }
+      });
+    }
+
+    function renderWordGroups() {
+      const container = document.getElementById('word-groups-container');
+      container.innerHTML = '';
+
+      wordGroups.forEach((group, idx) => {
+        const card = document.createElement('div');
+        card.className = "bg-slate-950 border border-slate-700 rounded-xl p-3 space-y-2";
+
+        const isCurrent = idx === currentGroupIndex;
+        const count = parseWordListFromRaw(group.rawText).length;
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 flex-1">
+              <input type="text" value="${group.title}" 
+                     oninput="updateGroupTitle(${group.id}, this.value)" 
+                     class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-xs focus:outline-none focus:border-indigo-500" 
+                     placeholder="グループ名">
+              ${isCurrent ? '<span class="text-[10px] font-bold text-amber-400 bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 rounded-full">使用中</span>' : ''}
+            </div>
+            <button onclick="setCurrentGroupWithSE(${group.id})" class="text-[10px] font-bold px-2 py-1 rounded bg-indigo-700 hover:bg-indigo-600 text-white touch-action-none">
+              使う
+            </button>
+            <button onclick="deleteWordGroupWithSE(${group.id})" class="text-[10px] font-bold px-2 py-1 rounded bg-rose-900/70 hover:bg-rose-800 text-rose-200 border border-rose-700 touch-action-none">
+              ✕
+            </button>
+          </div>
+
+          <textarea rows="5" 
+                    oninput="updateGroupRaw(${group.id}, this.value)"
+                    class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-white font-mono text-xs focus:outline-none focus:border-indigo-500 leading-relaxed">${group.rawText}</textarea>
+
+          <div class="flex items-center justify-between">
+            <span id="group-count-${group.id}" class="text-[11px] text-slate-500">お題数: ${count}個</span>
+            <button onclick="loadDefaultToGroupWithSE(${group.id})" class="text-[10px] text-indigo-400 hover:underline font-bold touch-action-none">デフォルトを読み込む</button>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    function updateGroupTitle(id, value) {
+      const group = wordGroups.find(g => g.id === id);
+      if (group) {
+        group.title = value.trim() || '無題グループ';
+        // 保存は閉じる時にまとめて行う
+      }
+    }
+
+    function updateGroupRaw(id, value) {
+      const group = wordGroups.find(g => g.id === id);
+      if (group) {
+        group.rawText = value;
+        const count = parseWordListFromRaw(value).length;
+        const countEl = document.getElementById(`group-count-${id}`);
+        if (countEl) countEl.innerText = `お題数: ${count}個`;
+      }
+    }
+
+    function addWordGroupWithSE() {
+      playButtonSE();
+      wordGroups.push({
+        id: Date.now(),
+        title: '新しいグループ',
+        rawText: ''
+      });
+      renderWordGroups();
+    }
+
+    function deleteWordGroupWithSE(id) {
+      playButtonSE();
+      if (wordGroups.length <= 1) {
+        alert('グループは最低1つ必要です。');
+        return;
+      }
+      if (confirm('このグループを削除しますか？')) {
+        const idx = wordGroups.findIndex(g => g.id === id);
+        if (idx !== -1) {
+          wordGroups.splice(idx, 1);
+          if (currentGroupIndex >= wordGroups.length) {
+            currentGroupIndex = wordGroups.length - 1;
+          }
+          renderWordGroups();
+          updateParsedWordList();
+          updateStartGroupDisplay();
+          saveStorageData();
+        }
+      }
+    }
+
+    function setCurrentGroupWithSE(id) {
+      playButtonSE();
+      const idx = wordGroups.findIndex(g => g.id === id);
+      if (idx !== -1) {
+        currentGroupIndex = idx;
+        renderWordGroups();
+        updateParsedWordList();
+        updateStartGroupDisplay();
+        saveStorageData();
+      }
+    }
+
+    function loadDefaultToGroupWithSE(id) {
+      playButtonSE();
+      const group = wordGroups.find(g => g.id === id);
+      if (group) {
+        group.rawText = DEFAULT_WORDS_RAW;
+        renderWordGroups();
+      }
+    }
+
+    function switchGroupPrevWithSE() {
+      playButtonSE();
+      if (wordGroups.length === 0) return;
+      currentGroupIndex = (currentGroupIndex - 1 + wordGroups.length) % wordGroups.length;
+      updateParsedWordList();
+      updateStartGroupDisplay();
+      saveStorageData();
+    }
+
+    function switchGroupNextWithSE() {
+      playButtonSE();
+      if (wordGroups.length === 0) return;
+      currentGroupIndex = (currentGroupIndex + 1) % wordGroups.length;
+      updateParsedWordList();
+      updateStartGroupDisplay();
+      saveStorageData();
+    }
+
+    function updateStartGroupDisplay() {
+      const el = document.getElementById('start-group-title');
+      if (el && wordGroups.length > 0) {
+        el.innerText = wordGroups[currentGroupIndex].title;
+      }
+    }
+
+    // ===== キャンバス初期化 =====
+    function initCanvas() {
+      colorCanvas = document.getElementById('color-canvas');
+      blackCanvas = document.getElementById('black-canvas');
+      colorCtx = colorCanvas.getContext('2d');
+      blackCtx = blackCanvas.getContext('2d');
+      resizeCanvas();
+
+      blackCanvas.addEventListener('pointerdown', startDrawing);
+      blackCanvas.addEventListener('pointermove', draw);
+      blackCanvas.addEventListener('pointerup', stopDrawing);
+      blackCanvas.addEventListener('pointercancel', stopDrawing);
+    }
+
+    function resizeCanvas() {
+      const container = document.getElementById('canvas-container');
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      resizeLayer(colorCanvas, colorCtx, rect);
+      resizeLayer(blackCanvas, blackCtx, rect);
+    }
+
+    function resizeLayer(cv, c, rect) {
+      const temp = document.createElement('canvas');
+      temp.width = cv.width;
+      temp.height = cv.height;
+      const tctx = temp.getContext('2d');
+      if (cv.width > 0) {
+        tctx.drawImage(cv, 0, 0);
+      }
+
+      cv.width = rect.width;
+      cv.height = rect.height;
+      c.clearRect(0, 0, cv.width, cv.height);
+
+      if (temp.width > 0) {
+        c.drawImage(temp, 0, 0, cv.width, cv.height);
+      }
+    }
+
+    function getCanvasCoordinates(e) {
+      const rect = blackCanvas.getBoundingClientRect();
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      };
+    }
+
+    function startDrawing(e) {
+      unlockAudioAndSpeech();
+      isDrawing = true;
+      startPencilSound();
+
+      const pos = getCanvasCoordinates(e);
+      const colorObj = PEN_COLORS.find(c => c.id === currentPenColor);
+      drawCtxs = [];
+
+      if (currentPenColor === '#ffffff') {
+        drawCtxs = [colorCtx, blackCtx];
+        drawCtxs.forEach(c => {
+          c.globalCompositeOperation = 'destination-out';
+          c.lineWidth = ERASER_LINE_WIDTH;
+          c.strokeStyle = 'rgba(0,0,0,1)';
+          c.beginPath();
+          c.moveTo(pos.x, pos.y);
+          c.lineCap = 'round';
+          c.lineJoin = 'round';
+        });
+      } else if (colorObj && colorObj.isOverlayColor) {
+        drawCtxs = [colorCtx];
+        colorCtx.globalCompositeOperation = 'source-over';
+        colorCtx.lineWidth = COLOR_LINE_WIDTH;
+        colorCtx.strokeStyle = currentPenColor;
+        colorCtx.beginPath();
+        colorCtx.moveTo(pos.x, pos.y);
+        colorCtx.lineCap = 'round';
+        colorCtx.lineJoin = 'round';
+      } else {
+        drawCtxs = [blackCtx];
+        blackCtx.globalCompositeOperation = 'source-over';
+        blackCtx.lineWidth = BLACK_LINE_WIDTH;
+        blackCtx.strokeStyle = currentPenColor;
+        blackCtx.beginPath();
+        blackCtx.moveTo(pos.x, pos.y);
+        blackCtx.lineCap = 'round';
+        blackCtx.lineJoin = 'round';
+      }
+    }
+
+    function draw(e) {
+      if (!isDrawing) return;
+      const pos = getCanvasCoordinates(e);
+      drawCtxs.forEach(c => {
+        c.lineTo(pos.x, pos.y);
+        c.stroke();
+      });
+    }
+
+    function stopDrawing() {
+      if (isDrawing) {
+        drawCtxs.forEach(c => {
+          c.closePath();
+          c.globalCompositeOperation = 'source-over';
+        });
+        isDrawing = false;
+        stopPencilSound();
+      }
+    }
+
+    function clearCanvas() {
+      colorCtx.clearRect(0, 0, colorCanvas.width, colorCanvas.height);
+      blackCtx.clearRect(0, 0, blackCanvas.width, blackCanvas.height);
+    }
+
+    function getCombinedCanvasDataURL() {
+      const temp = document.createElement('canvas');
+      temp.width = colorCanvas.width;
+      temp.height = colorCanvas.height;
+      const tctx = temp.getContext('2d');
+      tctx.fillStyle = '#ffffff';
+      tctx.fillRect(0, 0, temp.width, temp.height);
+      tctx.drawImage(colorCanvas, 0, 0);
+      tctx.drawImage(blackCanvas, 0, 0);
+      return temp.toDataURL('image/png');
+    }
+
+    function clearCanvasWithSE() {
+      playButtonSE();
+      clearCanvas();
+    }
+
+    // ===== ヘッダーボタン =====
+    function headerMainBtnWithSE() {
+      playButtonSE();
+      if (isGaming) {
+        stopGame();
+      } else {
+        openSettings();
+      }
+    }
+
+    function updateHeaderButton() {
+      const btn = document.getElementById('header-main-btn');
+      if (isGaming) {
+        btn.innerHTML = '<span>⏹ 中断</span>';
+        btn.className = "bg-rose-600 hover:bg-rose-500 text-white border border-rose-400 px-3 py-1 rounded-xl text-xs font-bold shadow-lg flex items-center space-x-1 active:scale-95 transition touch-action-none";
+      } else {
+        btn.innerHTML = '<span>⚙️ 設定</span>';
+        btn.className = "bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1 rounded-xl text-xs font-bold shadow-lg flex items-center space-x-1 active:scale-95 transition touch-action-none";
+      }
+    }
+
+    // ===== ゲーム進行 =====
+    function toggleGameWithSE() {
+      playButtonSE();
+      toggleGame();
+    }
+
+    function toggleGame() {
+      unlockAudioAndSpeech();
+      if (isGaming) {
+        stopGame();
+      } else {
+        startGame();
+      }
+    }
+
+    function startGame() {
+      if (parsedWordList.length === 0) {
+        alert("お題が登録されていません。設定からお題を追加してください。");
+        return;
+      }
+
+      const activePlayers = players.filter(p => p.active);
+      if (activePlayers.length < 1) {
+        alert("ゲームに参加するプレイヤーを最低1名以上設定してください。");
+        return;
+      }
+
+      isGaming = true;
+      isPaused = false;
+      timerSeconds = 60;
+      usedWordIndices.clear();
+
+      roundScores = {};
+      roundDrawingsHistory = [];
+      players.forEach(p => { roundScores[p.id] = 0; });
+
+      document.getElementById('center-start-overlay').classList.add('opacity-0', 'pointer-events-none');
+      document.getElementById('footer-active-controls-left').classList.remove('opacity-0', 'pointer-events-none');
+      document.getElementById('footer-active-controls-right').classList.remove('opacity-0', 'pointer-events-none');
+
+      document.getElementById('btn-skip').disabled = false;
+      document.getElementById('btn-correct-trigger').disabled = false;
+
+      updateHeaderButton();
+      clearCanvas();
+      nextWord();
+
+      const activePlayersList = players.filter(p => p.active);
+      const currentArtist = activePlayersList[currentArtistIndex % activePlayersList.length];
+      speakText(getRandomPhrase('start', currentArtist ? currentArtist.name : "アーティスト"));
+
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+        if (isPaused) return;
+
+        timerSeconds--;
+        updateTimerDisplay();
+
+        if (timerSeconds === 3) speakText("3");
+        else if (timerSeconds === 2) speakText("2");
+        else if (timerSeconds === 1) speakText("1");
+        else if (timerSeconds === 30) {
+          const act = players.filter(p => p.active);
+          const art = act[currentArtistIndex % act.length];
+          speakText(getRandomPhrase('time30', art ? art.name : "アーティスト"));
+        }
+
+        if (timerSeconds <= 0) {
+          finishRound();
+        }
+      }, 1000);
+    }
+
+    function stopGame() {
+      isGaming = false;
+      isPaused = false;
+      clearInterval(timerInterval);
+      
+      document.getElementById('center-start-overlay').classList.remove('opacity-0', 'pointer-events-none');
+      document.getElementById('footer-active-controls-left').classList.add('opacity-0', 'pointer-events-none');
+      document.getElementById('footer-active-controls-right').classList.add('opacity-0', 'pointer-events-none');
+
+      document.getElementById('btn-skip').disabled = true;
+      document.getElementById('btn-correct-trigger').disabled = true;
+      document.getElementById('word-display').innerText = "「スタート」を押してね！";
+      updateTimerDisplay(60);
+      updateCenterArtistDisplay();
+      updateHeaderButton();
+    }
+
+    function finishRound() {
+      saveCurrentCanvasToHistory(null, true);
+      stopGame();
+      playSound('finish');
+      
+      const activePlayers = players.filter(p => p.active);
+      const artist = activePlayers[currentArtistIndex % activePlayers.length];
+      const artistRoundPt = artist ? (roundScores[artist.id] || 0) : 0;
+
+      speakText(getRandomPhrase('finishRound', artist ? artist.name : "アーティスト", artistRoundPt));
+      showResultModal();
+    }
+
+    function updateTimerDisplay(overrideSec) {
+      const sec = overrideSec !== undefined ? overrideSec : timerSeconds;
+      const mm = String(Math.floor(sec / 60)).padStart(2, '0');
+      const ss = String(sec % 60).padStart(2, '0');
+      document.getElementById('timer-text-overlay').innerText = `${mm}:${ss}`;
+      document.getElementById('timer-progress-bar').style.width = `${(sec / 60) * 100}%`;
+    }
+
+    function saveCurrentCanvasToHistory(winnerPlayer, isUnfinished = false) {
+      if (!colorCanvas || !currentWordObj) return;
+      try {
+        const timeTaken = Math.max(1, currentWordStartTime - timerSeconds);
+        const dataUrl = getCombinedCanvasDataURL();
+        roundDrawingsHistory.push({
+          dataUrl,
+          wordName: currentWordObj.name,
+          wordEmoji: currentWordObj.emoji,
+          timeTaken,
+          isUnfinished,
+          winnerName: winnerPlayer ? winnerPlayer.name : null,
+          winnerEmoji: winnerPlayer ? winnerPlayer.emoji : null
+        });
+      } catch (e) {
+        console.error("Canvas save error:", e);
+      }
+    }
+
+    function nextWord() {
+      if (usedWordIndices.size >= parsedWordList.length) {
+        usedWordIndices.clear();
+      }
+
+      let randomIndex;
+      do {
+        randomIndex = Math.floor(Math.random() * parsedWordList.length);
+      } while (usedWordIndices.has(randomIndex) && usedWordIndices.size < parsedWordList.length);
+
+      usedWordIndices.add(randomIndex);
+      currentWordObj = parsedWordList[randomIndex];
+      currentWordStartTime = timerSeconds;
+      
+      document.getElementById('word-display').innerText = currentWordObj.name;
+      clearCanvas();
+      // ペンを黒に戻す
+      currentPenColor = '#000000';
+      renderColorPalette();
+    }
+
+    function skipWordWithSE() {
+      playButtonSE();
+      skipWord();
+    }
+
+    function skipWord() {
+      if (!isGaming) return;
+      saveCurrentCanvasToHistory(null, true);
+      const activePlayers = players.filter(p => p.active);
+      const art = activePlayers[currentArtistIndex % activePlayers.length];
+      speakText(getRandomPhrase('pass', art ? art.name : "アーティスト"));
+      nextWord();
+    }
+
+    function openAnswerModalWithSE() {
+      playButtonSE();
+      openAnswerModal();
+    }
+
+    function openAnswerModal() {
+      if (!isGaming) return;
+      unlockAudioAndSpeech();
+      isPaused = true;
+
+      playSound('correct');
+      speakText(getRandomPhrase('correctAnswerOpen', currentWordObj.name));
+
+      const displayContainer = document.getElementById('modal-word-display');
+      
+      if (currentWordObj.emoji) {
+        displayContainer.innerHTML = `
+          <span class="text-9xl md:text-[14rem] leading-none block my-2 drop-shadow-2xl shrink-0 animate-periodic-jump">${currentWordObj.emoji}</span>
+          <span class="text-3xl md:text-5xl font-black text-amber-200 block drop-shadow">${currentWordObj.name}</span>
+        `;
+      } else {
+        displayContainer.innerHTML = `<span class="text-5xl md:text-7xl font-black text-amber-200 drop-shadow">${currentWordObj.name}</span>`;
+      }
+
+      renderAnswerModalGrid();
+      document.getElementById('answer-modal').classList.remove('modal-hidden');
+    }
+
+    function closeAnswerModalWithSE() {
+      playButtonSE();
+      closeAnswerModal();
+    }
+
+    function closeAnswerModal() {
+      document.getElementById('answer-modal').classList.add('modal-hidden');
+      isPaused = false;
+    }
+
+    function imageSearchWithSE() {
+      playButtonSE();
+      if (currentWordObj) {
+        const query = encodeURIComponent(currentWordObj.name);
+        window.open(`https://www.google.com/search?tbm=isch&q=${query}`, '_blank');
+      }
+    }
+
+    function renderAnswerModalGrid() {
+      const grid = document.getElementById('answer-modal-grid');
+      grid.innerHTML = '';
+
+      const activePlayers = players.filter(p => p.active);
+      const currentArtist = activePlayers[currentArtistIndex % activePlayers.length];
+
+      players.forEach((player) => {
+        if (!player.active) return;
+
+        const colorStyle = COLOR_OPTIONS[player.colorIdx % COLOR_OPTIONS.length] || COLOR_OPTIONS[0];
+        const isArtist = currentArtist && currentArtist.id === player.id;
+        const currentRoundPt = roundScores[player.id] || 0;
+
+        const btn = document.createElement('button');
+        btn.onclick = () => submitCorrectWinner(player.id);
+        btn.className = `p-2 rounded-2xl border-2 flex flex-col items-center justify-between transition active:scale-95 shadow-lg relative ${colorStyle.bg} ${colorStyle.border} ${isArtist ? 'ring-4 ring-amber-400 font-black' : ''} touch-action-none`;
+
+        btn.innerHTML = `
+          ${isArtist ? '<span class="absolute top-2 left-2 bg-amber-400 text-black text-[9px] font-black px-2 py-0.5 rounded-full shadow z-30">アーティスト</span>' : ''}
+          <span class="text-4xl md:text-5xl my-1 shrink-0 drop-shadow">${player.emoji}</span>
+          <span class="text-xs md:text-sm font-extrabold text-white truncate w-full text-center px-1">${player.name}</span>
+          <span class="mt-1 text-[11px] font-mono font-bold text-amber-300 bg-black/40 px-2 py-0.5 rounded-full border border-white/20">
+            +${currentRoundPt} pt
+          </span>
+        `;
+        grid.appendChild(btn);
+      });
+    }
+
+    function submitCorrectWinner(winnerPlayerId) {
+      if (!isGaming) return;
+
+      const activePlayers = players.filter(p => p.active);
+      const artist = activePlayers[currentArtistIndex % activePlayers.length];
+      
+      if (artist && artistPointEnabled) {
+        artist.score += 1;
+        roundScores[artist.id] = (roundScores[artist.id] || 0) + 1;
+      }
+
+      const winner = players.find(p => p.id === winnerPlayerId);
+      if (winner && winner.id !== artist.id) {
+        winner.score += 1;
+        roundScores[winner.id] = (roundScores[winner.id] || 0) + 1;
+      }
+
+      saveCurrentCanvasToHistory(winner, false);
+
+      if (winner) speakText(getRandomPhrase('afterCorrectWinner', winner.name));
+
+      saveStorageData();
+      closeAnswerModal();
+      
+      renderTvRankingsWithAnimation();
+      triggerScoreAnimation(winnerPlayerId, artist ? artist.id : null);
+      nextWord();
+    }
+
+    function triggerScoreAnimation(winnerId, artistId) {
+      const idsToAnimate = new Set([winnerId, artistId].filter(id => id !== null));
+      idsToAnimate.forEach(id => {
+        const card = document.getElementById(`player-card-${id}`);
+        if (card) {
+          card.classList.add('animate-score-pop');
+          const floatEl = document.createElement('div');
+          floatEl.className = 'absolute inset-0 flex items-center justify-center font-black text-amber-300 text-xl md:text-2xl drop-shadow-lg float-score-text z-30';
+          floatEl.innerText = '+1 pt!';
+          card.appendChild(floatEl);
+          setTimeout(() => {
+            card.classList.remove('animate-score-pop');
+            if (floatEl.parentNode) floatEl.parentNode.removeChild(floatEl);
+          }, 1200);
+        }
+      });
+    }
+
+    function renderTvRankingsWithAnimation() {
+      const container = document.getElementById('tv-rankings-container');
+      const children = Array.from(container.children);
+      children.forEach(child => {
+        const id = child.id;
+        if (id) previousPositions.set(id, child.getBoundingClientRect());
+      });
+
+      renderTvRankings();
+
+      const newChildren = Array.from(container.children);
+      newChildren.forEach(child => {
+        const id = child.id;
+        const first = previousPositions.get(id);
+        if (first) {
+          const last = child.getBoundingClientRect();
+          const deltaY = first.top - last.top;
+          if (deltaY !== 0) {
+            child.style.transform = `translateY(${deltaY}px)`;
+            child.style.transition = 'none';
+            requestAnimationFrame(() => {
+              child.style.transition = 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+              child.style.transform = '';
+            });
+          }
+        }
+      });
+    }
+
+    function renderTvRankings() {
+      const container = document.getElementById('tv-rankings-container');
+      container.innerHTML = '';
+
+      const activePlayers = players.filter(p => p.active);
+      if (activePlayers.length === 0) return;
+
+      const currentArtist = activePlayers[currentArtistIndex % activePlayers.length];
+      const sorted = activePlayers.map((p, originalIndex) => ({...p, originalIndex}))
+        .sort((a, b) => b.score - a.score || a.id - b.id);
+
+      let currentRank = 1;
+      const rankedPlayers = sorted.map((player, idx, arr) => {
+        if (idx > 0 && player.score < arr[idx - 1].score) currentRank = idx + 1;
+        return { ...player, displayRank: currentRank };
+      });
+
+      rankedPlayers.forEach((player) => {
+        const colorStyle = COLOR_OPTIONS[player.colorIdx % COLOR_OPTIONS.length] || COLOR_OPTIONS[0];
+        const isArtist = currentArtist && currentArtist.id === player.id;
+        const rank = player.displayRank;
+
+        const card = document.createElement('div');
+        card.id = `player-card-${player.id}`;
+        if (!isGaming) {
+          card.onclick = () => selectArtistByCardTap(player.id);
+          card.style.cursor = 'pointer';
+        }
+        card.className = `player-card-move w-full flex-1 rounded-xl p-2 flex items-center justify-between border-2 transition relative overflow-hidden shadow-md ${colorStyle.bg} ${colorStyle.border} ${isArtist ? 'ring-4 ring-amber-400 font-black' : 'opacity-90'}`;
+
+        let rankBadge = `<span class="text-xs font-bold w-6 text-center text-white/90">${rank}位</span>`;
+        if (rank === 1) rankBadge = `<span class="text-sm font-black w-6 text-center">🥇</span>`;
+        if (rank === 2) rankBadge = `<span class="text-sm font-black w-6 text-center">🥈</span>`;
+        if (rank === 3) rankBadge = `<span class="text-sm font-black w-6 text-center">🥉</span>`;
+
+        card.innerHTML = `
+          ${isArtist ? '<span class="absolute top-0 right-0 bg-amber-400 text-black text-[8px] font-black px-1.5 py-0.2 rounded-bl-md shadow z-30">アーティスト</span>' : ''}
+          <div class="flex items-center space-x-1.5 truncate flex-1 min-w-0 pr-1">
+            ${rankBadge}
+            <span class="text-xl md:text-2xl leading-none shrink-0 drop-shadow-sm">${player.emoji}</span>
+            <span class="text-xs md:text-sm font-extrabold text-white truncate">${player.name}</span>
+          </div>
+          <div class="text-right shrink-0">
+            <span class="text-sm md:text-base font-black text-white font-mono bg-black/30 px-1.5 py-0.5 rounded border border-white/20">${player.score} <span class="text-[9px]">pt</span></span>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      updateCenterArtistDisplay();
+    }
+
+    function updateCenterArtistDisplay() {
+      const activePlayers = players.filter(p => p.active);
+      const currentArtist = activePlayers[currentArtistIndex % activePlayers.length];
+      const displayEl = document.getElementById('center-artist-display');
+      if (displayEl && currentArtist) {
+        displayEl.innerHTML = `
+          <span class="text-5xl md:text-6xl">${currentArtist.emoji}</span>
+          <span class="text-xl md:text-2xl font-black text-white">${currentArtist.name}</span>
+        `;
+      }
+    }
+
+    function selectArtistByCardTap(playerId) {
+      if (isGaming) return;
+      playButtonSE();
+      const activePlayers = players.filter(p => p.active);
+      const idx = activePlayers.findIndex(p => p.id === playerId);
+      if (idx !== -1) {
+        currentArtistIndex = idx;
+        renderTvRankings();
+        const selectedPlayer = activePlayers[idx];
+        speakText(getRandomPhrase('selectArtistManual', selectedPlayer.name));
+      }
+    }
+
+    // ===== 設定モーダル =====
+    function openSettingsWithSE() {
+      playButtonSE();
+      openSettings();
+    }
+
+    function closeSettingsWithSE() {
+      playButtonSE();
+      closeSettings();
+    }
+
+    function saveAndCloseSettingsWithSE() {
+      playButtonSE();
+      saveAndCloseSettings();
+    }
+
+    function switchTabWithSE(tabName) {
+      playButtonSE();
+      switchTab(tabName);
+    }
+
+    function resetScoresWithSE() {
+      playButtonSE();
+      resetScores();
+    }
+
+    function openSettings() {
+      if (isGaming) stopGame();
+      renderPlayersSettingsList();
+      renderWordGroups();
+      updateStartGroupDisplay();
+      document.getElementById('settings-modal').classList.remove('modal-hidden');
+    }
+
+    function closeSettings() {
+      document.getElementById('settings-modal').classList.add('modal-hidden');
+    }
+
+    function saveAndCloseSettings() {
+      // グループの情報はoninputで逐次更新済み
+      if (wordGroups.length === 0) {
+        alert('お題グループがありません。');
+        return;
+      }
+      if (wordGroups[currentGroupIndex] && parseWordListFromRaw(wordGroups[currentGroupIndex].rawText).length === 0) {
+        alert('現在選択中のお題グループにお題がありません。');
+        return;
+      }
+
+      updateParsedWordList();
+      saveStorageData();
+      renderTvRankings();
+      updateStartGroupDisplay();
+      closeSettings();
+    }
+
+    function switchTab(tabName) {
+      const tabPlayers = document.getElementById('tab-content-players');
+      const tabWords = document.getElementById('tab-content-words');
+      const btnPlayers = document.getElementById('tab-btn-players');
+      const btnWords = document.getElementById('tab-btn-words');
+
+      if (tabName === 'players') {
+        tabPlayers.classList.remove('modal-hidden');
+        tabWords.classList.add('modal-hidden');
+        btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none";
+        btnWords.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none";
+      } else {
+        tabPlayers.classList.add('modal-hidden');
+        tabWords.classList.remove('modal-hidden');
+        btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none";
+        btnWords.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none";
+        renderWordGroups();
+      }
+    }
+
+    function renderPlayersSettingsList() {
+      const container = document.getElementById('players-list-container');
+      container.innerHTML = '';
+      const activePlayers = players.filter(p => p.active);
+
+      players.forEach((player) => {
+        const activeIdx = activePlayers.findIndex(p => p.id === player.id);
+        const isArtist = activeIdx === (currentArtistIndex % (activePlayers.length || 1));
+
+        const card = document.createElement('div');
+        card.className = `p-3 rounded-xl border flex flex-col justify-between space-y-2 bg-slate-950 ${player.active ? 'border-slate-700' : 'border-slate-800 opacity-50'}`;
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-slate-300 text-xs">P${player.id + 1}</span>
+            <label class="flex items-center cursor-pointer space-x-1">
+              <span class="text-[10px] text-slate-400">${player.active ? '参加' : 'お休み'}</span>
+              <input type="checkbox" ${player.active ? 'checked' : ''} onchange="togglePlayerActive(${player.id})" class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0">
+            </label>
+          </div>
+
+          <div class="flex space-x-2">
+            <select onchange="updatePlayerEmoji(${player.id}, this.value)" class="bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-lg text-white focus:outline-none">
+              ${EMOJI_OPTIONS.map(e => `<option value="${e}" ${e === player.emoji ? 'selected' : ''}>${e}</option>`).join('')}
+            </select>
+            <input type="text" value="${player.name}" onchange="updatePlayerName(${player.id}, this.value)" class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-xs focus:outline-none focus:border-indigo-500" placeholder="名前">
+          </div>
+
+          <div class="space-y-1">
+            <span class="text-[10px] text-slate-400 block">テーマカラー:</span>
+            <div class="flex flex-wrap gap-1">
+              ${COLOR_OPTIONS.map((c, i) => `
+                <button onclick="updatePlayerColor(${player.id}, ${i})" class="w-4 h-4 rounded-full ${c.bg} border ${i === player.colorIdx ? 'border-white ring-2 ring-indigo-400 scale-110 z-10' : 'border-transparent opacity-70 hover:opacity-100'} touch-action-none"></button>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-1 border-t border-slate-800 text-xs">
+            <span class="font-mono text-amber-400 font-bold">${player.score} pt</span>
+            ${player.active ? `
+              <button onclick="setArtistByPlayerId(${player.id})" class="px-2 py-0.5 rounded text-[10px] font-bold ${isArtist ? 'bg-amber-500 text-black' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'} touch-action-none">
+                ${isArtist ? '★ アーティスト' : 'アーティストに指定'}
+              </button>
+            ` : '<span></span>'}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function togglePlayerActive(playerId) {
+      playButtonSE();
+      const p = players.find(x => x.id === playerId);
+      if (p) {
+        p.active = !p.active;
+        saveStorageData();
+        renderPlayersSettingsList();
+      }
+    }
+
+    function updatePlayerName(playerId, newName) {
+      const p = players.find(x => x.id === playerId);
+      if (p) {
+        p.name = newName.trim() || `プレイヤー${playerId + 1}`;
+        saveStorageData();
+      }
+    }
+
+    function updatePlayerEmoji(playerId, emoji) {
+      playButtonSE();
+      const p = players.find(x => x.id === playerId);
+      if (p) {
+        p.emoji = emoji;
+        saveStorageData();
+      }
+    }
+
+    function updatePlayerColor(playerId, colorIdx) {
+      playButtonSE();
+      const p = players.find(x => x.id === playerId);
+      if (p) {
+        p.colorIdx = colorIdx;
+        saveStorageData();
+        renderPlayersSettingsList();
+      }
+    }
+
+    function setArtistByPlayerId(playerId) {
+      playButtonSE();
+      const activePlayers = players.filter(p => p.active);
+      const idx = activePlayers.findIndex(p => p.id === playerId);
+      if (idx !== -1) {
+        currentArtistIndex = idx;
+        renderPlayersSettingsList();
+      }
+    }
+
+    function resetScores() {
+      if (confirm("全員のスコアを 0 pt にリセットしますか？")) {
+        players.forEach(p => p.score = 0);
+        roundScores = {};
+        saveStorageData();
+        renderPlayersSettingsList();
+        renderTvRankings();
+      }
+    }
+
+    // ===== 音声フレーズ =====
     const VOICE_PHRASES = {
       start: [
         (artist) => `よーい、スタート！${artist}画伯、魂の一作をお願いします！`,
@@ -571,891 +1659,7 @@
       return typeof item === 'function' ? item(p1, p2) : item;
     }
 
-    function unlockAudioAndSpeech() {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        initPencilSoundNode();
-        startAudioKeepAlive();
-      }
-      if (audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-      if ('speechSynthesis' in window && window.speechSynthesis.paused) {
-        window.speechSynthesis.resume();
-      }
-    }
-
-    function speakText(text) {
-      if (!enableSpeech || !('speechSynthesis' in window)) return;
-      try {
-        window.speechSynthesis.cancel();
-        const uttr = new SpeechSynthesisUtterance(text);
-        uttr.lang = 'ja-JP';
-        uttr.rate = 1.15;
-        uttr.pitch = 1.1;
-        window.speechSynthesis.speak(uttr);
-      } catch (e) {
-        console.error("Speech error:", e);
-      }
-    }
-
-    function toggleSpeech(checked) {
-      enableSpeech = checked;
-      saveStorageData();
-    }
-
-    function parseWordListFromRaw(rawText) {
-      const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-      return lines.map(line => {
-        const parts = line.split(/\s+/);
-        if (parts.length >= 2) {
-          return { emoji: parts[0], name: parts.slice(1).join(' ') };
-        } else {
-          return { emoji: null, name: line };
-        }
-      });
-    }
-
-    function loadStorageData() {
-      let loadedPlayers = localStorage.getItem(STORAGE_KEY_PLAYERS);
-      if (!loadedPlayers) {
-        for (const oldKey of OLD_PLAYER_KEYS) {
-          const oldData = localStorage.getItem(oldKey);
-          if (oldData) { loadedPlayers = oldData; break; }
-        }
-      }
-
-      try {
-        if (loadedPlayers) {
-          const parsed = JSON.parse(loadedPlayers);
-          players = parsed.map((p, idx) => ({
-            ...DEFAULT_PLAYERS[idx],
-            ...p,
-            emoji: EMOJI_OPTIONS.includes(p.emoji) ? p.emoji : DEFAULT_PLAYERS[idx].emoji,
-            colorIdx: p.colorIdx !== undefined ? p.colorIdx : (idx % COLOR_OPTIONS.length)
-          }));
-        } else {
-          players = JSON.parse(JSON.stringify(DEFAULT_PLAYERS));
-        }
-      } catch (e) {
-        players = JSON.parse(JSON.stringify(DEFAULT_PLAYERS));
-      }
-
-      let loadedWords = localStorage.getItem(STORAGE_KEY_WORDS);
-      rawWordInputText = loadedWords ? loadedWords : DEFAULT_WORDS_RAW;
-      parsedWordList = parseWordListFromRaw(rawWordInputText);
-
-      try {
-        const savedSettings = localStorage.getItem(STORAGE_KEY_SETTINGS);
-        if (savedSettings) {
-          const settings = JSON.parse(savedSettings);
-          enableSpeech = settings.enableSpeech !== undefined ? settings.enableSpeech : true;
-        }
-      } catch (e) {}
-
-      document.getElementById('speech-toggle').checked = enableSpeech;
-      saveStorageData();
-    }
-
-    function saveStorageData() {
-      try {
-        localStorage.setItem(STORAGE_KEY_PLAYERS, JSON.stringify(players));
-        localStorage.setItem(STORAGE_KEY_WORDS, rawWordInputText);
-        localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify({ enableSpeech }));
-      } catch (e) {
-        console.error("Storage save failed:", e);
-      }
-    }
-
-    function playSound(type) {
-      unlockAudioAndSpeech();
-      if (!audioCtx) return;
-      try {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        if (type === 'correct') {
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
-          osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.15);
-          gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-          osc.start(audioCtx.currentTime);
-          osc.stop(audioCtx.currentTime + 0.4);
-        } else if (type === 'finish') {
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(392.00, audioCtx.currentTime);
-          osc.frequency.setValueAtTime(261.63, audioCtx.currentTime + 0.2);
-          gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
-          osc.start(audioCtx.currentTime);
-          osc.stop(audioCtx.currentTime + 0.6);
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    // ボタンクリック音
-    function playButtonSE() {
-      unlockAudioAndSpeech();
-      if (!audioCtx) return;
-      try {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-        osc.start(audioCtx.currentTime);
-        osc.stop(audioCtx.currentTime + 0.1);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
-      loadStorageData();
-      initCanvas();
-      renderColorPalette();
-      renderTvRankings();
-      window.addEventListener('resize', resizeCanvas);
-    });
-
-    function renderColorPalette() {
-      const container = document.getElementById('color-palette');
-      container.innerHTML = '';
-
-      PEN_COLORS.forEach(c => {
-        const btn = document.createElement('button');
-        btn.onclick = () => { playButtonSE(); selectPenColor(c.id); };
-        const isSelected = currentPenColor === c.id;
-
-        btn.className = `w-5 h-5 rounded-full ${c.bg} border-2 transition ${isSelected ? 'scale-125 border-white ring-2 ring-indigo-400 z-10' : 'border-transparent hover:scale-110 opacity-80'} touch-action-none`;
-        container.appendChild(btn);
-      });
-    }
-
-    function selectPenColor(hexColor) {
-      currentPenColor = hexColor;
-      renderColorPalette();
-    }
-
-    function initCanvas() {
-      canvas = document.getElementById('paint-canvas');
-      ctx = canvas.getContext('2d');
-      resizeCanvas();
-
-      canvas.addEventListener('pointerdown', startDrawing);
-      canvas.addEventListener('pointermove', draw);
-      canvas.addEventListener('pointerup', stopDrawing);
-      canvas.addEventListener('pointercancel', stopDrawing);
-    }
-
-    function resizeCanvas() {
-      const container = document.getElementById('canvas-container');
-      if (!container) return;
-      const rect = container.getBoundingClientRect();
-      
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = canvas.width;
-      tempCanvas.height = canvas.height;
-      const tempCtx = tempCanvas.getContext('2d');
-      if (canvas.width > 0) {
-        tempCtx.drawImage(canvas, 0, 0);
-      }
-
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-
-      // 透明にクリア
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      if (tempCanvas.width > 0) {
-        ctx.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height);
-      }
-    }
-
-    function getCanvasCoordinates(e) {
-      const rect = canvas.getBoundingClientRect();
-      return {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      };
-    }
-
-    function startDrawing(e) {
-      unlockAudioAndSpeech();
-      isDrawing = true;
-      startPencilSound();
-
-      const pos = getCanvasCoordinates(e);
-      ctx.beginPath();
-      ctx.moveTo(pos.x, pos.y);
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      
-      const colorObj = PEN_COLORS.find(c => c.id === currentPenColor);
-      ctx.strokeStyle = currentPenColor;
-
-      if (currentPenColor === '#ffffff') {
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.lineWidth = ERASER_LINE_WIDTH;
-      } else if (colorObj && colorObj.isOverlayColor) {
-        ctx.globalCompositeOperation = 'destination-over';
-        ctx.lineWidth = COLOR_LINE_WIDTH;
-      } else {
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.lineWidth = BLACK_LINE_WIDTH;
-      }
-    }
-
-    function draw(e) {
-      if (!isDrawing) return;
-      const pos = getCanvasCoordinates(e);
-      ctx.lineTo(pos.x, pos.y);
-      ctx.stroke();
-    }
-
-    function stopDrawing() {
-      if (isDrawing) {
-        ctx.closePath();
-        isDrawing = false;
-        ctx.globalCompositeOperation = 'source-over';
-        stopPencilSound();
-      }
-    }
-
-    function clearCanvas() {
-      // 透明にクリア
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-
-    function clearCanvasWithSE() {
-      playButtonSE();
-      clearCanvas();
-    }
-
-    function toggleGameWithSE() {
-      playButtonSE();
-      toggleGame();
-    }
-
-    function toggleGame() {
-      unlockAudioAndSpeech();
-      if (isGaming) {
-        stopGame();
-      } else {
-        startGame();
-      }
-    }
-
-    function startGame() {
-      if (parsedWordList.length === 0) {
-        alert("お題が登録されていません。設定からお題を追加してください。");
-        return;
-      }
-
-      const activePlayers = players.filter(p => p.active);
-      if (activePlayers.length < 1) {
-        alert("ゲームに参加するプレイヤーを最低1名以上設定してください。");
-        return;
-      }
-
-      isGaming = true;
-      isPaused = false;
-      timerSeconds = 60;
-      usedWordIndices.clear();
-
-      roundScores = {};
-      roundDrawingsHistory = [];
-      players.forEach(p => { roundScores[p.id] = 0; });
-
-      document.getElementById('center-start-overlay').classList.add('opacity-0', 'pointer-events-none');
-      document.getElementById('footer-active-controls-left').classList.remove('opacity-0', 'pointer-events-none');
-      document.getElementById('footer-active-controls-right').classList.remove('opacity-0', 'pointer-events-none');
-
-      document.getElementById('btn-start').innerText = "中断";
-      document.getElementById('btn-start').className = "bg-rose-600 hover:bg-rose-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs md:text-sm border border-rose-400 shadow active:scale-95 transition touch-action-none";
-      document.getElementById('btn-skip').disabled = false;
-      document.getElementById('btn-correct-trigger').disabled = false;
-
-      clearCanvas();
-      nextWord();
-
-      const activePlayersList = players.filter(p => p.active);
-      const currentArtist = activePlayersList[currentArtistIndex % activePlayersList.length];
-      speakText(getRandomPhrase('start', currentArtist ? currentArtist.name : "アーティスト"));
-
-      updateTimerDisplay();
-      timerInterval = setInterval(() => {
-        if (isPaused) return;
-
-        timerSeconds--;
-        updateTimerDisplay();
-
-        if (timerSeconds === 3) {
-          speakText("3");
-        } else if (timerSeconds === 2) {
-          speakText("2");
-        } else if (timerSeconds === 1) {
-          speakText("1");
-        } else if (timerSeconds === 30) {
-          const act = players.filter(p => p.active);
-          const art = act[currentArtistIndex % act.length];
-          speakText(getRandomPhrase('time30', art ? art.name : "アーティスト"));
-        }
-
-        if (timerSeconds <= 0) {
-          finishRound();
-        }
-      }, 1000);
-    }
-
-    function stopGame() {
-      isGaming = false;
-      isPaused = false;
-      clearInterval(timerInterval);
-      
-      document.getElementById('center-start-overlay').classList.remove('opacity-0', 'pointer-events-none');
-      document.getElementById('footer-active-controls-left').classList.add('opacity-0', 'pointer-events-none');
-      document.getElementById('footer-active-controls-right').classList.add('opacity-0', 'pointer-events-none');
-
-      document.getElementById('btn-start').innerText = "スタート";
-      document.getElementById('btn-start').className = "bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-5 rounded-xl text-xs md:text-sm border border-emerald-400 shadow-md active:scale-95 transition touch-action-none";
-      document.getElementById('btn-skip').disabled = true;
-      document.getElementById('btn-correct-trigger').disabled = true;
-      document.getElementById('word-display').innerText = "「スタート」を押してね！";
-      updateTimerDisplay(60);
-      updateCenterArtistDisplay();
-    }
-
-    function finishRound() {
-      saveCurrentCanvasToHistory(null, true);
-      stopGame();
-      playSound('finish');
-      
-      const activePlayers = players.filter(p => p.active);
-      const artist = activePlayers[currentArtistIndex % activePlayers.length];
-      const artistRoundPt = artist ? (roundScores[artist.id] || 0) : 0;
-
-      speakText(getRandomPhrase('finishRound', artist ? artist.name : "アーティスト", artistRoundPt));
-      showResultModal();
-    }
-
-    function updateTimerDisplay(overrideSec) {
-      const sec = overrideSec !== undefined ? overrideSec : timerSeconds;
-      const mm = String(Math.floor(sec / 60)).padStart(2, '0');
-      const ss = String(sec % 60).padStart(2, '0');
-      
-      document.getElementById('timer-text-overlay').innerText = `${mm}:${ss}`;
-
-      const percentage = (sec / 60) * 100;
-      document.getElementById('timer-progress-bar').style.width = `${percentage}%`;
-    }
-
-    function saveCurrentCanvasToHistory(winnerPlayer, isUnfinished = false) {
-      if (!canvas || !currentWordObj) return;
-      try {
-        const timeTaken = Math.max(1, currentWordStartTime - timerSeconds);
-        const dataUrl = canvas.toDataURL('image/png');
-        roundDrawingsHistory.push({
-          dataUrl,
-          wordName: currentWordObj.name,
-          wordEmoji: currentWordObj.emoji,
-          timeTaken,
-          isUnfinished,
-          winnerName: winnerPlayer ? winnerPlayer.name : null,
-          winnerEmoji: winnerPlayer ? winnerPlayer.emoji : null
-        });
-      } catch (e) {
-        console.error("Canvas save error:", e);
-      }
-    }
-
-    function nextWord() {
-      if (usedWordIndices.size >= parsedWordList.length) {
-        usedWordIndices.clear();
-      }
-
-      let randomIndex;
-      do {
-        randomIndex = Math.floor(Math.random() * parsedWordList.length);
-      } while (usedWordIndices.has(randomIndex) && usedWordIndices.size < parsedWordList.length);
-
-      usedWordIndices.add(randomIndex);
-      currentWordObj = parsedWordList[randomIndex];
-      currentWordStartTime = timerSeconds;
-      
-      document.getElementById('word-display').innerText = currentWordObj.name;
-      clearCanvas();
-    }
-
-    function skipWordWithSE() {
-      playButtonSE();
-      skipWord();
-    }
-
-    function skipWord() {
-      if (!isGaming) return;
-      saveCurrentCanvasToHistory(null, true);
-      const activePlayers = players.filter(p => p.active);
-      const art = activePlayers[currentArtistIndex % activePlayers.length];
-      speakText(getRandomPhrase('pass', art ? art.name : "アーティスト"));
-      nextWord();
-    }
-
-    function openAnswerModalWithSE() {
-      playButtonSE();
-      openAnswerModal();
-    }
-
-    function openAnswerModal() {
-      if (!isGaming) return;
-      unlockAudioAndSpeech();
-      isPaused = true;
-
-      playSound('correct');
-      speakText(getRandomPhrase('correctAnswerOpen', currentWordObj.name));
-
-      const displayContainer = document.getElementById('modal-word-display');
-      
-      if (currentWordObj.emoji) {
-        displayContainer.innerHTML = `
-          <span class="text-9xl md:text-[14rem] leading-none block my-2 drop-shadow-2xl shrink-0 animate-periodic-jump">${currentWordObj.emoji}</span>
-          <span class="text-3xl md:text-5xl font-black text-amber-200 block drop-shadow">${currentWordObj.name}</span>
-        `;
-      } else {
-        displayContainer.innerHTML = `<span class="text-5xl md:text-7xl font-black text-amber-200 drop-shadow">${currentWordObj.name}</span>`;
-      }
-
-      renderAnswerModalGrid();
-      document.getElementById('answer-modal').classList.remove('modal-hidden');
-    }
-
-    function closeAnswerModalWithSE() {
-      playButtonSE();
-      closeAnswerModal();
-    }
-
-    function closeAnswerModal() {
-      document.getElementById('answer-modal').classList.add('modal-hidden');
-      isPaused = false;
-    }
-
-    function renderAnswerModalGrid() {
-      const grid = document.getElementById('answer-modal-grid');
-      grid.innerHTML = '';
-
-      const activePlayers = players.filter(p => p.active);
-      const currentArtist = activePlayers[currentArtistIndex % activePlayers.length];
-
-      players.forEach((player) => {
-        if (!player.active) return;
-
-        const colorStyle = COLOR_OPTIONS[player.colorIdx % COLOR_OPTIONS.length] || COLOR_OPTIONS[0];
-        const isArtist = currentArtist && currentArtist.id === player.id;
-        const currentRoundPt = roundScores[player.id] || 0;
-
-        const btn = document.createElement('button');
-        btn.onclick = () => submitCorrectWinner(player.id);
-        
-        btn.className = `p-2 rounded-2xl border-2 flex flex-col items-center justify-between transition active:scale-95 shadow-lg relative ${colorStyle.bg} ${colorStyle.border} ${isArtist ? 'ring-4 ring-amber-400 font-black' : ''} touch-action-none`;
-
-        btn.innerHTML = `
-          ${isArtist ? '<span class="absolute top-2 left-2 bg-amber-400 text-black text-[9px] font-black px-2 py-0.5 rounded-full shadow z-30">アーティスト</span>' : ''}
-          <span class="text-4xl md:text-5xl my-1 shrink-0 drop-shadow">${player.emoji}</span>
-          <span class="text-xs md:text-sm font-extrabold text-white truncate w-full text-center px-1">${player.name}</span>
-          <span class="mt-1 text-[11px] font-mono font-bold text-amber-300 bg-black/40 px-2 py-0.5 rounded-full border border-white/20">
-            +${currentRoundPt} pt
-          </span>
-        `;
-
-        grid.appendChild(btn);
-      });
-    }
-
-    function submitCorrectWinner(winnerPlayerId) {
-      if (!isGaming) return;
-
-      const activePlayers = players.filter(p => p.active);
-      const artist = activePlayers[currentArtistIndex % activePlayers.length];
-      if (artist) {
-        artist.score += 1;
-        roundScores[artist.id] = (roundScores[artist.id] || 0) + 1;
-      }
-
-      const winner = players.find(p => p.id === winnerPlayerId);
-      if (winner && winner.id !== artist.id) {
-        winner.score += 1;
-        roundScores[winner.id] = (roundScores[winner.id] || 0) + 1;
-      }
-
-      saveCurrentCanvasToHistory(winner, false);
-
-      if (winner) {
-        speakText(getRandomPhrase('afterCorrectWinner', winner.name));
-      }
-
-      saveStorageData();
-      closeAnswerModal();
-      
-      renderTvRankingsWithAnimation();
-      triggerScoreAnimation(winnerPlayerId, artist ? artist.id : null);
-      nextWord();
-    }
-
-    function triggerScoreAnimation(winnerId, artistId) {
-      const idsToAnimate = new Set([winnerId, artistId].filter(id => id !== null));
-      
-      idsToAnimate.forEach(id => {
-        const card = document.getElementById(`player-card-${id}`);
-        if (card) {
-          card.classList.add('animate-score-pop');
-          
-          const floatEl = document.createElement('div');
-          floatEl.className = 'absolute inset-0 flex items-center justify-center font-black text-amber-300 text-xl md:text-2xl drop-shadow-lg float-score-text z-30';
-          floatEl.innerText = '+1 pt!';
-          card.appendChild(floatEl);
-
-          setTimeout(() => {
-            card.classList.remove('animate-score-pop');
-            if (floatEl.parentNode) floatEl.parentNode.removeChild(floatEl);
-          }, 1200);
-        }
-      });
-    }
-
-    function renderTvRankingsWithAnimation() {
-      const container = document.getElementById('tv-rankings-container');
-      
-      const children = Array.from(container.children);
-      children.forEach(child => {
-        const id = child.id;
-        if (id) { previousPositions.set(id, child.getBoundingClientRect()); }
-      });
-
-      renderTvRankings();
-
-      const newChildren = Array.from(container.children);
-      newChildren.forEach(child => {
-        const id = child.id;
-        const first = previousPositions.get(id);
-        if (first) {
-          const last = child.getBoundingClientRect();
-          const deltaY = first.top - last.top;
-
-          if (deltaY !== 0) {
-            child.style.transform = `translateY(${deltaY}px)`;
-            child.style.transition = 'none';
-
-            requestAnimationFrame(() => {
-              child.style.transition = 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
-              child.style.transform = '';
-            });
-          }
-        }
-      });
-    }
-
-    function renderTvRankings() {
-      const container = document.getElementById('tv-rankings-container');
-      container.innerHTML = '';
-
-      const activePlayers = players.filter(p => p.active);
-      if (activePlayers.length === 0) return;
-
-      const currentArtist = activePlayers[currentArtistIndex % activePlayers.length];
-
-      const sorted = activePlayers.map((p, originalIndex) => ({
-        ...p,
-        originalIndex
-      })).sort((a, b) => b.score - a.score || a.id - b.id);
-
-      let currentRank = 1;
-      const rankedPlayers = sorted.map((player, idx, arr) => {
-        if (idx > 0 && player.score < arr[idx - 1].score) {
-          currentRank = idx + 1;
-        }
-        return { ...player, displayRank: currentRank };
-      });
-
-      rankedPlayers.forEach((player) => {
-        const colorStyle = COLOR_OPTIONS[player.colorIdx % COLOR_OPTIONS.length] || COLOR_OPTIONS[0];
-        const isArtist = currentArtist && currentArtist.id === player.id;
-        const rank = player.displayRank;
-
-        const card = document.createElement('div');
-        card.id = `player-card-${player.id}`;
-        
-        if (!isGaming) {
-          card.onclick = () => selectArtistByCardTap(player.id);
-          card.style.cursor = 'pointer';
-        }
-
-        card.className = `player-card-move w-full flex-1 rounded-xl p-2 flex items-center justify-between border-2 transition relative overflow-hidden shadow-md ${colorStyle.bg} ${colorStyle.border} ${isArtist ? 'ring-4 ring-amber-400 font-black' : 'opacity-90'}`;
-
-        let rankBadge = `<span class="text-xs font-bold w-6 text-center text-white/90">${rank}位</span>`;
-        if (rank === 1) rankBadge = `<span class="text-sm font-black w-6 text-center">🥇</span>`;
-        if (rank === 2) rankBadge = `<span class="text-sm font-black w-6 text-center">🥈</span>`;
-        if (rank === 3) rankBadge = `<span class="text-sm font-black w-6 text-center">🥉</span>`;
-
-        card.innerHTML = `
-          ${isArtist ? '<span class="absolute top-0 right-0 bg-amber-400 text-black text-[8px] font-black px-1.5 py-0.2 rounded-bl-md shadow z-30">アーティスト</span>' : ''}
-          <div class="flex items-center space-x-1.5 truncate flex-1 min-w-0 pr-1">
-            ${rankBadge}
-            <span class="text-xl md:text-2xl leading-none shrink-0 drop-shadow-sm">${player.emoji}</span>
-            <span class="text-xs md:text-sm font-extrabold text-white truncate">${player.name}</span>
-          </div>
-          <div class="text-right shrink-0">
-            <span class="text-sm md:text-base font-black text-white font-mono bg-black/30 px-1.5 py-0.5 rounded border border-white/20">${player.score} <span class="text-[9px]">pt</span></span>
-          </div>
-        `;
-
-        container.appendChild(card);
-      });
-
-      updateCenterArtistDisplay();
-    }
-
-    function updateCenterArtistDisplay() {
-      const activePlayers = players.filter(p => p.active);
-      const currentArtist = activePlayers[currentArtistIndex % activePlayers.length];
-      const displayEl = document.getElementById('center-artist-display');
-      if (displayEl && currentArtist) {
-        displayEl.innerHTML = `
-          <span class="text-5xl md:text-6xl">${currentArtist.emoji}</span>
-          <span class="text-xl md:text-2xl font-black text-white">${currentArtist.name}</span>
-        `;
-      }
-    }
-
-    function selectArtistByCardTap(playerId) {
-      if (isGaming) return;
-      playButtonSE();
-
-      const activePlayers = players.filter(p => p.active);
-      const idx = activePlayers.findIndex(p => p.id === playerId);
-      if (idx !== -1) {
-        currentArtistIndex = idx;
-        renderTvRankings();
-
-        const selectedPlayer = activePlayers[idx];
-        speakText(getRandomPhrase('selectArtistManual', selectedPlayer.name));
-      }
-    }
-
-    // ===== 設定モーダル関連（WithSEラッパー） =====
-    function openSettingsWithSE() {
-      playButtonSE();
-      openSettings();
-    }
-
-    function closeSettingsWithSE() {
-      playButtonSE();
-      closeSettings();
-    }
-
-    function saveAndCloseSettingsWithSE() {
-      playButtonSE();
-      saveAndCloseSettings();
-    }
-
-    function switchTabWithSE(tabName) {
-      playButtonSE();
-      switchTab(tabName);
-    }
-
-    function resetScoresWithSE() {
-      playButtonSE();
-      resetScores();
-    }
-
-    function loadDefaultWordsWithSE() {
-      playButtonSE();
-      loadDefaultWords();
-    }
-
-    function openSettings() {
-      if (isGaming) stopGame();
-
-      renderPlayersSettingsList();
-      document.getElementById('words-input').value = rawWordInputText;
-      updateWordsCountDisplay();
-      document.getElementById('settings-modal').classList.remove('modal-hidden');
-    }
-
-    function closeSettings() {
-      document.getElementById('settings-modal').classList.add('modal-hidden');
-    }
-
-    function saveAndCloseSettings() {
-      const rawText = document.getElementById('words-input').value;
-      const parsed = parseWordListFromRaw(rawText);
-      
-      if (parsed.length === 0) {
-        alert("お題は最低1つ以上入力してください。");
-        return;
-      }
-
-      rawWordInputText = rawText;
-      parsedWordList = parsed;
-
-      const activePlayers = players.filter(p => p.active);
-      if (currentArtistIndex >= activePlayers.length) {
-        currentArtistIndex = 0;
-      }
-
-      saveStorageData();
-      renderTvRankings();
-      closeSettings();
-    }
-
-    function switchTab(tabName) {
-      const tabPlayers = document.getElementById('tab-content-players');
-      const tabWords = document.getElementById('tab-content-words');
-      const btnPlayers = document.getElementById('tab-btn-players');
-      const btnWords = document.getElementById('tab-btn-words');
-
-      if (tabName === 'players') {
-        tabPlayers.classList.remove('modal-hidden');
-        tabWords.classList.add('modal-hidden');
-        btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none";
-        btnWords.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none";
-      } else {
-        tabPlayers.classList.add('modal-hidden');
-        tabWords.classList.remove('modal-hidden');
-        btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none";
-        btnWords.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none";
-      }
-    }
-
-    function renderPlayersSettingsList() {
-      const container = document.getElementById('players-list-container');
-      container.innerHTML = '';
-
-      const activePlayers = players.filter(p => p.active);
-
-      players.forEach((player) => {
-        const activeIdx = activePlayers.findIndex(p => p.id === player.id);
-        const isArtist = activeIdx === (currentArtistIndex % (activePlayers.length || 1));
-
-        const card = document.createElement('div');
-        card.className = `p-3 rounded-xl border flex flex-col justify-between space-y-2 bg-slate-950 ${player.active ? 'border-slate-700' : 'border-slate-800 opacity-50'}`;
-
-        card.innerHTML = `
-          <div class="flex items-center justify-between">
-            <span class="font-bold text-slate-300 text-xs">P${player.id + 1}</span>
-            <label class="flex items-center cursor-pointer space-x-1">
-              <span class="text-[10px] text-slate-400">${player.active ? '参加' : 'お休み'}</span>
-              <input type="checkbox" ${player.active ? 'checked' : ''} onchange="togglePlayerActive(${player.id})" class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0">
-            </label>
-          </div>
-
-          <div class="flex space-x-2">
-            <select onchange="updatePlayerEmoji(${player.id}, this.value)" class="bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-lg text-white focus:outline-none">
-              ${EMOJI_OPTIONS.map(e => `<option value="${e}" ${e === player.emoji ? 'selected' : ''}>${e}</option>`).join('')}
-            </select>
-            <input type="text" value="${player.name}" onchange="updatePlayerName(${player.id}, this.value)" class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-xs focus:outline-none focus:border-indigo-500" placeholder="名前">
-          </div>
-
-          <div class="space-y-1">
-            <span class="text-[10px] text-slate-400 block">テーマカラー:</span>
-            <div class="flex flex-wrap gap-1">
-              ${COLOR_OPTIONS.map((c, i) => `
-                <button onclick="updatePlayerColor(${player.id}, ${i})" class="w-4 h-4 rounded-full ${c.bg} border ${i === player.colorIdx ? 'border-white ring-2 ring-indigo-400 scale-110 z-10' : 'border-transparent opacity-70 hover:opacity-100'} touch-action-none"></button>
-              `).join('')}
-            </div>
-          </div>
-
-          <div class="flex items-center justify-between pt-1 border-t border-slate-800 text-xs">
-            <span class="font-mono text-amber-400 font-bold">${player.score} pt</span>
-            ${player.active ? `
-              <button onclick="setArtistByPlayerId(${player.id})" class="px-2 py-0.5 rounded text-[10px] font-bold ${isArtist ? 'bg-amber-500 text-black' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'} touch-action-none">
-                ${isArtist ? '★ アーティスト' : 'アーティストに指定'}
-              </button>
-            ` : '<span></span>'}
-          </div>
-        `;
-
-        container.appendChild(card);
-      });
-    }
-
-    function togglePlayerActive(playerId) {
-      playButtonSE();
-      const p = players.find(x => x.id === playerId);
-      if (p) {
-        p.active = !p.active;
-        saveStorageData();
-        renderPlayersSettingsList();
-      }
-    }
-
-    function updatePlayerName(playerId, newName) {
-      const p = players.find(x => x.id === playerId);
-      if (p) {
-        p.name = newName.trim() || `プレイヤー${playerId + 1}`;
-        saveStorageData();
-      }
-    }
-
-    function updatePlayerEmoji(playerId, emoji) {
-      playButtonSE();
-      const p = players.find(x => x.id === playerId);
-      if (p) {
-        p.emoji = emoji;
-        saveStorageData();
-      }
-    }
-
-    function updatePlayerColor(playerId, colorIdx) {
-      playButtonSE();
-      const p = players.find(x => x.id === playerId);
-      if (p) {
-        p.colorIdx = colorIdx;
-        saveStorageData();
-        renderPlayersSettingsList();
-      }
-    }
-
-    function setArtistByPlayerId(playerId) {
-      playButtonSE();
-      const activePlayers = players.filter(p => p.active);
-      const idx = activePlayers.findIndex(p => p.id === playerId);
-      if (idx !== -1) {
-        currentArtistIndex = idx;
-        renderPlayersSettingsList();
-      }
-    }
-
-    function resetScores() {
-      if (confirm("全員のスコアを 0 pt にリセットしますか？")) {
-        players.forEach(p => p.score = 0);
-        roundScores = {};
-        saveStorageData();
-        renderPlayersSettingsList();
-        renderTvRankings();
-      }
-    }
-
-    function loadDefaultWords() {
-      document.getElementById('words-input').value = DEFAULT_WORDS_RAW;
-      updateWordsCountDisplay();
-    }
-
-    function updateWordsCountDisplay() {
-      const rawText = document.getElementById('words-input').value;
-      const parsed = parseWordListFromRaw(rawText);
-      document.getElementById('words-count-display').innerText = `現在のお題数: ${parsed.length}個`;
-    }
-
-    document.getElementById('words-input').addEventListener('input', updateWordsCountDisplay);
-
+    // ===== 結果モーダル =====
     function saveDrawingAsImage(dataUrl, wordName, artistName, timeTaken) {
       playButtonSE();
       const img = new Image();
@@ -1489,7 +1693,6 @@
         const now = new Date();
         const days = ['日', '月', '火', '水', '木', '金', '土'];
         const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日(${days[now.getDay()]}) ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}  所要時間 ${timeTaken}秒`;
-        
         cx.fillStyle = '#94a3b8';
         cx.font = '22px sans-serif';
         cx.fillText(dateStr, 540, 1015);
@@ -1514,21 +1717,15 @@
       const currentArtist = activePlayers[currentArtistIndex % activePlayers.length];
       const artistName = currentArtist ? currentArtist.name : "アーティスト";
 
-      if (galleryTitle) {
-        galleryTitle.innerText = `${artistName}さんのアート作品`;
-      }
+      galleryTitle.innerText = `${artistName}さんのアート作品`;
 
       const detectives = activePlayers.filter(p => !currentArtist || p.id !== currentArtist.id);
-      const roundRanked = detectives.map(p => ({
-        ...p,
-        roundScore: roundScores[p.id] || 0
-      })).sort((a, b) => b.roundScore - a.roundScore || b.id - a.id);
+      const roundRanked = detectives.map(p => ({...p, roundScore: roundScores[p.id] || 0}))
+        .sort((a, b) => b.roundScore - a.roundScore || b.id - a.id);
 
       let currentRank = 1;
       const rankedRoundDetectives = roundRanked.map((player, idx, arr) => {
-        if (idx > 0 && player.roundScore < arr[idx - 1].roundScore) {
-          currentRank = idx + 1;
-        }
+        if (idx > 0 && player.roundScore < arr[idx - 1].roundScore) currentRank = idx + 1;
         return { ...player, displayRank: currentRank };
       });
 
@@ -1536,7 +1733,6 @@
         const item = document.createElement('div');
         const isZero = player.roundScore === 0;
         item.className = `flex justify-between items-center bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 text-sm transition ${isZero ? 'opacity-40' : 'opacity-100'}`;
-        
         let rankBadge = `<span class="font-bold text-xs text-amber-400 w-10 text-left">${player.displayRank}位</span>`;
         if (player.displayRank === 1) rankBadge = `<span class="font-bold text-xs text-amber-400 w-10 text-left">🥇 1位</span>`;
         if (player.displayRank === 2) rankBadge = `<span class="font-bold text-xs text-amber-400 w-10 text-left">🥈 2位</span>`;
@@ -1561,7 +1757,6 @@
         roundDrawingsHistory.forEach((item, index) => {
           const card = document.createElement('div');
           card.className = "bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/30 rounded-xl p-2 flex flex-col items-center space-y-1.5 text-center shadow-lg relative";
-          
           card.innerHTML = `
             <div class="w-full h-24 md:h-28 bg-white rounded-lg overflow-hidden border-2 border-slate-800 shadow-inner flex items-center justify-center p-1 relative">
               <img src="${item.dataUrl}" class="max-w-full max-h-full object-contain">
@@ -1572,12 +1767,8 @@
                 <span>${item.wordName}</span>
               </div>
               <div class="flex items-center space-x-1 shrink-0">
-                <span class="text-[10px] font-mono bg-amber-500/20 text-amber-300 px-1 py-0.2 rounded border border-amber-500/30">
-                  ${item.timeTaken}秒
-                </span>
-                <button onclick="saveDrawingAsImage('${item.dataUrl}', '${item.wordName}', '${artistName}', ${item.timeTaken})" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow border border-indigo-400 active:scale-95 transition touch-action-none">
-                  📥
-                </button>
+                <span class="text-[10px] font-mono bg-amber-500/20 text-amber-300 px-1 py-0.2 rounded border border-amber-500/30">${item.timeTaken}秒</span>
+                <button onclick="saveDrawingAsImage('${item.dataUrl}', '${item.wordName}', '${artistName}', ${item.timeTaken})" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow border border-indigo-400 active:scale-95 transition touch-action-none">📥</button>
               </div>
             </div>
             <div class="text-[10px] text-slate-400 truncate w-full text-center border-t border-slate-800/80 pt-1">
@@ -1609,12 +1800,39 @@
 
     function closeResultModal() {
       document.getElementById('result-modal').classList.add('modal-hidden');
-
       const activePlayers = players.filter(p => p.active);
       const nextArtist = activePlayers[currentArtistIndex % activePlayers.length];
       if (nextArtist) {
         speakText(getRandomPhrase('nextArtist', nextArtist.name));
       }
+    }
+
+    // ===== 初期化 =====
+    window.addEventListener('DOMContentLoaded', () => {
+      loadStorageData();
+      initCanvas();
+      renderColorPalette();
+      renderTvRankings();
+      updateStartGroupDisplay();
+      updateHeaderButton();
+      window.addEventListener('resize', resizeCanvas);
+    });
+
+    function renderColorPalette() {
+      const container = document.getElementById('color-palette');
+      container.innerHTML = '';
+      PEN_COLORS.forEach(c => {
+        const btn = document.createElement('button');
+        btn.onclick = () => { playButtonSE(); selectPenColor(c.id); };
+        const isSelected = currentPenColor === c.id;
+        btn.className = `w-5 h-5 rounded-full ${c.bg} border-2 transition ${isSelected ? 'scale-125 border-white ring-2 ring-indigo-400 z-10' : 'border-transparent hover:scale-110 opacity-80'} touch-action-none`;
+        container.appendChild(btn);
+      });
+    }
+
+    function selectPenColor(hexColor) {
+      currentPenColor = hexColor;
+      renderColorPalette();
     }
   </script>
 </body>
