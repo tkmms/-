@@ -9,14 +9,20 @@
   <meta name="apple-mobile-web-app-title" content="アテテ！">
   <meta name="theme-color" content="#020617">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="apple-touch-icon" href="icon-192.PNG">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    :root {
+      --safe-top: 112px;
+      --safe-bottom: 91px;
+      --safe-left: 18px;
+      --safe-right: 19px;
+    }
     html, body {
       height: 100dvh;
       width: 100vw;
       margin: 0;
-      padding: 0;
+      padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
       touch-action: manipulation;
       -webkit-touch-callout: none;
       -webkit-user-select: none;
@@ -25,6 +31,7 @@
       background-color: #020617;
       color: #f8fafc;
       -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
     }
     canvas {
       touch-action: none;
@@ -58,12 +65,24 @@
     }
     .float-score-text { animation: floatUp 1.2s ease-out forwards; pointer-events: none; }
     .modal-hidden { display: none !important; }
+
+    /* ヘッダー・フッターをセーフエリアに合わせて調整 */
+    header {
+      top: var(--safe-top) !important;
+      left: var(--safe-left) !important;
+      right: var(--safe-right) !important;
+    }
+    footer {
+      bottom: var(--safe-bottom) !important;
+      left: var(--safe-left) !important;
+      right: var(--safe-right) !important;
+    }
   </style>
 </head>
 <body class="h-[100dvh] w-vw flex flex-col justify-between font-sans overflow-hidden relative">
 
   <!-- ヘッダー -->
-  <header class="absolute top-0.5 left-0 right-0 z-30 px-[5vw] flex items-center justify-between pointer-events-auto">
+  <header class="absolute z-30 flex items-center justify-between pointer-events-auto">
     <div class="flex items-center space-x-3">
       <button id="header-main-btn" onclick="headerMainBtnWithSE()" class="bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1 rounded-xl text-xs font-bold shadow-lg flex items-center space-x-1 active:scale-95 transition touch-action-none">
         <span>⚙️ 設定</span>
@@ -79,7 +98,7 @@
   </header>
 
   <!-- メイン -->
-  <div class="flex-1 flex flex-col pt-[8.5dvh] px-[5vw] pb-[2.5dvh] min-h-0 relative">
+  <div class="flex-1 flex flex-col pt-[calc(var(--safe-top)+2rem)] min-h-0 relative">
     <div class="w-full h-full flex flex-row gap-3 min-h-0">
       <aside id="tv-rankings-container" class="w-44 md:w-56 h-full flex flex-col gap-1.5 shrink-0 relative select-none"></aside>
       <main class="flex-1 h-full flex flex-col gap-2 min-h-0 min-w-0 relative">
@@ -108,7 +127,7 @@
   </div>
 
   <!-- フッター -->
-  <footer class="h-[14dvh] w-full bg-slate-900 border-t-2 border-slate-800 px-4 py-1.5 flex items-center justify-between gap-2 shrink-0 z-20 shadow-2xl overflow-hidden relative">
+  <footer class="w-full bg-slate-900 border-t-2 border-slate-800 px-4 py-1.5 flex items-center justify-between gap-2 shrink-0 z-20 shadow-2xl overflow-hidden relative">
     <div class="absolute -top-5 left-6 text-[10px] text-amber-300/80 font-bold tracking-wider pointer-events-none">正解したら右側の「🎉 正解！」ボタンをタップ！</div>
     <div class="w-full bg-amber-500/10 border-2 border-amber-500/50 rounded-2xl px-4 py-1.5 flex items-center justify-between relative shadow-inner h-full overflow-hidden gap-3">
       <div id="footer-active-controls-left" class="flex items-center space-x-2 shrink-0 opacity-0 pointer-events-none transition-opacity duration-300">
@@ -155,6 +174,7 @@
           <div class="flex space-x-2">
             <button id="tab-btn-players" onclick="switchTabWithSE('players')" class="px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none">👥 プレイヤー編集</button>
             <button id="tab-btn-words" onclick="switchTabWithSE('words')" class="px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none">📝 お題グループ編集</button>
+            <button id="tab-btn-safearea" onclick="switchTabWithSE('safearea')" class="px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none">🖥️ 画面調整</button>
           </div>
           <div class="flex items-center gap-3">
             <label class="flex items-center space-x-2 cursor-pointer bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
@@ -167,6 +187,8 @@
             </label>
           </div>
         </div>
+
+        <!-- プレイヤー編集タブ -->
         <div id="tab-content-players" class="space-y-4">
           <div class="flex justify-between items-center">
             <p class="text-slate-400 text-xs">プレイヤーの名前、アイコン絵文字、テーマカラーを選択できます（最大9名）。</p>
@@ -174,6 +196,8 @@
           </div>
           <div id="players-list-container" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
         </div>
+
+        <!-- お題グループ編集タブ -->
         <div id="tab-content-words" class="space-y-3 modal-hidden">
           <div class="bg-indigo-950/60 border border-indigo-500/40 p-3 rounded-xl">
             <span class="text-xs font-bold text-indigo-200 block mb-1">お題の入力形式について</span>
@@ -181,6 +205,31 @@
           </div>
           <div id="word-groups-container" class="space-y-4"></div>
           <button onclick="addWordGroupWithSE()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-lg border border-slate-600 active:scale-95 transition touch-action-none">＋ グループを追加</button>
+        </div>
+
+        <!-- 画面調整タブ -->
+        <div id="tab-content-safearea" class="space-y-4 modal-hidden">
+          <div class="bg-indigo-950/60 border border-indigo-500/40 p-3 rounded-xl">
+            <p class="text-xs text-slate-300">テレビにミラーリングした際、画面の端が見切れる場合は、下のスライダーで調整してください。設定は自動的に保存されます。</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <label class="flex justify-between text-xs text-slate-300"><span>上余白</span><span id="safe-top-value">112px</span></label>
+              <input type="range" id="safe-top-slider" min="0" max="300" value="112" oninput="updateSafeArea('top', this.value)" class="w-full">
+            </div>
+            <div class="space-y-2">
+              <label class="flex justify-between text-xs text-slate-300"><span>下余白</span><span id="safe-bottom-value">91px</span></label>
+              <input type="range" id="safe-bottom-slider" min="0" max="300" value="91" oninput="updateSafeArea('bottom', this.value)" class="w-full">
+            </div>
+            <div class="space-y-2">
+              <label class="flex justify-between text-xs text-slate-300"><span>左余白</span><span id="safe-left-value">18px</span></label>
+              <input type="range" id="safe-left-slider" min="0" max="300" value="18" oninput="updateSafeArea('left', this.value)" class="w-full">
+            </div>
+            <div class="space-y-2">
+              <label class="flex justify-between text-xs text-slate-300"><span>右余白</span><span id="safe-right-value">19px</span></label>
+              <input type="range" id="safe-right-slider" min="0" max="300" value="19" oninput="updateSafeArea('right', this.value)" class="w-full">
+            </div>
+          </div>
         </div>
       </div>
       <div class="p-4 border-t border-slate-800 flex justify-end">
@@ -216,9 +265,11 @@
   </div>
 
   <script>
+    // ===== 定数・データ =====
     const STORAGE_KEY_PLAYERS = 'atete_app_players_v18';
     const STORAGE_KEY_GROUPS = 'atete_app_word_groups_v1';
     const STORAGE_KEY_SETTINGS = 'atete_app_settings_v18';
+    const STORAGE_KEY_SAFEAREA = 'atete_app_safearea_v1';
     const OLD_PLAYER_KEYS = ['atete_app_players_v17', 'oekaki_app_players_v16'];
     const OLD_WORD_KEYS = ['atete_app_words_v17', 'oekaki_app_words_v16'];
 
@@ -344,6 +395,10 @@
     let undoStack = [];
     let usePastelColors = false;
 
+    // セーフエリア
+    const defaultSafeArea = { top: 112, bottom: 91, left: 18, right: 19 };
+    let safeArea = { ...defaultSafeArea };
+
     // 不要な操作防止
     let lastTouchEnd = 0;
     document.addEventListener('touchend', function(e) {
@@ -355,7 +410,7 @@
     document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
     document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
 
-    // 音声関連
+    // ===== 音声関連 =====
     function startAudioKeepAlive() {
       if (keepAliveInterval) return;
       keepAliveInterval = setInterval(() => {
@@ -456,6 +511,7 @@
       } catch(e) { console.error(e); }
     }
 
+    // ===== しゃべりバリエーション =====
     const VOICE_PHRASES = {
       start: [
         (artist) => `よーい、スタート！${artist}画伯、魂の一作をお願いします！`,
@@ -547,8 +603,19 @@
       return typeof item === 'function' ? item(p1, p2) : item;
     }
 
-    // ストレージ
+    // ===== ストレージ =====
     function loadStorageData() {
+      // セーフエリア
+      try {
+        const savedSafe = localStorage.getItem(STORAGE_KEY_SAFEAREA);
+        if (savedSafe) {
+          const parsed = JSON.parse(savedSafe);
+          safeArea = { ...defaultSafeArea, ...parsed };
+        }
+      } catch(e) { safeArea = { ...defaultSafeArea }; }
+      applySafeArea();
+
+      // プレイヤー
       let loadedPlayers = localStorage.getItem(STORAGE_KEY_PLAYERS);
       if (!loadedPlayers) {
         for (const oldKey of OLD_PLAYER_KEYS) {
@@ -565,6 +632,7 @@
         }
       } catch(e) { players = JSON.parse(JSON.stringify(DEFAULT_PLAYERS)); }
 
+      // お題グループ
       const savedGroups = localStorage.getItem(STORAGE_KEY_GROUPS);
       if (savedGroups) {
         try {
@@ -578,6 +646,7 @@
         else wordGroups = [{ id: Date.now(), title: 'デフォルト', rawText: DEFAULT_WORDS_RAW }];
       }
 
+      // 設定
       try {
         const savedSettings = localStorage.getItem(STORAGE_KEY_SETTINGS);
         if (savedSettings) {
@@ -599,13 +668,31 @@
         localStorage.setItem(STORAGE_KEY_PLAYERS, JSON.stringify(players));
         localStorage.setItem(STORAGE_KEY_GROUPS, JSON.stringify(wordGroups));
         localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify({ enableSpeech, artistPointEnabled, currentGroupIndex }));
+        localStorage.setItem(STORAGE_KEY_SAFEAREA, JSON.stringify(safeArea));
       } catch(e) { console.error("Storage save failed:", e); }
     }
 
     function toggleSpeech(checked) { enableSpeech = checked; saveStorageData(); }
     function toggleArtistPoint(checked) { artistPointEnabled = checked; saveStorageData(); }
 
-    // お題グループ
+    // ===== セーフエリア =====
+    function applySafeArea() {
+      document.documentElement.style.setProperty('--safe-top', safeArea.top + 'px');
+      document.documentElement.style.setProperty('--safe-bottom', safeArea.bottom + 'px');
+      document.documentElement.style.setProperty('--safe-left', safeArea.left + 'px');
+      document.documentElement.style.setProperty('--safe-right', safeArea.right + 'px');
+    }
+
+    function updateSafeArea(side, value) {
+      safeArea[side] = parseInt(value, 10);
+      applySafeArea();
+      // 表示更新
+      document.getElementById(`safe-${side}-value`).innerText = value + 'px';
+      // 自動保存
+      localStorage.setItem(STORAGE_KEY_SAFEAREA, JSON.stringify(safeArea));
+    }
+
+    // ===== お題グループ管理 =====
     function updateParsedWordList() {
       if (wordGroups.length > 0 && wordGroups[currentGroupIndex]) parsedWordList = parseWordListFromRaw(wordGroups[currentGroupIndex].rawText);
       else parsedWordList = [];
@@ -673,7 +760,7 @@
     function switchGroupNextWithSE() { playButtonSE(); if (wordGroups.length === 0) return; currentGroupIndex = (currentGroupIndex + 1) % wordGroups.length; updateParsedWordList(); updateStartGroupDisplay(); saveStorageData(); }
     function updateStartGroupDisplay() { const el = document.getElementById('start-group-title'); if (el && wordGroups.length > 0) el.innerText = wordGroups[currentGroupIndex].title; }
 
-    // キャンバス
+    // ===== キャンバス・レイヤー =====
     function initCanvas() {
       colorCanvas = document.getElementById('color-canvas');
       blackCanvas = document.getElementById('black-canvas');
@@ -706,6 +793,7 @@
       return { x: e.clientX - rect.left, y: e.clientY - rect.top };
     }
 
+    // 描画開始（長押し判定・Undo保存）
     function startDrawing(e) {
       unlockAudioAndSpeech();
       isPointerDown = true;
@@ -792,6 +880,7 @@
       }
     }
 
+    // フラッドフィル（黒線を境界として扱う）
     function performFill(x, y) {
       if (currentPenColor === '#ffffff') return;
       if (currentPenColor === '#000000') {
@@ -844,6 +933,7 @@
       return result ? { r: parseInt(result[1],16), g: parseInt(result[2],16), b: parseInt(result[3],16) } : { r:0, g:0, b:0 };
     }
 
+    // パステル色の生成（白と混ぜて明るく）
     function getPastelColor(hex) {
       const rgb = hexToRgb(hex);
       const mix = 0.6;
@@ -866,6 +956,7 @@
       });
     }
 
+    // Undo機能
     function saveStateForUndo() {
       if (!colorCanvas || !blackCanvas) return;
       if (undoStack.length >= 20) undoStack.shift();
@@ -941,7 +1032,7 @@
       }
     }
 
-    // ゲーム進行
+    // ===== ゲーム進行 =====
     function toggleGameWithSE() { playButtonSE(); toggleGame(); }
     function toggleGame() {
       unlockAudioAndSpeech();
@@ -1234,6 +1325,15 @@
       renderPlayersSettingsList();
       renderWordGroups();
       updateStartGroupDisplay();
+      // セーフエリア設定をUIに反映
+      document.getElementById('safe-top-slider').value = safeArea.top;
+      document.getElementById('safe-bottom-slider').value = safeArea.bottom;
+      document.getElementById('safe-left-slider').value = safeArea.left;
+      document.getElementById('safe-right-slider').value = safeArea.right;
+      document.getElementById('safe-top-value').innerText = safeArea.top + 'px';
+      document.getElementById('safe-bottom-value').innerText = safeArea.bottom + 'px';
+      document.getElementById('safe-left-value').innerText = safeArea.left + 'px';
+      document.getElementById('safe-right-value').innerText = safeArea.right + 'px';
       document.getElementById('settings-modal').classList.remove('modal-hidden');
     }
     function closeSettings() { document.getElementById('settings-modal').classList.add('modal-hidden'); }
@@ -1249,17 +1349,26 @@
     function switchTab(tabName) {
       const tabPlayers = document.getElementById('tab-content-players');
       const tabWords = document.getElementById('tab-content-words');
+      const tabSafeArea = document.getElementById('tab-content-safearea');
       const btnPlayers = document.getElementById('tab-btn-players');
       const btnWords = document.getElementById('tab-btn-words');
+      const btnSafeArea = document.getElementById('tab-btn-safearea');
+      tabPlayers.classList.add('modal-hidden');
+      tabWords.classList.add('modal-hidden');
+      tabSafeArea.classList.add('modal-hidden');
+      btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none";
+      btnWords.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none";
+      btnSafeArea.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none";
       if (tabName === 'players') {
-        tabPlayers.classList.remove('modal-hidden'); tabWords.classList.add('modal-hidden');
+        tabPlayers.classList.remove('modal-hidden');
         btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none";
-        btnWords.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none";
-      } else {
-        tabPlayers.classList.add('modal-hidden'); tabWords.classList.remove('modal-hidden');
-        btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none";
+      } else if (tabName === 'words') {
+        tabWords.classList.remove('modal-hidden');
         btnWords.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none";
         renderWordGroups();
+      } else if (tabName === 'safearea') {
+        tabSafeArea.classList.remove('modal-hidden');
+        btnSafeArea.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none";
       }
     }
     function renderPlayersSettingsList() {
