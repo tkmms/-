@@ -32,6 +32,7 @@
     body {
       position: relative;
       display: block;
+      height: 100dvh; /* iOS PWA用に100dvhを追加 */
     }
 
     /* ===== ヘッダー：iPad最上部から16:9メイン上端まで ===== */
@@ -57,17 +58,13 @@
       background: #fff;
       border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 0 0 2px #1e293b;
+      box-shadow: 0 0 0 2px #1e293b; /* 従来のダークな枠 */
       display: flex;
       flex-direction: row;
       gap: 8px;
       padding: 8px;
       min-width: 0;
       min-height: 0;
-    }
-    /* 16:9枠（画面調整時に強調表示） */
-    #app-main.safe-adjusting {
-      box-shadow: 0 0 0 3px #f59e0b, 0 0 20px rgba(245, 158, 11, 0.5);
     }
 
     /* ===== フッター：16:9メイン下端からiPad最下部まで ===== */
@@ -84,6 +81,20 @@
       padding: 0 16px;
       gap: 8px;
       overflow: hidden;
+    }
+
+    /* ===== 画面調整用16:9枠オーバーレイ ===== */
+    #safe-frame-overlay {
+      position: fixed;
+      border: 3px dashed #f59e0b;
+      background: rgba(245, 158, 11, 0.08);
+      pointer-events: none;
+      z-index: 200; /* モーダルより前面 */
+      display: none;
+      border-radius: 4px;
+    }
+    #safe-frame-overlay.visible {
+      display: block;
     }
 
     /* ===== ランキングサイドバー ===== */
@@ -145,7 +156,7 @@
       min-height: 0;
       position: relative;
       background: #fff;
-      border-radius: 12px;
+      border-radius: 8px;
       overflow: hidden;
       border: 2px solid #1e293b;
     }
@@ -210,6 +221,9 @@
   </style>
 </head>
 <body>
+
+  <!-- 画面調整用16:9枠オーバーレイ -->
+  <div id="safe-frame-overlay"></div>
 
   <!-- ==================== ヘッダー ==================== -->
   <header id="app-header">
@@ -347,7 +361,7 @@
         <!-- 画面調整タブ -->
         <div id="tab-content-safearea" class="space-y-4 modal-hidden">
           <div class="bg-indigo-950/60 border border-indigo-500/40 p-3 rounded-xl">
-            <p class="text-xs text-slate-300">テレビにミラーリングした際、16:9のメイン画面のみがテレビに映るよう、左右余白を調整してください。<br>ヘッダーとフッターはテレビに映りません。調整中は16:9の枠が表示されます。</p>
+            <p class="text-xs text-slate-300">テレビにミラーリングした際、16:9のメイン画面のみがテレビに映るよう、左右余白を調整してください。調整中はオレンジの枠が表示されます。</p>
           </div>
           <div class="space-y-4">
             <div class="space-y-2">
@@ -527,7 +541,6 @@
     let undoStack = [];
     let usePastelColors = false;
 
-    // セーフマージン
     const DEFAULT_SAFE_MARGIN = 18;
     let safeMargin = DEFAULT_SAFE_MARGIN;
 
@@ -544,8 +557,8 @@
 
     // ===== レイアウト計算 =====
     function calculateLayout() {
-      const screenW = window.innerWidth;
-      const screenH = window.innerHeight;
+      const screenW = document.documentElement.clientWidth;
+      const screenH = document.documentElement.clientHeight;
       const mainW = Math.max(100, screenW - safeMargin * 2);
       const mainH = mainW * 9 / 16;
       const mainTop = Math.round((screenH - mainH) / 2);
@@ -591,7 +604,21 @@
         resizeCanvas();
       }
 
+      // 画面調整用オーバーレイの更新
+      updateSafeFrameOverlay(L);
+
       return L;
+    }
+
+    function updateSafeFrameOverlay(L) {
+      const overlay = document.getElementById('safe-frame-overlay');
+      if (!overlay) return;
+      if (overlay.classList.contains('visible')) {
+        overlay.style.top = L.mainTop + 'px';
+        overlay.style.left = L.mainLeft + 'px';
+        overlay.style.width = L.mainW + 'px';
+        overlay.style.height = L.mainH + 'px';
+      }
     }
 
     function updateSafeMargin(value) {
@@ -1495,7 +1522,7 @@
     }
     function closeSettings() {
       document.getElementById('settings-modal').classList.add('modal-hidden');
-      document.getElementById('app-main').classList.remove('safe-adjusting');
+      document.getElementById('safe-frame-overlay').classList.remove('visible');
     }
     function saveAndCloseSettings() {
       if (wordGroups.length === 0) { alert('お題グループがありません。'); return; }
@@ -1522,20 +1549,19 @@
       if (tabName === 'players') {
         tabPlayers.classList.remove('modal-hidden');
         btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none whitespace-nowrap";
+        document.getElementById('safe-frame-overlay').classList.remove('visible');
       } else if (tabName === 'words') {
         tabWords.classList.remove('modal-hidden');
         btnWords.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none whitespace-nowrap";
         renderWordGroups();
+        document.getElementById('safe-frame-overlay').classList.remove('visible');
       } else if (tabName === 'safearea') {
         tabSafeArea.classList.remove('modal-hidden');
         btnSafeArea.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none whitespace-nowrap";
         const marginSlider = document.getElementById('safe-margin-slider');
         if (marginSlider) marginSlider.value = safeMargin;
         updateSafeMargin(safeMargin);
-        // 16:9枠を強調表示
-        document.getElementById('app-main').classList.add('safe-adjusting');
-      } else {
-        document.getElementById('app-main').classList.remove('safe-adjusting');
+        document.getElementById('safe-frame-overlay').classList.add('visible');
       }
     }
     function renderPlayersSettingsList() {
