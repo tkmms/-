@@ -12,38 +12,181 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    :root {
-      --safe-top: 0px;
-      --safe-bottom: 0px;
-      --safe-left: 0px;
-      --safe-right: 0px;
-    }
-    html, body {
-      height: 100dvh;
-      width: 100vw;
+    * {
       margin: 0;
-      padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
-      touch-action: manipulation;
+      padding: 0;
+      box-sizing: border-box;
       -webkit-touch-callout: none;
       -webkit-user-select: none;
       user-select: none;
-      overflow: hidden;
-      background-color: #020617;
-      color: #f8fafc;
       -webkit-tap-highlight-color: transparent;
-      box-sizing: border-box;
     }
-    canvas {
-      touch-action: none;
-      cursor: crosshair;
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #020617;
+      font-family: sans-serif;
+      touch-action: manipulation;
     }
+    body {
+      position: relative;
+      display: block;
+    }
+
+    /* ===== ヘッダー：iPad最上部から16:9メイン上端まで ===== */
+    #app-header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 30;
+      background: #020617;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    /* ===== 16:9メイン領域（テレビ投影部分） ===== */
+    #app-main {
+      position: absolute;
+      z-index: 20;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 0 2px #1e293b;
+      display: flex;
+      flex-direction: row;
+      gap: 8px;
+      padding: 8px;
+      min-width: 0;
+      min-height: 0;
+    }
+    /* 16:9枠（画面調整時に強調表示） */
+    #app-main.safe-adjusting {
+      box-shadow: 0 0 0 3px #f59e0b, 0 0 20px rgba(245, 158, 11, 0.5);
+    }
+
+    /* ===== フッター：16:9メイン下端からiPad最下部まで ===== */
+    #app-footer {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 30;
+      background: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    /* ===== ランキングサイドバー ===== */
+    #tv-rankings-container {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      width: 176px;
+      min-width: 140px;
+      max-width: 200px;
+      flex-shrink: 0;
+      height: 100%;
+      overflow-y: auto;
+    }
+
+    /* ===== キャンバス側 ===== */
+    #canvas-area {
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    /* ===== タイマーバー ===== */
+    #timer-bar {
+      height: 16px;
+      background: #1e293b;
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+      flex-shrink: 0;
+      border: 1px solid #334155;
+    }
+    #timer-progress-bar {
+      height: 100%;
+      background: linear-gradient(to right, #dc2626, #f43f5e, #f59e0b);
+      border-radius: 999px;
+      transition: width 0.2s linear;
+      width: 100%;
+    }
+    #timer-text-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 900;
+      color: #fff;
+      font-family: monospace;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    }
+
+    /* ===== キャンバスコンテナ ===== */
+    #canvas-container {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid #1e293b;
+    }
+    #canvas-container canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* ===== スタートオーバーレイ ===== */
+    #center-start-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.85);
+      backdrop-filter: blur(4px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      transition: opacity 0.3s;
+      gap: 16px;
+      padding: 20px;
+    }
+    #center-start-overlay.hidden-start {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* ===== モーダル ===== */
+    .modal-hidden { display: none !important; }
     .scrollable-content {
       touch-action: pan-y;
       -webkit-overflow-scrolling: touch;
     }
-    .player-card-move {
-      transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
+
+    /* ===== アニメーション ===== */
+    .player-card-move { transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
     @keyframes scorePop {
       0% { transform: scale(1); filter: brightness(1); }
       50% { transform: scale(1.08); filter: brightness(1.6); }
@@ -64,85 +207,80 @@
       100% { opacity: 0; transform: translateY(-38px) scale(0.8); }
     }
     .float-score-text { animation: floatUp 1.2s ease-out forwards; pointer-events: none; }
-    .modal-hidden { display: none !important; }
-
-    /* ヘッダー・フッターをセーフエリアに合わせて調整 */
-    header {
-      top: var(--safe-top) !important;
-      left: var(--safe-left) !important;
-      right: var(--safe-right) !important;
-    }
-    footer {
-      bottom: var(--safe-bottom) !important;
-      left: var(--safe-left) !important;
-      right: var(--safe-right) !important;
-    }
   </style>
 </head>
-<body class="h-[100dvh] w-vw flex flex-col justify-between font-sans overflow-hidden relative">
+<body>
 
-  <!-- ヘッダー -->
-  <header class="absolute z-30 flex items-center justify-between pointer-events-auto">
-    <div class="flex items-center space-x-3">
-      <button id="header-main-btn" onclick="headerMainBtnWithSE()" class="bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1 rounded-xl text-xs font-bold shadow-lg flex items-center space-x-1 active:scale-95 transition touch-action-none">
-        <span>⚙️ 設定</span>
+  <!-- ==================== ヘッダー ==================== -->
+  <header id="app-header">
+    <div class="flex items-center gap-2 flex-shrink-0">
+      <button id="header-main-btn" onclick="headerMainBtnWithSE()" class="bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1.5 rounded-xl text-xs font-bold shadow-lg active:scale-95 transition touch-action-none whitespace-nowrap">
+        ⚙️ 設定
       </button>
-      <button onclick="undoCanvasWithSE()" class="bg-slate-800/80 hover:bg-slate-700 text-white px-2 py-1 rounded-lg text-xs font-bold border border-slate-600 shadow active:scale-95 transition touch-action-none">↩️ 戻る</button>
-      <span class="text-base md:text-lg font-black text-amber-300 tracking-wider drop-shadow">アテテ！</span>
+      <button onclick="undoCanvasWithSE()" class="bg-slate-800/80 hover:bg-slate-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold border border-slate-600 shadow active:scale-95 transition touch-action-none whitespace-nowrap">
+        ↩️ 戻る
+      </button>
+      <span class="text-base md:text-lg font-black text-amber-300 tracking-wider drop-shadow whitespace-nowrap">アテテ！</span>
     </div>
-    <div class="flex items-center space-x-2">
-      <div id="color-palette" class="flex items-center space-x-1.5"></div>
-      <button id="palette-toggle-btn" onclick="togglePaletteWithSE()" class="px-2 py-1 rounded-lg font-bold text-xs border active:scale-95 transition touch-action-none"></button>
-      <button onclick="clearCanvasWithSE()" class="ml-4 px-2.5 py-1 rounded-lg font-bold text-xs bg-rose-900/80 hover:bg-rose-800 text-rose-200 border border-rose-700 active:scale-95 transition shadow touch-action-none">🗑️ 全消し</button>
+    <div class="flex items-center gap-2 flex-shrink-0 overflow-x-auto">
+      <div id="color-palette" class="flex items-center gap-1 flex-shrink-0"></div>
+      <button id="palette-toggle-btn" onclick="togglePaletteWithSE()" class="px-2 py-1.5 rounded-lg font-bold text-xs border active:scale-95 transition touch-action-none whitespace-nowrap"></button>
+      <button onclick="clearCanvasWithSE()" class="px-3 py-1.5 rounded-lg font-bold text-xs bg-rose-900/80 hover:bg-rose-800 text-rose-200 border border-rose-700 active:scale-95 transition shadow touch-action-none whitespace-nowrap">
+        🗑️ 全消し
+      </button>
     </div>
   </header>
 
-  <!-- メイン -->
-  <div class="flex-1 flex flex-col pt-[calc(var(--safe-top)+2.5rem)] min-h-0 relative">
-    <div class="w-full h-full flex flex-row gap-3 min-h-0">
-      <aside id="tv-rankings-container" class="w-44 md:w-56 h-full flex flex-col gap-1.5 shrink-0 relative select-none"></aside>
-      <main class="flex-1 h-full flex flex-col gap-2 min-h-0 min-w-0 relative">
-        <div class="w-full bg-slate-800/90 rounded-full h-4 overflow-hidden border border-slate-700 relative shrink-0 shadow-inner">
-          <div id="timer-progress-bar" class="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-500 rounded-full transition-all duration-200 ease-linear w-full"></div>
-          <span id="timer-text-overlay" class="absolute inset-0 flex items-center justify-center text-[11px] font-black text-white drop-shadow font-mono">01:00</span>
-        </div>
-        <div id="canvas-container" class="flex-1 w-full relative bg-white rounded-2xl overflow-hidden shadow-2xl border-2 border-slate-800 min-h-0">
-          <canvas id="color-canvas" class="absolute inset-0 w-full h-full"></canvas>
-          <canvas id="black-canvas" class="absolute inset-0 w-full h-full"></canvas>
-          <div id="center-start-overlay" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 z-20 transition-opacity duration-300">
-            <div class="text-center space-y-6">
-              <span class="text-xs font-bold tracking-widest text-amber-400 block uppercase">次のアーティスト</span>
-              <div id="center-artist-display" class="flex items-center justify-center space-x-3 bg-slate-900 border-2 border-amber-500/60 px-6 py-4 rounded-3xl shadow-2xl"></div>
-              <div class="bg-slate-900/80 border border-slate-700 px-4 py-2 rounded-full flex items-center justify-center space-x-3 w-fit mx-auto">
-                <button onclick="switchGroupPrevWithSE()" class="text-slate-300 hover:text-white text-lg font-black touch-action-none">◀</button>
-                <span id="start-group-title" class="text-lg md:text-xl font-bold text-white whitespace-nowrap">デフォルト</span>
-                <button onclick="switchGroupNextWithSE()" class="text-slate-300 hover:text-white text-lg font-black touch-action-none">▶</button>
-              </div>
-              <button onclick="toggleGameWithSE()" class="mt-6 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-4 px-12 rounded-3xl text-2xl md:text-3xl border-4 border-emerald-300 shadow-2xl active:scale-95 transition animate-bounce touch-action-none">▶️ スタート！</button>
-            </div>
+  <!-- ==================== 16:9メイン領域 ==================== -->
+  <div id="app-main">
+    <!-- ランキングサイドバー -->
+    <aside id="tv-rankings-container" class="select-none"></aside>
+
+    <!-- キャンバスエリア -->
+    <div id="canvas-area">
+      <div id="timer-bar">
+        <div id="timer-progress-bar"></div>
+        <span id="timer-text-overlay">01:00</span>
+      </div>
+      <div id="canvas-container">
+        <canvas id="color-canvas"></canvas>
+        <canvas id="black-canvas"></canvas>
+        <div id="center-start-overlay">
+          <span class="text-xs font-bold tracking-widest text-amber-400 uppercase">次のアーティスト</span>
+          <div id="center-artist-display" class="flex items-center justify-center space-x-3 bg-slate-900 border-2 border-amber-500/60 px-6 py-4 rounded-3xl shadow-2xl"></div>
+          <div class="bg-slate-900/80 border border-slate-700 px-4 py-2 rounded-full flex items-center justify-center space-x-3">
+            <button onclick="switchGroupPrevWithSE()" class="text-slate-300 hover:text-white text-lg font-black touch-action-none">◀</button>
+            <span id="start-group-title" class="text-lg font-bold text-white whitespace-nowrap">デフォルト</span>
+            <button onclick="switchGroupNextWithSE()" class="text-slate-300 hover:text-white text-lg font-black touch-action-none">▶</button>
           </div>
+          <button onclick="toggleGameWithSE()" class="mt-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-4 px-12 rounded-3xl text-2xl md:text-3xl border-4 border-emerald-300 shadow-2xl active:scale-95 transition animate-bounce touch-action-none">
+            ▶️ スタート！
+          </button>
         </div>
-      </main>
+      </div>
     </div>
   </div>
 
-  <!-- フッター -->
-  <footer class="w-full bg-slate-900 border-t-2 border-slate-800 px-4 py-1.5 flex items-center justify-between gap-2 shrink-0 z-20 shadow-2xl overflow-hidden relative">
-    <div class="absolute -top-5 left-6 text-[10px] text-amber-300/80 font-bold tracking-wider pointer-events-none">正解したら右側の「🎉 正解！」ボタンをタップ！</div>
-    <div class="w-full bg-amber-500/10 border-2 border-amber-500/50 rounded-2xl px-4 py-1.5 flex items-center justify-between relative shadow-inner h-full overflow-hidden gap-3">
-      <div id="footer-active-controls-left" class="flex items-center space-x-2 shrink-0 opacity-0 pointer-events-none transition-opacity duration-300">
-        <button id="btn-skip" onclick="skipWordWithSE()" disabled class="bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white font-black py-4 px-8 rounded-2xl text-base md:text-lg border border-slate-600 shadow-lg active:scale-95 transition touch-action-none">パス</button>
+  <!-- ==================== フッター ==================== -->
+  <footer id="app-footer">
+    <div id="footer-active-controls-left" class="flex items-center gap-2 flex-shrink-0 opacity-0 pointer-events-none transition-opacity duration-300">
+      <button id="btn-skip" onclick="skipWordWithSE()" disabled class="bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white font-black py-4 px-8 rounded-2xl text-base md:text-lg border border-slate-600 shadow-lg active:scale-95 transition touch-action-none whitespace-nowrap">
+        パス
+      </button>
+    </div>
+    <div class="flex-1 flex items-center justify-center min-w-0 px-3">
+      <div id="word-display" class="font-black tracking-wider text-amber-300 text-center truncate w-full" style="font-size: clamp(1.2rem, 3vw, 2.4rem);">
+        「スタート」を押してね！
       </div>
-      <div class="flex-1 flex items-center justify-center h-full min-w-0 px-3">
-        <div id="word-display" class="font-black tracking-wider text-amber-300 text-center truncate w-full" style="font-size: clamp(1.2rem, 3vw, 2.4rem);">「スタート」を押してね！</div>
-      </div>
-      <div id="footer-active-controls-right" class="flex items-center shrink-0 opacity-0 pointer-events-none transition-opacity duration-300">
-        <button id="btn-correct-trigger" onclick="openAnswerModalWithSE()" disabled class="bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black font-black py-4 px-8 rounded-2xl text-base md:text-lg border border-amber-300 shadow-lg active:scale-95 transition touch-action-none">🎉 正解！</button>
-      </div>
+    </div>
+    <div id="footer-active-controls-right" class="flex items-center gap-2 flex-shrink-0 opacity-0 pointer-events-none transition-opacity duration-300">
+      <button id="btn-correct-trigger" onclick="openAnswerModalWithSE()" disabled class="bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black font-black py-4 px-8 rounded-2xl text-base md:text-lg border border-amber-300 shadow-lg active:scale-95 transition touch-action-none whitespace-nowrap">
+        🎉 正解！
+      </button>
     </div>
   </footer>
 
-  <!-- 正解モーダル -->
+  <!-- ==================== 正解モーダル ==================== -->
   <div id="answer-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 modal-hidden flex items-center justify-center p-3">
     <div class="bg-slate-900 border-2 border-amber-500/80 rounded-2xl w-full max-w-5xl h-[68vh] flex flex-col shadow-2xl overflow-hidden p-5 space-y-2 relative -top-6">
       <div class="flex items-center justify-between border-b border-slate-800 pb-2 shrink-0">
@@ -162,21 +300,21 @@
     </div>
   </div>
 
-  <!-- 設定モーダル -->
+  <!-- ==================== 設定モーダル ==================== -->
   <div id="settings-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 modal-hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[88vh] flex flex-col shadow-2xl">
-      <div class="p-4 border-b border-slate-800 flex justify-between items-center">
+      <div class="p-4 border-b border-slate-800 flex justify-between items-center shrink-0">
         <h2 class="text-xl font-bold text-white">⚙️ ゲーム設定＆お題編集</h2>
         <button onclick="closeSettingsWithSE()" class="text-slate-400 hover:text-white text-2xl font-bold px-2 touch-action-none">✕</button>
       </div>
       <div class="p-6 scrollable-content overflow-y-auto space-y-6 flex-1 text-sm">
         <div class="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 gap-2">
-          <div class="flex space-x-2">
-            <button id="tab-btn-players" onclick="switchTabWithSE('players')" class="px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none">👥 プレイヤー編集</button>
-            <button id="tab-btn-words" onclick="switchTabWithSE('words')" class="px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none">📝 お題グループ編集</button>
-            <button id="tab-btn-safearea" onclick="switchTabWithSE('safearea')" class="px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none">🖥️ 画面調整</button>
+          <div class="flex space-x-2 flex-wrap">
+            <button id="tab-btn-players" onclick="switchTabWithSE('players')" class="px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none whitespace-nowrap">👥 プレイヤー編集</button>
+            <button id="tab-btn-words" onclick="switchTabWithSE('words')" class="px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none whitespace-nowrap">📝 お題グループ編集</button>
+            <button id="tab-btn-safearea" onclick="switchTabWithSE('safearea')" class="px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none whitespace-nowrap">🖥️ 画面調整</button>
           </div>
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-3 flex-wrap">
             <label class="flex items-center space-x-2 cursor-pointer bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
               <span class="text-xs text-slate-300 font-bold">🔊 実況音声</span>
               <input type="checkbox" id="speech-toggle" onchange="toggleSpeech(this.checked)" checked class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0">
@@ -190,9 +328,9 @@
 
         <!-- プレイヤー編集タブ -->
         <div id="tab-content-players" class="space-y-4">
-          <div class="flex justify-between items-center">
+          <div class="flex justify-between items-center flex-wrap gap-2">
             <p class="text-slate-400 text-xs">プレイヤーの名前、アイコン絵文字、テーマカラーを選択できます（最大9名）。</p>
-            <button onclick="resetScoresWithSE()" class="text-xs bg-rose-900/50 hover:bg-rose-800 text-rose-300 border border-rose-700 px-3 py-1 rounded touch-action-none">スコアをリセット</button>
+            <button onclick="resetScoresWithSE()" class="text-xs bg-rose-900/50 hover:bg-rose-800 text-rose-300 border border-rose-700 px-3 py-1 rounded touch-action-none whitespace-nowrap">スコアをリセット</button>
           </div>
           <div id="players-list-container" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
         </div>
@@ -200,7 +338,6 @@
         <!-- お題グループ編集タブ -->
         <div id="tab-content-words" class="space-y-3 modal-hidden">
           <div class="bg-indigo-950/60 border border-indigo-500/40 p-3 rounded-xl">
-            <span class="text-xs font-bold text-indigo-200 block mb-1">お題の入力形式について</span>
             <p class="text-[11px] text-slate-300">「<span class="text-amber-300 font-bold">🎺 トランペット</span>」のように、絵文字と名前をスペース区切りで1行ずつ入力してください。<br>グループごとにお題を保存でき、スタート画面で切り替えられます。</p>
           </div>
           <div id="word-groups-container" class="space-y-4"></div>
@@ -210,7 +347,7 @@
         <!-- 画面調整タブ -->
         <div id="tab-content-safearea" class="space-y-4 modal-hidden">
           <div class="bg-indigo-950/60 border border-indigo-500/40 p-3 rounded-xl">
-            <p class="text-xs text-slate-300">テレビにミラーリングした際、画面の端が見切れる場合は、スライダーで左右余白を調整してください。上下余白は16:9比率から自動計算されます。</p>
+            <p class="text-xs text-slate-300">テレビにミラーリングした際、16:9のメイン画面のみがテレビに映るよう、左右余白を調整してください。<br>ヘッダーとフッターはテレビに映りません。調整中は16:9の枠が表示されます。</p>
           </div>
           <div class="space-y-4">
             <div class="space-y-2">
@@ -218,22 +355,22 @@
               <input type="range" id="safe-margin-slider" min="0" max="300" value="18" step="1" oninput="updateSafeMargin(this.value)" class="w-full">
             </div>
             <div class="bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-slate-300 space-y-1">
-              <div class="flex justify-between"><span>上余白（自動計算）</span><span id="calc-safe-top">0px</span></div>
-              <div class="flex justify-between"><span>下余白（自動計算）</span><span id="calc-safe-bottom">0px</span></div>
-              <div class="flex justify-between"><span>左余白（設定値）</span><span id="calc-safe-left">0px</span></div>
-              <div class="flex justify-between"><span>右余白（設定値）</span><span id="calc-safe-right">0px</span></div>
+              <div class="flex justify-between"><span>上余白（ヘッダー高さ）</span><span id="calc-safe-top">0px</span></div>
+              <div class="flex justify-between"><span>下余白（フッター高さ）</span><span id="calc-safe-bottom">0px</span></div>
+              <div class="flex justify-between"><span>左余白</span><span id="calc-safe-left">0px</span></div>
+              <div class="flex justify-between"><span>右余白</span><span id="calc-safe-right">0px</span></div>
               <div class="flex justify-between"><span>16:9可視領域</span><span id="calc-visible-area">0 × 0 px</span></div>
             </div>
           </div>
         </div>
       </div>
-      <div class="p-4 border-t border-slate-800 flex justify-end">
+      <div class="p-4 border-t border-slate-800 flex justify-end shrink-0">
         <button onclick="saveAndCloseSettingsWithSE()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2 rounded-xl shadow-lg touch-action-none">設定を保存して閉じる</button>
       </div>
     </div>
   </div>
 
-  <!-- 結果モーダル -->
+  <!-- ==================== 結果モーダル ==================== -->
   <div id="result-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 modal-hidden flex flex-col justify-between p-4 pt-10">
     <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/60 rounded-3xl w-full max-w-5xl h-[68vh] mx-auto flex flex-col p-5 shadow-2xl space-y-3 relative overflow-hidden mt-8">
       <div class="flex items-center justify-between border-b border-amber-500/30 pb-3 shrink-0">
@@ -390,11 +527,11 @@
     let undoStack = [];
     let usePastelColors = false;
 
-    // セーフエリア関連（左右マージンのみ保存、上下は自動計算）
-    const DEFAULT_SAFE_MARGIN = 18; // 左右余白の初期値
+    // セーフマージン
+    const DEFAULT_SAFE_MARGIN = 18;
     let safeMargin = DEFAULT_SAFE_MARGIN;
 
-    // 不要な操作防止
+    // ===== 不要な操作防止 =====
     let lastTouchEnd = 0;
     document.addEventListener('touchend', function(e) {
       const now = Date.now();
@@ -404,6 +541,78 @@
     document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
     document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
     document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+
+    // ===== レイアウト計算 =====
+    function calculateLayout() {
+      const screenW = window.innerWidth;
+      const screenH = window.innerHeight;
+      const mainW = Math.max(100, screenW - safeMargin * 2);
+      const mainH = mainW * 9 / 16;
+      const mainTop = Math.round((screenH - mainH) / 2);
+      const mainBottom = mainTop + Math.round(mainH);
+      return {
+        screenW,
+        screenH,
+        mainW: Math.round(mainW),
+        mainH: Math.round(mainH),
+        mainTop,
+        mainBottom,
+        mainLeft: safeMargin,
+        mainRight: safeMargin
+      };
+    }
+
+    function applyLayout() {
+      const L = calculateLayout();
+      const header = document.getElementById('app-header');
+      const main = document.getElementById('app-main');
+      const footer = document.getElementById('app-footer');
+
+      // ヘッダー
+      header.style.top = '0';
+      header.style.left = '0';
+      header.style.right = '0';
+      header.style.height = L.mainTop + 'px';
+
+      // メイン
+      main.style.top = L.mainTop + 'px';
+      main.style.left = L.mainLeft + 'px';
+      main.style.right = L.mainRight + 'px';
+      main.style.bottom = (L.screenH - L.mainBottom) + 'px';
+
+      // フッター
+      footer.style.top = L.mainBottom + 'px';
+      footer.style.left = '0';
+      footer.style.right = '0';
+      footer.style.bottom = '0';
+
+      // キャンバスリサイズ
+      if (colorCanvas && blackCanvas) {
+        resizeCanvas();
+      }
+
+      return L;
+    }
+
+    function updateSafeMargin(value) {
+      safeMargin = parseInt(value, 10) || 0;
+      const L = applyLayout();
+
+      const marginValueEl = document.getElementById('safe-margin-value');
+      if (marginValueEl) marginValueEl.innerText = safeMargin + 'px';
+      const topEl = document.getElementById('calc-safe-top');
+      if (topEl) topEl.innerText = L.mainTop + 'px';
+      const bottomEl = document.getElementById('calc-safe-bottom');
+      if (bottomEl) bottomEl.innerText = (L.screenH - L.mainBottom) + 'px';
+      const leftEl = document.getElementById('calc-safe-left');
+      if (leftEl) leftEl.innerText = L.mainLeft + 'px';
+      const rightEl = document.getElementById('calc-safe-right');
+      if (rightEl) rightEl.innerText = L.mainRight + 'px';
+      const visibleEl = document.getElementById('calc-visible-area');
+      if (visibleEl) visibleEl.innerText = L.mainW + ' × ' + L.mainH + ' px';
+
+      localStorage.setItem(STORAGE_KEY_SAFE_MARGIN, String(safeMargin));
+    }
 
     // ===== 音声関連 =====
     function startAudioKeepAlive() {
@@ -600,16 +809,11 @@
 
     // ===== ストレージ =====
     function loadStorageData() {
-      // セーフマージン
       try {
         const savedMargin = localStorage.getItem(STORAGE_KEY_SAFE_MARGIN);
-        if (savedMargin !== null) {
-          safeMargin = parseInt(savedMargin, 10) || 0;
-        }
+        if (savedMargin !== null) safeMargin = parseInt(savedMargin, 10) || 0;
       } catch(e) { safeMargin = DEFAULT_SAFE_MARGIN; }
-      applySafeArea();
 
-      // プレイヤー
       let loadedPlayers = localStorage.getItem(STORAGE_KEY_PLAYERS);
       if (!loadedPlayers) {
         for (const oldKey of OLD_PLAYER_KEYS) {
@@ -626,7 +830,6 @@
         }
       } catch(e) { players = JSON.parse(JSON.stringify(DEFAULT_PLAYERS)); }
 
-      // お題グループ
       const savedGroups = localStorage.getItem(STORAGE_KEY_GROUPS);
       if (savedGroups) {
         try {
@@ -640,7 +843,6 @@
         else wordGroups = [{ id: Date.now(), title: 'デフォルト', rawText: DEFAULT_WORDS_RAW }];
       }
 
-      // 設定
       try {
         const savedSettings = localStorage.getItem(STORAGE_KEY_SETTINGS);
         if (savedSettings) {
@@ -668,48 +870,6 @@
 
     function toggleSpeech(checked) { enableSpeech = checked; saveStorageData(); }
     function toggleArtistPoint(checked) { artistPointEnabled = checked; saveStorageData(); }
-
-    // ===== セーフエリア計算 =====
-    function calculateSafeArea() {
-      const cssW = window.innerWidth || 1080;
-      const cssH = window.innerHeight || 790;
-      const visibleW = cssW - safeMargin * 2;
-      const visibleH = visibleW * 9 / 16;
-      const top = Math.max(0, (cssH - visibleH) / 2);
-      const bottom = Math.max(0, (cssH - visibleH) / 2);
-      const left = safeMargin;
-      const right = safeMargin;
-      return { top: Math.round(top), bottom: Math.round(bottom), left: Math.round(left), right: Math.round(right), visibleW: Math.round(visibleW), visibleH: Math.round(visibleH) };
-    }
-
-    function applySafeArea() {
-      const area = calculateSafeArea();
-      document.documentElement.style.setProperty('--safe-top', area.top + 'px');
-      document.documentElement.style.setProperty('--safe-bottom', area.bottom + 'px');
-      document.documentElement.style.setProperty('--safe-left', area.left + 'px');
-      document.documentElement.style.setProperty('--safe-right', area.right + 'px');
-      return area;
-    }
-
-    function updateSafeMargin(value) {
-      safeMargin = parseInt(value, 10) || 0;
-      const area = applySafeArea();
-      // UI表示更新
-      const marginValueEl = document.getElementById('safe-margin-value');
-      if (marginValueEl) marginValueEl.innerText = safeMargin + 'px';
-      const topEl = document.getElementById('calc-safe-top');
-      if (topEl) topEl.innerText = area.top + 'px';
-      const bottomEl = document.getElementById('calc-safe-bottom');
-      if (bottomEl) bottomEl.innerText = area.bottom + 'px';
-      const leftEl = document.getElementById('calc-safe-left');
-      if (leftEl) leftEl.innerText = area.left + 'px';
-      const rightEl = document.getElementById('calc-safe-right');
-      if (rightEl) rightEl.innerText = area.right + 'px';
-      const visibleEl = document.getElementById('calc-visible-area');
-      if (visibleEl) visibleEl.innerText = area.visibleW + ' × ' + area.visibleH + ' px';
-      // 自動保存
-      localStorage.setItem(STORAGE_KEY_SAFE_MARGIN, String(safeMargin));
-    }
 
     // ===== お題グループ管理 =====
     function updateParsedWordList() {
@@ -793,7 +953,7 @@
     }
     function resizeCanvas() {
       const container = document.getElementById('canvas-container');
-      if (!container) return;
+      if (!container || !colorCanvas || !blackCanvas) return;
       const rect = container.getBoundingClientRect();
       resizeLayer(colorCanvas, colorCtx, rect);
       resizeLayer(blackCanvas, blackCtx, rect);
@@ -812,7 +972,6 @@
       return { x: e.clientX - rect.left, y: e.clientY - rect.top };
     }
 
-    // 描画開始（長押し判定・Undo保存）
     function startDrawing(e) {
       unlockAudioAndSpeech();
       isPointerDown = true;
@@ -899,7 +1058,6 @@
       }
     }
 
-    // フラッドフィル（黒線を境界として扱う）
     function performFill(x, y) {
       if (currentPenColor === '#ffffff') return;
       if (currentPenColor === '#000000') {
@@ -952,7 +1110,6 @@
       return result ? { r: parseInt(result[1],16), g: parseInt(result[2],16), b: parseInt(result[3],16) } : { r:0, g:0, b:0 };
     }
 
-    // パステル色の生成
     function getPastelColor(hex) {
       const rgb = hexToRgb(hex);
       const mix = 0.6;
@@ -961,12 +1118,10 @@
       const b = Math.round(rgb.b + (255 - rgb.b) * mix);
       return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
     }
-
     function getCurrentPaletteColor(hex) {
       const colors = usePastelColors ? getPastelPalette() : BASE_PEN_COLORS;
       return colors.find(c => c.id === hex);
     }
-
     function getPastelPalette() {
       return BASE_PEN_COLORS.map(c => {
         if (c.id === '#000000' || c.id === '#ffffff') return c;
@@ -975,7 +1130,6 @@
       });
     }
 
-    // Undo機能
     function saveStateForUndo() {
       if (!colorCanvas || !blackCanvas) return;
       if (undoStack.length >= 20) undoStack.shift();
@@ -984,15 +1138,9 @@
         black: blackCanvas.toDataURL()
       });
     }
-    function undoCanvasWithSE() {
-      playButtonSE();
-      undoCanvas();
-    }
+    function undoCanvasWithSE() { playButtonSE(); undoCanvas(); }
     function undoCanvas() {
-      if (undoStack.length === 0) {
-        speakText("戻れる操作がありません");
-        return;
-      }
+      if (undoStack.length === 0) { speakText("戻れる操作がありません"); return; }
       const state = undoStack.pop();
       restoreState(state);
     }
@@ -1029,11 +1177,7 @@
       tctx.drawImage(blackCanvas, 0, 0);
       return temp.toDataURL('image/png');
     }
-    function clearCanvasWithSE() {
-      playButtonSE();
-      saveStateForUndo();
-      clearCanvas();
-    }
+    function clearCanvasWithSE() { playButtonSE(); saveStateForUndo(); clearCanvas(); }
 
     function headerMainBtnWithSE() {
       playButtonSE();
@@ -1043,11 +1187,11 @@
     function updateHeaderButton() {
       const btn = document.getElementById('header-main-btn');
       if (isGaming) {
-        btn.innerHTML = '<span>⏹ 中断</span>';
-        btn.className = "bg-rose-600 hover:bg-rose-500 text-white border border-rose-400 px-3 py-1 rounded-xl text-xs font-bold shadow-lg flex items-center space-x-1 active:scale-95 transition touch-action-none";
+        btn.innerHTML = '⏹ 中断';
+        btn.className = "bg-rose-600 hover:bg-rose-500 text-white border border-rose-400 px-3 py-1.5 rounded-xl text-xs font-bold shadow-lg active:scale-95 transition touch-action-none whitespace-nowrap";
       } else {
-        btn.innerHTML = '<span>⚙️ 設定</span>';
-        btn.className = "bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1 rounded-xl text-xs font-bold shadow-lg flex items-center space-x-1 active:scale-95 transition touch-action-none";
+        btn.innerHTML = '⚙️ 設定';
+        btn.className = "bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1.5 rounded-xl text-xs font-bold shadow-lg active:scale-95 transition touch-action-none whitespace-nowrap";
       }
     }
 
@@ -1065,7 +1209,7 @@
       isGaming = true; isPaused = false; timerSeconds = 60; usedWordIndices.clear();
       roundScores = {}; roundDrawingsHistory = [];
       players.forEach(p => { roundScores[p.id] = 0; });
-      document.getElementById('center-start-overlay').classList.add('opacity-0', 'pointer-events-none');
+      document.getElementById('center-start-overlay').classList.add('hidden-start');
       document.getElementById('footer-active-controls-left').classList.remove('opacity-0', 'pointer-events-none');
       document.getElementById('footer-active-controls-right').classList.remove('opacity-0', 'pointer-events-none');
       document.getElementById('btn-skip').disabled = false;
@@ -1095,7 +1239,7 @@
     }
     function stopGame() {
       isGaming = false; isPaused = false; clearInterval(timerInterval);
-      document.getElementById('center-start-overlay').classList.remove('opacity-0', 'pointer-events-none');
+      document.getElementById('center-start-overlay').classList.remove('hidden-start');
       document.getElementById('footer-active-controls-left').classList.add('opacity-0', 'pointer-events-none');
       document.getElementById('footer-active-controls-right').classList.add('opacity-0', 'pointer-events-none');
       document.getElementById('btn-skip').disabled = true;
@@ -1333,7 +1477,7 @@
       }
     }
 
-    // 設定モーダル
+    // ===== 設定モーダル =====
     function openSettingsWithSE() { playButtonSE(); openSettings(); }
     function closeSettingsWithSE() { playButtonSE(); closeSettings(); }
     function saveAndCloseSettingsWithSE() { playButtonSE(); saveAndCloseSettings(); }
@@ -1344,13 +1488,15 @@
       renderPlayersSettingsList();
       renderWordGroups();
       updateStartGroupDisplay();
-      // セーフマージン設定をUIに反映
       const marginSlider = document.getElementById('safe-margin-slider');
       if (marginSlider) marginSlider.value = safeMargin;
       updateSafeMargin(safeMargin);
       document.getElementById('settings-modal').classList.remove('modal-hidden');
     }
-    function closeSettings() { document.getElementById('settings-modal').classList.add('modal-hidden'); }
+    function closeSettings() {
+      document.getElementById('settings-modal').classList.add('modal-hidden');
+      document.getElementById('app-main').classList.remove('safe-adjusting');
+    }
     function saveAndCloseSettings() {
       if (wordGroups.length === 0) { alert('お題グループがありません。'); return; }
       if (wordGroups[currentGroupIndex] && parseWordListFromRaw(wordGroups[currentGroupIndex].rawText).length === 0) { alert('現在選択中のお題グループにお題がありません。'); return; }
@@ -1370,23 +1516,26 @@
       tabPlayers.classList.add('modal-hidden');
       tabWords.classList.add('modal-hidden');
       tabSafeArea.classList.add('modal-hidden');
-      btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none";
-      btnWords.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none";
-      btnSafeArea.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none";
+      btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none whitespace-nowrap";
+      btnWords.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none whitespace-nowrap";
+      btnSafeArea.className = "px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-400 touch-action-none whitespace-nowrap";
       if (tabName === 'players') {
         tabPlayers.classList.remove('modal-hidden');
-        btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none";
+        btnPlayers.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none whitespace-nowrap";
       } else if (tabName === 'words') {
         tabWords.classList.remove('modal-hidden');
-        btnWords.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none";
+        btnWords.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none whitespace-nowrap";
         renderWordGroups();
       } else if (tabName === 'safearea') {
         tabSafeArea.classList.remove('modal-hidden');
-        btnSafeArea.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none";
-        // スライダー同期
+        btnSafeArea.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none whitespace-nowrap";
         const marginSlider = document.getElementById('safe-margin-slider');
         if (marginSlider) marginSlider.value = safeMargin;
         updateSafeMargin(safeMargin);
+        // 16:9枠を強調表示
+        document.getElementById('app-main').classList.add('safe-adjusting');
+      } else {
+        document.getElementById('app-main').classList.remove('safe-adjusting');
       }
     }
     function renderPlayersSettingsList() {
@@ -1432,7 +1581,7 @@
     function setArtistByPlayerId(playerId) { playButtonSE(); const activePlayers = players.filter(p => p.active); const idx = activePlayers.findIndex(p => p.id === playerId); if (idx !== -1) { currentArtistIndex = idx; renderPlayersSettingsList(); } }
     function resetScores() { if (confirm("全員のスコアを 0 pt にリセットしますか？")) { players.forEach(p => p.score = 0); roundScores = {}; saveStorageData(); renderPlayersSettingsList(); renderTvRankings(); } }
 
-    // 結果モーダル
+    // ===== 結果モーダル =====
     function saveDrawingAsImage(dataUrl, wordName, artistName, timeTaken) {
       playButtonSE();
       const img = new Image();
@@ -1540,7 +1689,7 @@
       if (nextArtist) speakText(getRandomPhrase('nextArtist', nextArtist.name));
     }
 
-    // パレット・カラー
+    // ===== パレット・カラー =====
     function togglePaletteWithSE() {
       playButtonSE();
       usePastelColors = !usePastelColors;
@@ -1553,9 +1702,9 @@
       if (btn) {
         btn.innerText = 'パステル';
         if (usePastelColors) {
-          btn.className = 'px-2 py-1 rounded-lg font-bold text-xs border bg-pink-300 text-pink-900 border-pink-400 active:scale-95 transition touch-action-none';
+          btn.className = 'px-2 py-1.5 rounded-lg font-bold text-xs border bg-pink-300 text-pink-900 border-pink-400 active:scale-95 transition touch-action-none whitespace-nowrap';
         } else {
-          btn.className = 'px-2 py-1 rounded-lg font-bold text-xs border bg-slate-800 text-slate-300 border-slate-600 active:scale-95 transition touch-action-none';
+          btn.className = 'px-2 py-1.5 rounded-lg font-bold text-xs border bg-slate-800 text-slate-300 border-slate-600 active:scale-95 transition touch-action-none whitespace-nowrap';
         }
       }
     }
@@ -1567,7 +1716,7 @@
         const btn = document.createElement('button');
         btn.onclick = () => { playButtonSE(); selectPenColor(c.id); };
         const isSelected = currentPenColor === c.id;
-        btn.className = `w-5 h-5 rounded-full ${c.bg} border-2 transition ${isSelected ? 'scale-125 border-white ring-2 ring-indigo-400 z-10' : 'border-transparent hover:scale-110 opacity-80'} touch-action-none`;
+        btn.className = `w-5 h-5 rounded-full ${c.bg} border-2 transition ${isSelected ? 'scale-125 border-white ring-2 ring-indigo-400 z-10' : 'border-transparent hover:scale-110 opacity-80'} touch-action-none flex-shrink-0`;
         if (c.id.startsWith('#')) {
           btn.style.backgroundColor = c.id;
           if (c.id === '#ffffff') btn.style.borderColor = '#d1d5db';
@@ -1580,9 +1729,10 @@
       renderColorPalette();
     }
 
-    // 初期化
+    // ===== 初期化 =====
     window.addEventListener('DOMContentLoaded', () => {
       loadStorageData();
+      applyLayout();
       initCanvas();
       renderColorPalette();
       updatePaletteToggleButton();
@@ -1590,7 +1740,7 @@
       updateStartGroupDisplay();
       updateHeaderButton();
       window.addEventListener('resize', () => {
-        applySafeArea();
+        applyLayout();
         resizeCanvas();
       });
     });
