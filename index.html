@@ -70,8 +70,9 @@
       <span class="text-base md:text-lg font-black text-amber-300 tracking-wider drop-shadow">アテテ！</span>
     </div>
     <div class="flex items-center space-x-2">
+      <button onclick="undoCanvasWithSE()" class="bg-slate-800/80 hover:bg-slate-700 text-white px-2 py-1 rounded-lg text-xs font-bold border border-slate-600 shadow active:scale-95 transition touch-action-none">↩️ 戻る</button>
       <div id="color-palette" class="flex items-center space-x-1.5"></div>
-      <button id="palette-toggle-btn" onclick="togglePaletteWithSE()" class="ml-1 px-2 py-1 rounded-lg font-bold text-[10px] bg-pink-200 text-pink-900 border border-pink-300 active:scale-95 transition touch-action-none">🌸 パステル</button>
+      <button id="palette-toggle-btn" onclick="togglePaletteWithSE()" class="px-2 py-1 rounded-lg font-bold text-xs border active:scale-95 transition touch-action-none"></button>
       <button onclick="clearCanvasWithSE()" class="ml-4 px-2.5 py-1 rounded-lg font-bold text-xs bg-rose-900/80 hover:bg-rose-800 text-rose-200 border border-rose-700 active:scale-95 transition shadow touch-action-none">🗑️ 全消し</button>
     </div>
   </header>
@@ -88,7 +89,6 @@
         <div id="canvas-container" class="flex-1 w-full relative bg-white rounded-2xl overflow-hidden shadow-2xl border-2 border-slate-800 min-h-0">
           <canvas id="color-canvas" class="absolute inset-0 w-full h-full"></canvas>
           <canvas id="black-canvas" class="absolute inset-0 w-full h-full"></canvas>
-          <button onclick="undoCanvasWithSE()" class="absolute top-2 left-2 z-30 bg-slate-800/80 hover:bg-slate-700 text-white px-2 py-1 rounded-lg text-xs font-bold border border-slate-600 shadow active:scale-95 transition touch-action-none">↩️ 戻る</button>
           <div id="center-start-overlay" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 z-20 transition-opacity duration-300">
             <div class="text-center space-y-6">
               <span class="text-xs font-bold tracking-widest text-amber-400 block uppercase">次のアーティスト</span>
@@ -224,7 +224,8 @@
 
     const EMOJI_OPTIONS = ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐦","🐣"];
 
-    const PEN_COLORS = [
+    // 基本カラーパレット（通常色）
+    const BASE_PEN_COLORS = [
       { id: "#000000", name: "黒", bg: "bg-black border-2 border-white/90 ring-1 ring-black", isOverlayColor: false },
       { id: "#4b5563", name: "濃い灰色", bg: "bg-gray-600", isOverlayColor: true },
       { id: "#92400e", name: "茶色", bg: "bg-amber-800", isOverlayColor: true },
@@ -240,20 +241,7 @@
       { id: "#ffffff", name: "白（消しゴム）", bg: "bg-white border border-gray-400", isOverlayColor: false }
     ];
 
-    const PASTEL_COLORS = [
-      { id: "#000000", name: "黒", bg: "bg-black border-2 border-white/90 ring-1 ring-black", isOverlayColor: false },
-      { id: "#fbcfe8", name: "パステルピンク", bg: "bg-pink-200", isOverlayColor: true },
-      { id: "#bfdbfe", name: "パステルブルー", bg: "bg-blue-200", isOverlayColor: true },
-      { id: "#bbf7d0", name: "パステルグリーン", bg: "bg-green-200", isOverlayColor: true },
-      { id: "#fef08a", name: "パステルイエロー", bg: "bg-yellow-200", isOverlayColor: true },
-      { id: "#ddd6fe", name: "ラベンダー", bg: "bg-purple-200", isOverlayColor: true },
-      { id: "#fed7aa", name: "ピーチ", bg: "bg-orange-200", isOverlayColor: true },
-      { id: "#cffafe", name: "ミント", bg: "bg-cyan-100", isOverlayColor: true },
-      { id: "#fecaca", name: "ローズ", bg: "bg-red-200", isOverlayColor: true },
-      { id: "#e7e5e4", name: "ライトグレー", bg: "bg-stone-300", isOverlayColor: true },
-      { id: "#ffffff", name: "白（消しゴム）", bg: "bg-white border border-gray-400", isOverlayColor: false }
-    ];
-
+    // プレイヤーカラーテーマ
     const COLOR_OPTIONS = [
       { id: "red", name: "レッド", bg: "bg-red-600", border: "border-red-400" },
       { id: "orange", name: "オレンジ", bg: "bg-orange-600", border: "border-orange-400" },
@@ -357,7 +345,7 @@
     let startPos = { x: 0, y: 0 };
     let isPointerDown = false;
     let undoStack = [];
-    let usePastelColors = false;
+    let usePastelColors = false; // パステルモード
 
     // ===== 不要な操作防止 =====
     let lastTouchEnd = 0;
@@ -730,7 +718,7 @@
       startPos = getCanvasCoordinates(e);
       isDrawing = false;
       drawCtxs = [];
-      saveStateForUndo(); // 現在の状態を保存
+      saveStateForUndo();
       longPressTimer = setTimeout(() => {
         longPressTriggered = true;
         performFill(startPos.x, startPos.y);
@@ -778,7 +766,7 @@
     function beginDrawing(pos) {
       isDrawing = true;
       startPencilSound();
-      const colorObj = (usePastelColors ? PASTEL_COLORS : PEN_COLORS).find(c => c.id === currentPenColor);
+      const colorObj = getCurrentPaletteColor(currentPenColor);
       drawCtxs = [];
       if (currentPenColor === '#ffffff') {
         drawCtxs = [colorCtx, blackCtx];
@@ -834,16 +822,13 @@
       const visited = new Uint8Array(w * h);
       const queue = [iy * w + ix];
       visited[iy * w + ix] = 1;
-
       let boundaryData = null;
       if (boundaryCtx) boundaryData = boundaryCtx.getImageData(0, 0, w, h).data;
-
       const match = (idx) => Math.abs(data[idx] - sr) <= tolerance && Math.abs(data[idx+1] - sg) <= tolerance && Math.abs(data[idx+2] - sb) <= tolerance && Math.abs(data[idx+3] - sa) <= tolerance;
       const isBoundary = (idx) => {
         if (!boundaryData) return false;
         return boundaryData[idx+3] > 0 && boundaryData[idx] < 50 && boundaryData[idx+1] < 50 && boundaryData[idx+2] < 50;
       };
-
       while (queue.length) {
         const p = queue.shift();
         const idx = p * 4;
@@ -863,6 +848,31 @@
     function hexToRgb(hex) {
       const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
       return result ? { r: parseInt(result[1],16), g: parseInt(result[2],16), b: parseInt(result[3],16) } : { r:0, g:0, b:0 };
+    }
+
+    // パステル色の生成（白と混ぜて明るく）
+    function getPastelColor(hex) {
+      const rgb = hexToRgb(hex);
+      const mix = 0.6; // 60% white
+      const r = Math.round(rgb.r + (255 - rgb.r) * mix);
+      const g = Math.round(rgb.g + (255 - rgb.g) * mix);
+      const b = Math.round(rgb.b + (255 - rgb.b) * mix);
+      return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+    }
+
+    // 現在のパレットから色オブジェクトを取得
+    function getCurrentPaletteColor(hex) {
+      const colors = usePastelColors ? getPastelPalette() : BASE_PEN_COLORS;
+      return colors.find(c => c.id === hex);
+    }
+
+    // パステルパレットを生成（黒・白は通常のまま）
+    function getPastelPalette() {
+      return BASE_PEN_COLORS.map(c => {
+        if (c.id === '#000000' || c.id === '#ffffff') return c;
+        const pastelHex = getPastelColor(c.id);
+        return { ...c, id: pastelHex, name: c.name, bg: c.bg };
+      });
     }
 
     // Undo機能
@@ -963,7 +973,7 @@
       document.getElementById('btn-correct-trigger').disabled = false;
       updateHeaderButton();
       clearCanvas();
-      undoStack = []; // ゲーム開始時にUndoスタックをリセット
+      undoStack = [];
       nextWord();
       const activePlayersList = players.filter(p => p.active);
       const currentArtist = activePlayersList[currentArtistIndex % activePlayersList.length];
@@ -1420,23 +1430,36 @@
     function updatePaletteToggleButton() {
       const btn = document.getElementById('palette-toggle-btn');
       if (btn) {
-        if (usePastelColors) btn.innerText = '🎨 通常';
-        else btn.innerText = '🌸 パステル';
+        if (usePastelColors) {
+          btn.innerText = 'パステル';
+          btn.className = 'px-2 py-1 rounded-lg font-bold text-xs border bg-pink-300 text-pink-900 border-pink-400 active:scale-95 transition touch-action-none';
+        } else {
+          btn.innerText = 'パステル';
+          btn.className = 'px-2 py-1 rounded-lg font-bold text-xs border bg-slate-800 text-slate-300 border-slate-600 active:scale-95 transition touch-action-none';
+        }
       }
     }
     function renderColorPalette() {
       const container = document.getElementById('color-palette');
       container.innerHTML = '';
-      const colors = usePastelColors ? PASTEL_COLORS : PEN_COLORS;
+      const colors = usePastelColors ? getPastelPalette() : BASE_PEN_COLORS;
       colors.forEach(c => {
         const btn = document.createElement('button');
         btn.onclick = () => { playButtonSE(); selectPenColor(c.id); };
         const isSelected = currentPenColor === c.id;
         btn.className = `w-5 h-5 rounded-full ${c.bg} border-2 transition ${isSelected ? 'scale-125 border-white ring-2 ring-indigo-400 z-10' : 'border-transparent hover:scale-110 opacity-80'} touch-action-none`;
+        // 背景色を動的に設定（パステル色の場合）
+        if (c.id.startsWith('#')) {
+          btn.style.backgroundColor = c.id;
+          if (c.id === '#ffffff') btn.style.borderColor = '#d1d5db';
+        }
         container.appendChild(btn);
       });
     }
-    function selectPenColor(hexColor) { currentPenColor = hexColor; renderColorPalette(); }
+    function selectPenColor(hexColor) {
+      currentPenColor = hexColor;
+      renderColorPalette();
+    }
 
     // ===== 初期化 =====
     window.addEventListener('DOMContentLoaded', () => {
