@@ -41,34 +41,26 @@
       50% { transform: scale(1.08); filter: brightness(1.6); }
       100% { transform: scale(1); filter: brightness(1); }
     }
-    .animate-score-pop {
-      animation: scorePop 0.6s ease-out;
-    }
+    .animate-score-pop { animation: scorePop 0.6s ease-out; }
     @keyframes periodicJump {
       0%, 80%, 100% { transform: translateY(0); }
       85% { transform: translateY(-15px) scale(1.05); }
       90% { transform: translateY(0); }
       95% { transform: translateY(-8px) scale(1.02); }
     }
-    .animate-periodic-jump {
-      animation: periodicJump 3s infinite ease-in-out;
-    }
+    .animate-periodic-jump { animation: periodicJump 3s infinite ease-in-out; }
     @keyframes floatUp {
       0% { opacity: 0; transform: translateY(10px) scale(0.5); }
       30% { opacity: 1; transform: translateY(-12px) scale(1.3); }
       80% { opacity: 1; transform: translateY(-28px) scale(1); }
       100% { opacity: 0; transform: translateY(-38px) scale(0.8); }
     }
-    .float-score-text {
-      animation: floatUp 1.2s ease-out forwards;
-      pointer-events: none;
-    }
-    .modal-hidden {
-      display: none !important;
-    }
+    .float-score-text { animation: floatUp 1.2s ease-out forwards; pointer-events: none; }
+    .modal-hidden { display: none !important; }
   </style>
 </head>
 <body class="h-[100dvh] w-vw flex flex-col justify-between font-sans overflow-hidden relative">
+
   <!-- ヘッダー -->
   <header class="absolute top-0.5 left-0 right-0 z-30 px-[5vw] flex items-center justify-between pointer-events-auto">
     <div class="flex items-center space-x-3">
@@ -79,7 +71,8 @@
     </div>
     <div class="flex items-center space-x-2">
       <div id="color-palette" class="flex items-center space-x-1.5"></div>
-      <button onclick="clearCanvasWithSE()" class="ml-2 px-2.5 py-1 rounded-lg font-bold text-xs bg-rose-900/80 hover:bg-rose-800 text-rose-200 border border-rose-700 active:scale-95 transition shadow touch-action-none">🗑️ 全消し</button>
+      <button id="palette-toggle-btn" onclick="togglePaletteWithSE()" class="ml-1 px-2 py-1 rounded-lg font-bold text-[10px] bg-pink-200 text-pink-900 border border-pink-300 active:scale-95 transition touch-action-none">🌸 パステル</button>
+      <button onclick="clearCanvasWithSE()" class="ml-4 px-2.5 py-1 rounded-lg font-bold text-xs bg-rose-900/80 hover:bg-rose-800 text-rose-200 border border-rose-700 active:scale-95 transition shadow touch-action-none">🗑️ 全消し</button>
     </div>
   </header>
 
@@ -95,6 +88,7 @@
         <div id="canvas-container" class="flex-1 w-full relative bg-white rounded-2xl overflow-hidden shadow-2xl border-2 border-slate-800 min-h-0">
           <canvas id="color-canvas" class="absolute inset-0 w-full h-full"></canvas>
           <canvas id="black-canvas" class="absolute inset-0 w-full h-full"></canvas>
+          <button onclick="undoCanvasWithSE()" class="absolute top-2 left-2 z-30 bg-slate-800/80 hover:bg-slate-700 text-white px-2 py-1 rounded-lg text-xs font-bold border border-slate-600 shadow active:scale-95 transition touch-action-none">↩️ 戻る</button>
           <div id="center-start-overlay" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 z-20 transition-opacity duration-300">
             <div class="text-center space-y-6">
               <span class="text-xs font-bold tracking-widest text-amber-400 block uppercase">次のアーティスト</span>
@@ -246,6 +240,20 @@
       { id: "#ffffff", name: "白（消しゴム）", bg: "bg-white border border-gray-400", isOverlayColor: false }
     ];
 
+    const PASTEL_COLORS = [
+      { id: "#000000", name: "黒", bg: "bg-black border-2 border-white/90 ring-1 ring-black", isOverlayColor: false },
+      { id: "#fbcfe8", name: "パステルピンク", bg: "bg-pink-200", isOverlayColor: true },
+      { id: "#bfdbfe", name: "パステルブルー", bg: "bg-blue-200", isOverlayColor: true },
+      { id: "#bbf7d0", name: "パステルグリーン", bg: "bg-green-200", isOverlayColor: true },
+      { id: "#fef08a", name: "パステルイエロー", bg: "bg-yellow-200", isOverlayColor: true },
+      { id: "#ddd6fe", name: "ラベンダー", bg: "bg-purple-200", isOverlayColor: true },
+      { id: "#fed7aa", name: "ピーチ", bg: "bg-orange-200", isOverlayColor: true },
+      { id: "#cffafe", name: "ミント", bg: "bg-cyan-100", isOverlayColor: true },
+      { id: "#fecaca", name: "ローズ", bg: "bg-red-200", isOverlayColor: true },
+      { id: "#e7e5e4", name: "ライトグレー", bg: "bg-stone-300", isOverlayColor: true },
+      { id: "#ffffff", name: "白（消しゴム）", bg: "bg-white border border-gray-400", isOverlayColor: false }
+    ];
+
     const COLOR_OPTIONS = [
       { id: "red", name: "レッド", bg: "bg-red-600", border: "border-red-400" },
       { id: "orange", name: "オレンジ", bg: "bg-orange-600", border: "border-orange-400" },
@@ -343,11 +351,13 @@
     let pencilGainNode = null;
     let previousPositions = new Map();
 
-    // 長押し塗りつぶし用
+    // 長押し塗りつぶし・Undo用
     let longPressTimer = null;
     let longPressTriggered = false;
     let startPos = { x: 0, y: 0 };
     let isPointerDown = false;
+    let undoStack = [];
+    let usePastelColors = false;
 
     // ===== 不要な操作防止 =====
     let lastTouchEnd = 0;
@@ -712,7 +722,7 @@
       return { x: e.clientX - rect.left, y: e.clientY - rect.top };
     }
 
-    // 描画開始（長押し判定付き）
+    // 描画開始（長押し判定・Undo保存）
     function startDrawing(e) {
       unlockAudioAndSpeech();
       isPointerDown = true;
@@ -720,6 +730,7 @@
       startPos = getCanvasCoordinates(e);
       isDrawing = false;
       drawCtxs = [];
+      saveStateForUndo(); // 現在の状態を保存
       longPressTimer = setTimeout(() => {
         longPressTriggered = true;
         performFill(startPos.x, startPos.y);
@@ -767,7 +778,7 @@
     function beginDrawing(pos) {
       isDrawing = true;
       startPencilSound();
-      const colorObj = PEN_COLORS.find(c => c.id === currentPenColor);
+      const colorObj = (usePastelColors ? PASTEL_COLORS : PEN_COLORS).find(c => c.id === currentPenColor);
       drawCtxs = [];
       if (currentPenColor === '#ffffff') {
         drawCtxs = [colorCtx, blackCtx];
@@ -800,12 +811,10 @@
 
     // フラッドフィル（黒線を境界として扱う）
     function performFill(x, y) {
-      if (currentPenColor === '#ffffff') return; // 消しゴムでは塗りつぶししない
+      if (currentPenColor === '#ffffff') return;
       if (currentPenColor === '#000000') {
-        // 黒色は黒キャンバスに塗りつぶし（境界なし）
         floodFill(blackCtx, x, y, currentPenColor, null);
       } else {
-        // カラーはカラーキャンバスに塗りつぶし、黒線を境界として使用
         floodFill(colorCtx, x, y, currentPenColor, blackCtx);
       }
       playButtonSE();
@@ -827,22 +836,18 @@
       visited[iy * w + ix] = 1;
 
       let boundaryData = null;
-      if (boundaryCtx) {
-        boundaryData = boundaryCtx.getImageData(0, 0, w, h).data;
-      }
+      if (boundaryCtx) boundaryData = boundaryCtx.getImageData(0, 0, w, h).data;
 
       const match = (idx) => Math.abs(data[idx] - sr) <= tolerance && Math.abs(data[idx+1] - sg) <= tolerance && Math.abs(data[idx+2] - sb) <= tolerance && Math.abs(data[idx+3] - sa) <= tolerance;
-
       const isBoundary = (idx) => {
         if (!boundaryData) return false;
-        // 黒線の判定：暗くて不透明なピクセル
         return boundaryData[idx+3] > 0 && boundaryData[idx] < 50 && boundaryData[idx+1] < 50 && boundaryData[idx+2] < 50;
       };
 
       while (queue.length) {
         const p = queue.shift();
         const idx = p * 4;
-        if (isBoundary(idx)) continue; // 境界はスキップ
+        if (isBoundary(idx)) continue;
         if (match(idx)) {
           data[idx] = rgb.r; data[idx+1] = rgb.g; data[idx+2] = rgb.b; data[idx+3] = 255;
           const xp = p % w, yp = Math.floor(p / w);
@@ -860,6 +865,46 @@
       return result ? { r: parseInt(result[1],16), g: parseInt(result[2],16), b: parseInt(result[3],16) } : { r:0, g:0, b:0 };
     }
 
+    // Undo機能
+    function saveStateForUndo() {
+      if (!colorCanvas || !blackCanvas) return;
+      if (undoStack.length >= 20) undoStack.shift();
+      undoStack.push({
+        color: colorCanvas.toDataURL(),
+        black: blackCanvas.toDataURL()
+      });
+    }
+    function undoCanvasWithSE() {
+      playButtonSE();
+      undoCanvas();
+    }
+    function undoCanvas() {
+      if (undoStack.length === 0) {
+        speakText("戻れる操作がありません");
+        return;
+      }
+      const state = undoStack.pop();
+      restoreState(state);
+    }
+    function restoreState(state) {
+      const imgC = new Image();
+      const imgB = new Image();
+      let loaded = 0;
+      const tryDraw = () => {
+        loaded++;
+        if (loaded === 2) {
+          colorCtx.clearRect(0, 0, colorCanvas.width, colorCanvas.height);
+          colorCtx.drawImage(imgC, 0, 0);
+          blackCtx.clearRect(0, 0, blackCanvas.width, blackCanvas.height);
+          blackCtx.drawImage(imgB, 0, 0);
+        }
+      };
+      imgC.onload = tryDraw;
+      imgB.onload = tryDraw;
+      imgC.src = state.color;
+      imgB.src = state.black;
+    }
+
     function clearCanvas() {
       colorCtx.clearRect(0, 0, colorCanvas.width, colorCanvas.height);
       blackCtx.clearRect(0, 0, blackCanvas.width, blackCanvas.height);
@@ -874,7 +919,11 @@
       tctx.drawImage(blackCanvas, 0, 0);
       return temp.toDataURL('image/png');
     }
-    function clearCanvasWithSE() { playButtonSE(); clearCanvas(); }
+    function clearCanvasWithSE() {
+      playButtonSE();
+      saveStateForUndo();
+      clearCanvas();
+    }
 
     // ヘッダーボタン
     function headerMainBtnWithSE() {
@@ -914,6 +963,7 @@
       document.getElementById('btn-correct-trigger').disabled = false;
       updateHeaderButton();
       clearCanvas();
+      undoStack = []; // ゲーム開始時にUndoスタックをリセット
       nextWord();
       const activePlayersList = players.filter(p => p.active);
       const currentArtist = activePlayersList[currentArtistIndex % activePlayersList.length];
@@ -1359,20 +1409,26 @@
       if (nextArtist) speakText(getRandomPhrase('nextArtist', nextArtist.name));
     }
 
-    // 初期化
-    window.addEventListener('DOMContentLoaded', () => {
-      loadStorageData();
-      initCanvas();
+    // ===== パレット切替・描画色 =====
+    function togglePaletteWithSE() {
+      playButtonSE();
+      usePastelColors = !usePastelColors;
+      currentPenColor = '#000000';
       renderColorPalette();
-      renderTvRankings();
-      updateStartGroupDisplay();
-      updateHeaderButton();
-      window.addEventListener('resize', resizeCanvas);
-    });
+      updatePaletteToggleButton();
+    }
+    function updatePaletteToggleButton() {
+      const btn = document.getElementById('palette-toggle-btn');
+      if (btn) {
+        if (usePastelColors) btn.innerText = '🎨 通常';
+        else btn.innerText = '🌸 パステル';
+      }
+    }
     function renderColorPalette() {
       const container = document.getElementById('color-palette');
       container.innerHTML = '';
-      PEN_COLORS.forEach(c => {
+      const colors = usePastelColors ? PASTEL_COLORS : PEN_COLORS;
+      colors.forEach(c => {
         const btn = document.createElement('button');
         btn.onclick = () => { playButtonSE(); selectPenColor(c.id); };
         const isSelected = currentPenColor === c.id;
@@ -1381,6 +1437,18 @@
       });
     }
     function selectPenColor(hexColor) { currentPenColor = hexColor; renderColorPalette(); }
+
+    // ===== 初期化 =====
+    window.addEventListener('DOMContentLoaded', () => {
+      loadStorageData();
+      initCanvas();
+      renderColorPalette();
+      updatePaletteToggleButton();
+      renderTvRankings();
+      updateStartGroupDisplay();
+      updateHeaderButton();
+      window.addEventListener('resize', resizeCanvas);
+    });
   </script>
 </body>
 </html>
