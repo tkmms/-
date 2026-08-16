@@ -13,10 +13,10 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root {
-      --safe-top: 112px;
-      --safe-bottom: 91px;
-      --safe-left: 18px;
-      --safe-right: 19px;
+      --safe-top: 0px;
+      --safe-bottom: 0px;
+      --safe-left: 0px;
+      --safe-right: 0px;
     }
     html, body {
       height: 100dvh;
@@ -98,7 +98,7 @@
   </header>
 
   <!-- メイン -->
-  <div class="flex-1 flex flex-col pt-[calc(var(--safe-top)+2rem)] min-h-0 relative">
+  <div class="flex-1 flex flex-col pt-[calc(var(--safe-top)+2.5rem)] min-h-0 relative">
     <div class="w-full h-full flex flex-row gap-3 min-h-0">
       <aside id="tv-rankings-container" class="w-44 md:w-56 h-full flex flex-col gap-1.5 shrink-0 relative select-none"></aside>
       <main class="flex-1 h-full flex flex-col gap-2 min-h-0 min-w-0 relative">
@@ -210,24 +210,19 @@
         <!-- 画面調整タブ -->
         <div id="tab-content-safearea" class="space-y-4 modal-hidden">
           <div class="bg-indigo-950/60 border border-indigo-500/40 p-3 rounded-xl">
-            <p class="text-xs text-slate-300">テレビにミラーリングした際、画面の端が見切れる場合は、下のスライダーで調整してください。設定は自動的に保存されます。</p>
+            <p class="text-xs text-slate-300">テレビにミラーリングした際、画面の端が見切れる場合は、スライダーで左右余白を調整してください。上下余白は16:9比率から自動計算されます。</p>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-4">
             <div class="space-y-2">
-              <label class="flex justify-between text-xs text-slate-300"><span>上余白</span><span id="safe-top-value">112px</span></label>
-              <input type="range" id="safe-top-slider" min="0" max="300" value="112" oninput="updateSafeArea('top', this.value)" class="w-full">
+              <label class="flex justify-between text-xs text-slate-300"><span>左右余白（テレビ可視領域の調整）</span><span id="safe-margin-value">18px</span></label>
+              <input type="range" id="safe-margin-slider" min="0" max="300" value="18" step="1" oninput="updateSafeMargin(this.value)" class="w-full">
             </div>
-            <div class="space-y-2">
-              <label class="flex justify-between text-xs text-slate-300"><span>下余白</span><span id="safe-bottom-value">91px</span></label>
-              <input type="range" id="safe-bottom-slider" min="0" max="300" value="91" oninput="updateSafeArea('bottom', this.value)" class="w-full">
-            </div>
-            <div class="space-y-2">
-              <label class="flex justify-between text-xs text-slate-300"><span>左余白</span><span id="safe-left-value">18px</span></label>
-              <input type="range" id="safe-left-slider" min="0" max="300" value="18" oninput="updateSafeArea('left', this.value)" class="w-full">
-            </div>
-            <div class="space-y-2">
-              <label class="flex justify-between text-xs text-slate-300"><span>右余白</span><span id="safe-right-value">19px</span></label>
-              <input type="range" id="safe-right-slider" min="0" max="300" value="19" oninput="updateSafeArea('right', this.value)" class="w-full">
+            <div class="bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-slate-300 space-y-1">
+              <div class="flex justify-between"><span>上余白（自動計算）</span><span id="calc-safe-top">0px</span></div>
+              <div class="flex justify-between"><span>下余白（自動計算）</span><span id="calc-safe-bottom">0px</span></div>
+              <div class="flex justify-between"><span>左余白（設定値）</span><span id="calc-safe-left">0px</span></div>
+              <div class="flex justify-between"><span>右余白（設定値）</span><span id="calc-safe-right">0px</span></div>
+              <div class="flex justify-between"><span>16:9可視領域</span><span id="calc-visible-area">0 × 0 px</span></div>
             </div>
           </div>
         </div>
@@ -269,7 +264,7 @@
     const STORAGE_KEY_PLAYERS = 'atete_app_players_v18';
     const STORAGE_KEY_GROUPS = 'atete_app_word_groups_v1';
     const STORAGE_KEY_SETTINGS = 'atete_app_settings_v18';
-    const STORAGE_KEY_SAFEAREA = 'atete_app_safearea_v1';
+    const STORAGE_KEY_SAFE_MARGIN = 'atete_app_safe_margin_v1';
     const OLD_PLAYER_KEYS = ['atete_app_players_v17', 'oekaki_app_players_v16'];
     const OLD_WORD_KEYS = ['atete_app_words_v17', 'oekaki_app_words_v16'];
 
@@ -395,9 +390,9 @@
     let undoStack = [];
     let usePastelColors = false;
 
-    // セーフエリア
-    const defaultSafeArea = { top: 112, bottom: 91, left: 18, right: 19 };
-    let safeArea = { ...defaultSafeArea };
+    // セーフエリア関連（左右マージンのみ保存、上下は自動計算）
+    const DEFAULT_SAFE_MARGIN = 18; // 左右余白の初期値
+    let safeMargin = DEFAULT_SAFE_MARGIN;
 
     // 不要な操作防止
     let lastTouchEnd = 0;
@@ -605,14 +600,13 @@
 
     // ===== ストレージ =====
     function loadStorageData() {
-      // セーフエリア
+      // セーフマージン
       try {
-        const savedSafe = localStorage.getItem(STORAGE_KEY_SAFEAREA);
-        if (savedSafe) {
-          const parsed = JSON.parse(savedSafe);
-          safeArea = { ...defaultSafeArea, ...parsed };
+        const savedMargin = localStorage.getItem(STORAGE_KEY_SAFE_MARGIN);
+        if (savedMargin !== null) {
+          safeMargin = parseInt(savedMargin, 10) || 0;
         }
-      } catch(e) { safeArea = { ...defaultSafeArea }; }
+      } catch(e) { safeMargin = DEFAULT_SAFE_MARGIN; }
       applySafeArea();
 
       // プレイヤー
@@ -668,28 +662,53 @@
         localStorage.setItem(STORAGE_KEY_PLAYERS, JSON.stringify(players));
         localStorage.setItem(STORAGE_KEY_GROUPS, JSON.stringify(wordGroups));
         localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify({ enableSpeech, artistPointEnabled, currentGroupIndex }));
-        localStorage.setItem(STORAGE_KEY_SAFEAREA, JSON.stringify(safeArea));
+        localStorage.setItem(STORAGE_KEY_SAFE_MARGIN, String(safeMargin));
       } catch(e) { console.error("Storage save failed:", e); }
     }
 
     function toggleSpeech(checked) { enableSpeech = checked; saveStorageData(); }
     function toggleArtistPoint(checked) { artistPointEnabled = checked; saveStorageData(); }
 
-    // ===== セーフエリア =====
-    function applySafeArea() {
-      document.documentElement.style.setProperty('--safe-top', safeArea.top + 'px');
-      document.documentElement.style.setProperty('--safe-bottom', safeArea.bottom + 'px');
-      document.documentElement.style.setProperty('--safe-left', safeArea.left + 'px');
-      document.documentElement.style.setProperty('--safe-right', safeArea.right + 'px');
+    // ===== セーフエリア計算 =====
+    function calculateSafeArea() {
+      const cssW = window.innerWidth || 1080;
+      const cssH = window.innerHeight || 790;
+      const visibleW = cssW - safeMargin * 2;
+      const visibleH = visibleW * 9 / 16;
+      const top = Math.max(0, (cssH - visibleH) / 2);
+      const bottom = Math.max(0, (cssH - visibleH) / 2);
+      const left = safeMargin;
+      const right = safeMargin;
+      return { top: Math.round(top), bottom: Math.round(bottom), left: Math.round(left), right: Math.round(right), visibleW: Math.round(visibleW), visibleH: Math.round(visibleH) };
     }
 
-    function updateSafeArea(side, value) {
-      safeArea[side] = parseInt(value, 10);
-      applySafeArea();
-      // 表示更新
-      document.getElementById(`safe-${side}-value`).innerText = value + 'px';
+    function applySafeArea() {
+      const area = calculateSafeArea();
+      document.documentElement.style.setProperty('--safe-top', area.top + 'px');
+      document.documentElement.style.setProperty('--safe-bottom', area.bottom + 'px');
+      document.documentElement.style.setProperty('--safe-left', area.left + 'px');
+      document.documentElement.style.setProperty('--safe-right', area.right + 'px');
+      return area;
+    }
+
+    function updateSafeMargin(value) {
+      safeMargin = parseInt(value, 10) || 0;
+      const area = applySafeArea();
+      // UI表示更新
+      const marginValueEl = document.getElementById('safe-margin-value');
+      if (marginValueEl) marginValueEl.innerText = safeMargin + 'px';
+      const topEl = document.getElementById('calc-safe-top');
+      if (topEl) topEl.innerText = area.top + 'px';
+      const bottomEl = document.getElementById('calc-safe-bottom');
+      if (bottomEl) bottomEl.innerText = area.bottom + 'px';
+      const leftEl = document.getElementById('calc-safe-left');
+      if (leftEl) leftEl.innerText = area.left + 'px';
+      const rightEl = document.getElementById('calc-safe-right');
+      if (rightEl) rightEl.innerText = area.right + 'px';
+      const visibleEl = document.getElementById('calc-visible-area');
+      if (visibleEl) visibleEl.innerText = area.visibleW + ' × ' + area.visibleH + ' px';
       // 自動保存
-      localStorage.setItem(STORAGE_KEY_SAFEAREA, JSON.stringify(safeArea));
+      localStorage.setItem(STORAGE_KEY_SAFE_MARGIN, String(safeMargin));
     }
 
     // ===== お題グループ管理 =====
@@ -933,7 +952,7 @@
       return result ? { r: parseInt(result[1],16), g: parseInt(result[2],16), b: parseInt(result[3],16) } : { r:0, g:0, b:0 };
     }
 
-    // パステル色の生成（白と混ぜて明るく）
+    // パステル色の生成
     function getPastelColor(hex) {
       const rgb = hexToRgb(hex);
       const mix = 0.6;
@@ -1325,15 +1344,10 @@
       renderPlayersSettingsList();
       renderWordGroups();
       updateStartGroupDisplay();
-      // セーフエリア設定をUIに反映
-      document.getElementById('safe-top-slider').value = safeArea.top;
-      document.getElementById('safe-bottom-slider').value = safeArea.bottom;
-      document.getElementById('safe-left-slider').value = safeArea.left;
-      document.getElementById('safe-right-slider').value = safeArea.right;
-      document.getElementById('safe-top-value').innerText = safeArea.top + 'px';
-      document.getElementById('safe-bottom-value').innerText = safeArea.bottom + 'px';
-      document.getElementById('safe-left-value').innerText = safeArea.left + 'px';
-      document.getElementById('safe-right-value').innerText = safeArea.right + 'px';
+      // セーフマージン設定をUIに反映
+      const marginSlider = document.getElementById('safe-margin-slider');
+      if (marginSlider) marginSlider.value = safeMargin;
+      updateSafeMargin(safeMargin);
       document.getElementById('settings-modal').classList.remove('modal-hidden');
     }
     function closeSettings() { document.getElementById('settings-modal').classList.add('modal-hidden'); }
@@ -1369,6 +1383,10 @@
       } else if (tabName === 'safearea') {
         tabSafeArea.classList.remove('modal-hidden');
         btnSafeArea.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none";
+        // スライダー同期
+        const marginSlider = document.getElementById('safe-margin-slider');
+        if (marginSlider) marginSlider.value = safeMargin;
+        updateSafeMargin(safeMargin);
       }
     }
     function renderPlayersSettingsList() {
@@ -1571,7 +1589,10 @@
       renderTvRankings();
       updateStartGroupDisplay();
       updateHeaderButton();
-      window.addEventListener('resize', resizeCanvas);
+      window.addEventListener('resize', () => {
+        applySafeArea();
+        resizeCanvas();
+      });
     });
   </script>
 </body>
