@@ -8,10 +8,15 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="アテテ！">
   <meta name="theme-color" content="#020617">
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="apple-touch-icon" href="icon-192.png">
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    :root {
+      --sat: env(safe-area-inset-top, 0px);
+      --sab: env(safe-area-inset-bottom, 0px);
+      --sal: env(safe-area-inset-left, 0px);
+      --sar: env(safe-area-inset-right, 0px);
+    }
     * {
       margin: 0;
       padding: 0;
@@ -27,15 +32,26 @@
       overflow: hidden;
       background: #020617;
       font-family: sans-serif;
-      touch-action: manipulation;
+      touch-action: none;
+      overscroll-behavior: none; /* iOS Safariのバウンスを全体で抑制 */
     }
     body {
       position: relative;
       display: block;
-      height: 100dvh; /* iOS PWA用に100dvhを追加 */
+      height: 100dvh;
     }
 
-    /* ===== ヘッダー：iPad最上部から16:9メイン上端まで ===== */
+    /* ===== 新ロゴデザイン（高級感のあるゴールド） ===== */
+    .logo-text {
+      background: linear-gradient(135deg, #fde047 0%, #f59e0b 50%, #b45309 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0px 2px 4px rgba(0,0,0,0.8), 0px 0px 8px rgba(251, 191, 36, 0.5);
+      letter-spacing: 0.08em;
+    }
+
+    /* ===== ヘッダー ===== */
     #app-header {
       position: absolute;
       top: 0;
@@ -45,17 +61,20 @@
       background: #020617;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-start;
       padding: 0 16px;
-      gap: 8px;
-      overflow: hidden;
+      padding-top: env(safe-area-inset-top);
+      gap: 12px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      white-space: nowrap;
     }
 
-    /* ===== 16:9メイン領域（テレビ投影部分） ===== */
+    /* ===== 16:9メイン領域 ===== */
     #app-main {
       position: absolute;
       z-index: 20;
-      background: #fff;
+      background: #020617; /* 親の背景色と同化させて白枠を解消 */
       border-radius: 12px;
       overflow: hidden;
       box-shadow: 0 0 0 2px #1e293b;
@@ -67,7 +86,7 @@
       min-height: 0;
     }
 
-    /* ===== フッター：16:9メイン下端からiPad最下部まで ===== */
+    /* ===== フッター ===== */
     #app-footer {
       position: absolute;
       left: 0;
@@ -79,11 +98,12 @@
       align-items: center;
       justify-content: space-between;
       padding: 0 16px;
+      padding-bottom: env(safe-area-inset-bottom);
       gap: 8px;
       overflow: hidden;
     }
 
-    /* ===== 画面調整用16:9枠オーバーレイ ===== */
+    /* ===== 画面調整用オーバーレイ ===== */
     #safe-frame-overlay {
       position: fixed;
       border: 3px dashed #f59e0b;
@@ -91,7 +111,7 @@
       pointer-events: none;
       z-index: 200;
       display: none;
-      border-radius: 4px;
+      border-radius: 12px;
     }
     #safe-frame-overlay.visible {
       display: block;
@@ -101,10 +121,10 @@
     #tv-rankings-container {
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      width: 176px;
-      min-width: 140px;
-      max-width: 200px;
+      gap: 6px;
+      width: 280px; /* 幅を広げて名前の切り詰め（プレ...）を解消 */
+      min-width: 240px;
+      max-width: 320px;
       flex-shrink: 0;
       height: 100%;
       overflow-y: auto;
@@ -150,12 +170,16 @@
       text-shadow: 0 1px 2px rgba(0,0,0,0.8);
     }
 
-    /* ===== キャンバスコンテナ ===== */
+    /* ===== キャンバスコンテナ（3:4アスペクト比） ===== */
     #canvas-container {
-      flex: 1;
-      min-height: 0;
+      flex: 0 0 auto;
+      height: 100%;
+      width: auto;
+      aspect-ratio: 3 / 4; /* 幅を抑えてサイドバー領域を確保 */
+      max-width: 100%;
+      margin: 0 auto;
       position: relative;
-      background: #fff;
+      background: #fff; /* キャンバス背景のみ白 */
       border-radius: 8px;
       overflow: hidden;
       border: 2px solid #1e293b;
@@ -167,6 +191,25 @@
       width: 100%;
       height: 100%;
       display: block;
+      touch-action: none;
+    }
+
+    /* ===== カラーパレット ===== */
+    #color-palette {
+      /* 左端が切れないようにpaddingを十分に確保 */
+      padding: 4px 8px;
+    }
+    .color-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      transition: transform 0.1s, box-shadow 0.1s;
+      flex-shrink: 0;
+    }
+    .color-btn.selected {
+      transform: scale(1.15);
+      box-shadow: 0 0 0 2px #fff, 0 0 0 4px #818cf8;
+      z-index: 10;
     }
 
     /* ===== スタートオーバーレイ ===== */
@@ -189,11 +232,20 @@
       pointer-events: none;
     }
 
-    /* ===== モーダル ===== */
+    /* ===== モーダル類（メイン領域内絶対配置） ===== */
     .modal-hidden { display: none !important; }
     .scrollable-content {
       touch-action: pan-y;
       -webkit-overflow-scrolling: touch;
+    }
+
+    #answer-modal,
+    #result-modal {
+      position: absolute;
+      inset: 0;
+      z-index: 40;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(4px);
     }
 
     /* ===== アニメーション ===== */
@@ -218,39 +270,97 @@
       100% { opacity: 0; transform: translateY(-38px) scale(0.8); }
     }
     .float-score-text { animation: floatUp 1.2s ease-out forwards; pointer-events: none; }
+
+    /* ボーナス通知 */
+    #bonus-notification {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 45;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .bonus-card {
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      color: white;
+      font-size: clamp(1.4rem, 4vw, 2.4rem);
+      font-weight: 900;
+      padding: 16px 32px;
+      border-radius: 28px;
+      border: 4px solid #fef3c7;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      animation: bonusPop 3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      text-align: center;
+      white-space: nowrap;
+    }
+    @keyframes bonusPop {
+      0% { opacity: 0; transform: scale(0.4); }
+      15% { opacity: 1; transform: scale(1.1); }
+      25% { transform: scale(1); }
+      80% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(0.9); }
+    }
+
+    /* カスタムダイアログ */
+    #custom-dialog {
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    #custom-dialog .dialog-box {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 20px;
+      padding: 24px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
   </style>
 </head>
 <body>
 
-  <!-- 画面調整用16:9枠オーバーレイ -->
+  <!-- 画面調整用オーバーレイ -->
   <div id="safe-frame-overlay"></div>
 
   <!-- ==================== ヘッダー ==================== -->
   <header id="app-header">
-    <div class="flex items-center gap-2 flex-shrink-0">
-      <button id="header-main-btn" onclick="headerMainBtnWithSE()" class="bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1.5 rounded-xl text-xs font-bold shadow-lg active:scale-95 transition touch-action-none whitespace-nowrap">
-        ⚙️ 設定
-      </button>
-      <button onclick="undoCanvasWithSE()" class="bg-slate-800/80 hover:bg-slate-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold border border-slate-600 shadow active:scale-95 transition touch-action-none whitespace-nowrap">
-        ↩️ 戻る
-      </button>
-      <span class="text-base md:text-lg font-black text-amber-300 tracking-wider drop-shadow whitespace-nowrap">アテテ！</span>
-    </div>
-    <div class="flex items-center gap-2 flex-shrink-0 overflow-x-auto">
-      <div id="color-palette" class="flex items-center gap-1 flex-shrink-0"></div>
-      <button id="palette-toggle-btn" onclick="togglePaletteWithSE()" class="px-2 py-1.5 rounded-lg font-bold text-xs border active:scale-95 transition touch-action-none whitespace-nowrap"></button>
-      <button onclick="clearCanvasWithSE()" class="px-3 py-1.5 rounded-lg font-bold text-xs bg-rose-900/80 hover:bg-rose-800 text-rose-200 border border-rose-700 active:scale-95 transition shadow touch-action-none whitespace-nowrap">
-        🗑️ 全消し
-      </button>
-    </div>
+    <span class="logo-text text-xl md:text-2xl font-black tracking-wider whitespace-nowrap mr-2">アテテ！</span>
+    
+    <!-- タップ領域拡大と並び順の変更 -->
+    <button id="header-main-btn" onclick="headerMainBtnWithSE()" class="bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 px-5 py-3 rounded-xl text-base md:text-lg font-bold shadow-lg active:scale-95 transition touch-action-none whitespace-nowrap">
+      ⚙️ 設定
+    </button>
+    <button onclick="clearCanvasWithSE()" class="bg-rose-900/80 hover:bg-rose-800 text-rose-200 border border-rose-700 px-5 py-3 rounded-xl text-base md:text-lg font-bold shadow active:scale-95 transition touch-action-none whitespace-nowrap">
+      🗑️ 全消し
+    </button>
+    <button onclick="undoCanvasWithSE()" class="bg-slate-800/80 hover:bg-slate-700 text-white px-5 py-3 rounded-xl text-base md:text-lg font-bold border border-slate-600 shadow active:scale-95 transition touch-action-none whitespace-nowrap">
+      ↩️ 戻る
+    </button>
+    
+    <!-- カラーパレット -->
+    <div id="color-palette" class="flex items-center gap-2 flex-shrink-0 ml-auto overflow-x-auto"></div>
   </header>
 
   <!-- ==================== 16:9メイン領域 ==================== -->
   <div id="app-main">
+    
     <!-- ランキングサイドバー -->
     <aside id="tv-rankings-container" class="select-none"></aside>
 
-    <!-- キャンバスエリア -->
     <div id="canvas-area">
       <div id="timer-bar">
         <div id="timer-progress-bar"></div>
@@ -262,17 +372,66 @@
         <div id="center-start-overlay">
           <span class="text-xs font-bold tracking-widest text-amber-400 uppercase">次のアーティスト</span>
           <div id="center-artist-display" class="flex items-center justify-center space-x-3 bg-slate-900 border-2 border-amber-500/60 px-6 py-4 rounded-3xl shadow-2xl"></div>
-          <div class="bg-slate-900/80 border border-slate-700 px-4 py-2 rounded-full flex items-center justify-center space-x-3">
-            <button onclick="switchGroupPrevWithSE()" class="text-slate-300 hover:text-white text-lg font-black touch-action-none">◀</button>
+          <div class="bg-slate-900/80 border border-slate-700 px-4 py-2 rounded-full flex items-center justify-center space-x-3 mt-2">
+            <button onclick="switchGroupPrevWithSE()" class="text-slate-300 hover:text-white text-xl px-2 font-black touch-action-none">◀</button>
             <span id="start-group-title" class="text-lg font-bold text-white whitespace-nowrap">デフォルト</span>
-            <button onclick="switchGroupNextWithSE()" class="text-slate-300 hover:text-white text-lg font-black touch-action-none">▶</button>
+            <button onclick="switchGroupNextWithSE()" class="text-slate-300 hover:text-white text-xl px-2 font-black touch-action-none">▶</button>
           </div>
-          <button onclick="toggleGameWithSE()" class="mt-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-4 px-12 rounded-3xl text-2xl md:text-3xl border-4 border-emerald-300 shadow-2xl active:scale-95 transition animate-bounce touch-action-none">
+          <button onclick="toggleGameWithSE()" class="mt-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-4 px-12 rounded-3xl text-2xl md:text-3xl border-4 border-emerald-300 shadow-2xl active:scale-95 transition animate-bounce touch-action-none">
             ▶️ スタート！
           </button>
         </div>
       </div>
     </div>
+
+    <!-- 正解モーダル（メイン領域内絶対配置） -->
+    <div id="answer-modal" class="modal-hidden flex items-center justify-center p-3">
+      <div class="bg-slate-900 border-2 border-amber-500/80 rounded-2xl w-full max-w-5xl h-[90%] flex flex-col shadow-2xl overflow-hidden p-5 space-y-2 relative">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2 shrink-0">
+          <span class="text-xs md:text-sm font-bold text-amber-400">🎉 正解発表！正解したプレイヤーをタップ</span>
+          <span class="text-[11px] text-slate-400">※タップすると+1pt入って次のお題へ！</span>
+        </div>
+        <div class="flex-1 flex flex-col md:flex-row gap-4 min-h-0 overflow-hidden items-stretch">
+          <div class="w-full md:w-1/2 bg-gradient-to-b from-amber-500/20 to-slate-900/80 border-2 border-amber-500/40 rounded-2xl p-4 flex flex-col items-center justify-center h-full text-center relative overflow-hidden shadow-inner">
+            <div id="modal-word-display" class="flex flex-col items-center justify-center h-full w-full"></div>
+          </div>
+          <div id="answer-modal-grid" class="w-full md:w-1/2 grid grid-cols-3 gap-3 h-full overflow-y-auto p-2"></div>
+        </div>
+        <div class="flex justify-between pt-2 border-t border-slate-800 shrink-0 gap-2">
+          <button onclick="imageSearchWithSE()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl text-base md:text-lg font-bold border border-indigo-400 active:scale-95 transition touch-action-none">🔍 画像検索</button>
+          <button onclick="closeAnswerModalWithSE()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-6 py-3 rounded-xl text-base md:text-lg font-bold border border-slate-700 active:scale-95 transition touch-action-none">キャンセル（ゲーム再開）</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 結果モーダル（メイン領域内絶対配置） -->
+    <div id="result-modal" class="modal-hidden flex flex-col justify-between p-4">
+      <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/60 rounded-3xl w-full max-w-5xl h-full mx-auto flex flex-col p-5 shadow-2xl space-y-3 relative overflow-hidden">
+        <div class="flex items-center justify-between border-b border-amber-500/30 pb-3 shrink-0">
+          <div class="flex items-center space-x-3">
+            <span class="text-3xl">🎨</span>
+            <h2 id="result-gallery-title" class="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100 tracking-wider">〇〇さんのアート作品</h2>
+          </div>
+          <span class="text-xs font-bold text-amber-400/80 bg-amber-950/80 border border-amber-500/40 px-3 py-1 rounded-full">✨ ラウンド終了</span>
+        </div>
+        <div class="flex-1 flex flex-col md:flex-row gap-4 min-h-0 overflow-hidden">
+          <div class="w-full md:w-8/12 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 flex flex-col min-h-0 shadow-inner">
+            <h3 class="text-xs font-bold text-amber-300 border-b border-slate-800 pb-1.5 shrink-0 mb-2">🖼️ 展示ギャラリー</h3>
+            <div id="result-drawings-gallery" class="flex-1 grid grid-cols-2 md:grid-cols-3 gap-3 scrollable-content overflow-y-auto pr-1"></div>
+          </div>
+          <div class="w-full md:w-4/12 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 flex flex-col min-h-0 shadow-inner">
+            <h3 class="text-xs font-bold text-amber-300 border-b border-slate-800 pb-1.5 shrink-0 mb-2">🏆 ランキング</h3>
+            <div id="result-ranking-list" class="flex-1 space-y-2 scrollable-content overflow-y-auto pr-1"></div>
+          </div>
+        </div>
+        <div class="w-full mx-auto pt-3 shrink-0">
+          <button onclick="closeResultModalWithSE()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-2xl shadow-2xl text-lg md:text-xl border-2 border-emerald-400 active:scale-95 transition touch-action-none">次のラウンドへ進む ➔</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ボーナス通知 -->
+    <div id="bonus-notification" class="modal-hidden"></div>
   </div>
 
   <!-- ==================== フッター ==================== -->
@@ -294,31 +453,11 @@
     </div>
   </footer>
 
-  <!-- ==================== 正解モーダル ==================== -->
-  <div id="answer-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 modal-hidden flex items-center justify-center p-3">
-    <div class="bg-slate-900 border-2 border-amber-500/80 rounded-2xl w-full max-w-5xl h-[68vh] flex flex-col shadow-2xl overflow-hidden p-5 space-y-2 relative -top-6">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-2 shrink-0">
-        <span class="text-xs md:text-sm font-bold text-amber-400">🎉 正解発表！正解したプレイヤーをタップ</span>
-        <span class="text-[11px] text-slate-400">※タップすると+1pt入って次のお題へ！</span>
-      </div>
-      <div class="flex-1 flex flex-col md:flex-row gap-4 min-h-0 overflow-hidden items-stretch">
-        <div class="w-full md:w-1/2 bg-gradient-to-b from-amber-500/20 to-slate-900/80 border-2 border-amber-500/40 rounded-2xl p-4 flex flex-col items-center justify-center h-full text-center relative overflow-hidden shadow-inner">
-          <div id="modal-word-display" class="flex flex-col items-center justify-center h-full w-full"></div>
-        </div>
-        <div id="answer-modal-grid" class="w-full md:w-1/2 grid grid-cols-3 gap-3 h-full overflow-y-auto p-2"></div>
-      </div>
-      <div class="flex justify-between pt-1 border-t border-slate-800 shrink-0 gap-2">
-        <button onclick="imageSearchWithSE()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-1.5 rounded-xl text-xs font-bold border border-indigo-400 active:scale-95 transition touch-action-none">🔍 画像検索</button>
-        <button onclick="closeAnswerModalWithSE()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-6 py-1.5 rounded-xl text-xs font-bold border border-slate-700 active:scale-95 transition touch-action-none">キャンセル（ゲーム再開）</button>
-      </div>
-    </div>
-  </div>
-
   <!-- ==================== 設定モーダル ==================== -->
   <div id="settings-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 modal-hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[88vh] flex flex-col shadow-2xl">
       <div class="p-4 border-b border-slate-800 flex justify-between items-center shrink-0">
-        <h2 class="text-xl font-bold text-white">⚙️ ゲーム設定＆お題編集</h2>
+        <h2 class="text-xl font-bold text-white">⚙️ ゲーム設定＆データ管理</h2>
         <button onclick="closeSettingsWithSE()" class="text-slate-400 hover:text-white text-2xl font-bold px-2 touch-action-none">✕</button>
       </div>
       <div class="p-6 scrollable-content overflow-y-auto space-y-6 flex-1 text-sm">
@@ -337,10 +476,12 @@
               <span class="text-xs text-slate-300 font-bold">🎨 アーティストpt</span>
               <input type="checkbox" id="artist-point-toggle" onchange="toggleArtistPoint(this.checked)" checked class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0">
             </label>
+            <button onclick="backupDataWithSE()" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-indigo-700 hover:bg-indigo-600 text-white shadow touch-action-none whitespace-nowrap">📦 バックアップ(JSON)</button>
+            <button onclick="restoreDataWithSE()" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-emerald-700 hover:bg-emerald-600 text-white shadow touch-action-none whitespace-nowrap">📂 データ復元</button>
+            <input type="file" id="restore-file-input" accept="application/json, .json" class="hidden" onchange="handleRestoreFile(event)">
           </div>
         </div>
 
-        <!-- プレイヤー編集タブ -->
         <div id="tab-content-players" class="space-y-4">
           <div class="flex justify-between items-center flex-wrap gap-2">
             <p class="text-slate-400 text-xs">プレイヤーの名前、アイコン絵文字、テーマカラーを選択できます（最大9名）。</p>
@@ -349,7 +490,6 @@
           <div id="players-list-container" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
         </div>
 
-        <!-- お題グループ編集タブ -->
         <div id="tab-content-words" class="space-y-3 modal-hidden">
           <div class="bg-indigo-950/60 border border-indigo-500/40 p-3 rounded-xl">
             <p class="text-[11px] text-slate-300">「<span class="text-amber-300 font-bold">🎺 トランペット</span>」のように、絵文字と名前をスペース区切りで1行ずつ入力してください。<br>グループごとにお題を保存でき、スタート画面で切り替えられます。</p>
@@ -358,55 +498,45 @@
           <button onclick="addWordGroupWithSE()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-lg border border-slate-600 active:scale-95 transition touch-action-none">＋ グループを追加</button>
         </div>
 
-        <!-- 画面調整タブ -->
         <div id="tab-content-safearea" class="space-y-4 modal-hidden">
           <div class="bg-indigo-950/60 border border-indigo-500/40 p-3 rounded-xl">
-            <p class="text-xs text-slate-300">テレビにミラーリングした際、16:9のメイン画面のみがテレビに映るよう、左右余白を調整してください。調整中はオレンジの枠が表示されます。</p>
+            <p class="text-xs text-slate-300">テレビにミラーリングした際、16:9のメイン画面のみがテレビに映るよう、左右余白を調整してください。調整中はオレンジの枠が表示されます。<br>※iOS/iPadOSのセーフエリアは自動で計算されます。</p>
           </div>
           <div class="space-y-4">
             <div class="space-y-2">
-              <label class="flex justify-between text-xs text-slate-300"><span>左右余白（テレビ可視領域の調整）</span><span id="safe-margin-value">18px</span></label>
-              <input type="range" id="safe-margin-slider" min="0" max="300" value="18" step="1" oninput="updateSafeMargin(this.value)" class="w-full">
+              <label class="flex justify-between text-xs text-slate-300 font-bold">
+                <span>左右余白（テレビ可視領域の調整）</span>
+                <span id="safe-margin-value" class="text-amber-400 text-sm">18px</span>
+              </label>
+              <!-- 修正: oninputでは枠のみ更新、onchangeで確定リサイズを実行し重さを軽減 -->
+              <input type="range" id="safe-margin-slider" min="0" max="300" value="18" step="1" oninput="previewSafeMargin(this.value)" onchange="commitSafeMargin(this.value)" class="w-full">
             </div>
-            <div class="bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-slate-300 space-y-1">
-              <div class="flex justify-between"><span>上余白（ヘッダー高さ）</span><span id="calc-safe-top">0px</span></div>
-              <div class="flex justify-between"><span>下余白（フッター高さ）</span><span id="calc-safe-bottom">0px</span></div>
+            <div class="bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-slate-300 space-y-1 font-mono">
+              <div class="flex justify-between"><span>上余白（ヘッダー+Safe）</span><span id="calc-safe-top">0px</span></div>
+              <div class="flex justify-between"><span>下余白（フッター+Safe）</span><span id="calc-safe-bottom">0px</span></div>
               <div class="flex justify-between"><span>左余白</span><span id="calc-safe-left">0px</span></div>
               <div class="flex justify-between"><span>右余白</span><span id="calc-safe-right">0px</span></div>
-              <div class="flex justify-between"><span>16:9可視領域</span><span id="calc-visible-area">0 × 0 px</span></div>
+              <div class="flex justify-between text-amber-400 font-bold mt-2 pt-2 border-t border-slate-800">
+                <span>16:9 描画領域</span><span id="calc-visible-area">0 × 0 px</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
       <div class="p-4 border-t border-slate-800 flex justify-end shrink-0">
-        <button onclick="saveAndCloseSettingsWithSE()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2 rounded-xl shadow-lg touch-action-none">設定を保存して閉じる</button>
+        <button onclick="saveAndCloseSettingsWithSE()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-8 py-3 rounded-xl shadow-lg text-lg touch-action-none">設定を保存して閉じる</button>
       </div>
     </div>
   </div>
 
-  <!-- ==================== 結果モーダル ==================== -->
-  <div id="result-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 modal-hidden flex flex-col justify-between p-4 pt-10">
-    <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/60 rounded-3xl w-full max-w-5xl h-[68vh] mx-auto flex flex-col p-5 shadow-2xl space-y-3 relative overflow-hidden mt-8">
-      <div class="flex items-center justify-between border-b border-amber-500/30 pb-3 shrink-0">
-        <div class="flex items-center space-x-3">
-          <span class="text-3xl">🎨</span>
-          <h2 id="result-gallery-title" class="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100 tracking-wider">〇〇さんのアート作品</h2>
-        </div>
-        <span class="text-xs font-bold text-amber-400/80 bg-amber-950/80 border border-amber-500/40 px-3 py-1 rounded-full">✨ ラウンド終了</span>
+  <!-- カスタムダイアログ -->
+  <div id="custom-dialog" class="modal-hidden">
+    <div class="dialog-box">
+      <p id="custom-dialog-message" class="text-white text-base font-bold whitespace-pre-line leading-relaxed"></p>
+      <div class="flex justify-center gap-3 mt-2">
+        <button id="custom-dialog-cancel" onclick="customDialogResolve(false)" class="px-6 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold border border-slate-500 hidden">キャンセル</button>
+        <button id="custom-dialog-ok" onclick="customDialogResolve(true)" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold w-full md:w-auto">OK</button>
       </div>
-      <div class="flex-1 flex flex-col md:flex-row gap-4 min-h-0 overflow-hidden">
-        <div class="w-full md:w-8/12 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 flex flex-col min-h-0 shadow-inner">
-          <h3 class="text-xs font-bold text-amber-300 border-b border-slate-800 pb-1.5 shrink-0 mb-2">🖼️ 展示ギャラリー</h3>
-          <div id="result-drawings-gallery" class="flex-1 grid grid-cols-2 md:grid-cols-3 gap-3 scrollable-content overflow-y-auto pr-1"></div>
-        </div>
-        <div class="w-full md:w-4/12 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 flex flex-col min-h-0 shadow-inner">
-          <h3 class="text-xs font-bold text-amber-300 border-b border-slate-800 pb-1.5 shrink-0 mb-2">🏆 ランキング</h3>
-          <div id="result-ranking-list" class="flex-1 space-y-2 scrollable-content overflow-y-auto pr-1"></div>
-        </div>
-      </div>
-    </div>
-    <div class="w-full max-w-xl mx-auto py-2 shrink-0">
-      <button onclick="closeResultModalWithSE()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-2xl shadow-2xl text-base md:text-lg border-2 border-emerald-400 active:scale-95 transition touch-action-none">次のラウンドへ進む ➔</button>
     </div>
   </div>
 
@@ -416,10 +546,11 @@
     const STORAGE_KEY_GROUPS = 'atete_app_word_groups_v1';
     const STORAGE_KEY_SETTINGS = 'atete_app_settings_v18';
     const STORAGE_KEY_SAFE_MARGIN = 'atete_app_safe_margin_v1';
+    const STORAGE_KEY_PASSED = 'atete_app_passed_counts_v1';
     const OLD_PLAYER_KEYS = ['atete_app_players_v17', 'oekaki_app_players_v16'];
     const OLD_WORD_KEYS = ['atete_app_words_v17', 'oekaki_app_words_v16'];
 
-    const EMOJI_OPTIONS = ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐦","🐣"];
+    const EMOJI_OPTIONS = ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐦","🐣","🐙","🦑","🐸","🦖"];
 
     const BASE_PEN_COLORS = [
       { id: "#000000", name: "黒", bg: "bg-black border-2 border-white/90 ring-1 ring-black", isOverlayColor: false },
@@ -452,43 +583,7 @@
       { id: "pink", name: "パステルピンク", bg: "bg-pink-400", border: "border-pink-200" },
     ];
 
-    const DEFAULT_WORDS_RAW = `🎺 トランペット
-🎻 バイオリン
-🎤 マイク
-🚗 自動車
-🚀 ロケット
-⚽ サッカーボール
-🍎 リンゴ
-🍣 お寿司
-🐱 ネコ
-🐶 イヌ
-🦁 ライオン
-🐸 カエル
-🌻 ヒマワリ
-🎂 ケーキ
-🎸 ギター
-🍔 ハンバーガー
-🍦 ソフトクリーム
-🚲 自転車
-✈️ 飛行機
-👑 王冠
-👻 オバケ
-🤖 ロボット
-🦄 ユニコーン
-🏀 バスケットボール
-🎮 ゲーム機
-🍉 スイカ
-🍜 ラーメン
-🍙 おにぎり
-🗻 富士山
-🗼 東京タワー
-⛄ 雪だるま
-⛵ ヨット
-🎈 風船
-🚁 ヘリコプター
-🐘 ゾウ
-🐼 パンダ
-🐧 ペンギン`;
+    const DEFAULT_WORDS_RAW = `🎺 トランペット\n🎻 バイオリン\n🎤 マイク\n🚗 自動車\n🚀 ロケット\n⚽ サッカーボール\n🍎 リンゴ\n🍣 お寿司\n🐱 ネコ\n🐶 イヌ\n🦁 ライオン\n🐸 カエル\n🌻 ヒマワリ\n🎂 ケーキ\n🎸 ギター\n🍔 ハンバーガー\n🍦 ソフトクリーム\n🚲 自転車\n✈️ 飛行機\n👑 王冠\n👻 オバケ\n🤖 ロボット\n🦄 ユニコーン\n🏀 バスケットボール\n🎮 ゲーム機\n🍉 スイカ\n🍜 ラーメン\n🍙 おにぎり\n🗻 富士山\n🗼 東京タワー\n⛄ 雪だるま\n⛵ ヨット\n🎈 風船\n🚁 ヘリコプター\n🐘 ゾウ\n🐼 パンダ\n🐧 ペンギン`;
 
     const DEFAULT_PLAYERS = [
       { id:0, name:"プレイヤー1", emoji:"🐶", colorIdx:0, active:true, score:0 },
@@ -519,6 +614,7 @@
     let keepAliveInterval = null;
     let roundScores = {};
     let roundDrawingsHistory = [];
+    let passedWordCounts = {};
 
     let colorCanvas, blackCanvas;
     let colorCtx, blackCtx;
@@ -539,40 +635,96 @@
     let startPos = { x: 0, y: 0 };
     let isPointerDown = false;
     let undoStack = [];
-    let usePastelColors = false;
 
     const DEFAULT_SAFE_MARGIN = 18;
     let safeMargin = DEFAULT_SAFE_MARGIN;
 
-    // ===== 不要な操作防止 =====
-    let lastTouchEnd = 0;
-    document.addEventListener('touchend', function(e) {
-      const now = Date.now();
-      if (now - lastTouchEnd <= 300) e.preventDefault();
-      lastTouchEnd = now;
-    }, { passive: false });
-    document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
-    document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
-    document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+    // ===== パステルカラー（常時表示用） =====
+    function getPastelColor(hex) {
+      const rgb = hexToRgb(hex);
+      const mix = 0.6;
+      const r = Math.round(rgb.r + (255 - rgb.r) * mix);
+      const g = Math.round(rgb.g + (255 - rgb.g) * mix);
+      const b = Math.round(rgb.b + (255 - rgb.b) * mix);
+      return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).padStart(6, '0')}`;
+    }
+    const PASTEL_PEN_COLORS = BASE_PEN_COLORS.filter(c => !['#000000','#ffffff'].includes(c.id)).map(c => {
+      const pastelHex = getPastelColor(c.id);
+      return { id: pastelHex, name: c.name + '（パステル）', bg: '', isOverlayColor: true };
+    });
+    const ALL_PEN_COLORS = [...BASE_PEN_COLORS, ...PASTEL_PEN_COLORS];
 
-    // ===== レイアウト計算 =====
+    // ===== カスタムダイアログ =====
+    let customDialogResolve = null;
+    function showCustomDialog(message, options = {}) {
+      return new Promise((resolve) => {
+        customDialogResolve = resolve;
+        document.getElementById('custom-dialog-message').innerText = message;
+        const cancelBtn = document.getElementById('custom-dialog-cancel');
+        const okBtn = document.getElementById('custom-dialog-ok');
+        if (options.showCancel) {
+          cancelBtn.classList.remove('hidden');
+        } else {
+          cancelBtn.classList.add('hidden');
+        }
+        okBtn.innerText = options.confirmText || 'OK';
+        cancelBtn.innerText = options.cancelText || 'キャンセル';
+        document.getElementById('custom-dialog').classList.remove('modal-hidden');
+      });
+    }
+    function customDialogResolveResult(value) {
+      document.getElementById('custom-dialog').classList.add('modal-hidden');
+      if (customDialogResolve) {
+        customDialogResolve(value);
+        customDialogResolve = null;
+      }
+    }
+    window.customDialogResolve = customDialogResolveResult; // グローバルにエクスポート
+
+    async function customAlert(message) {
+      await showCustomDialog(message, { showCancel: false });
+    }
+    async function customConfirm(message) {
+      return await showCustomDialog(message, { showCancel: true });
+    }
+
+    // ===== セーフエリア取得 =====
+    function getSafeAreaInsets() {
+      const style = getComputedStyle(document.documentElement);
+      const top = parseFloat(style.getPropertyValue('--sat')) || 0;
+      const bottom = parseFloat(style.getPropertyValue('--sab')) || 0;
+      return { top, bottom };
+    }
+
+    // ===== レイアウト計算 (iOS Safari PWA セーフエリア対応) =====
     function calculateLayout() {
-      // window.innerWidth / window.innerHeight を使う（ステータスバーを含む全画面サイズ）
       const screenW = window.innerWidth;
-      const screenH = window.innerHeight;
-      const mainW = Math.max(100, screenW - safeMargin * 2);
-      const mainH = mainW * 9 / 16;
-      const mainTop = Math.round((screenH - mainH) / 2);
-      const mainBottom = mainTop + Math.round(mainH);
+      const screenH = window.innerHeight; // documentElement.clientHeightから修正
+      const safe = getSafeAreaInsets();
+      
+      const availableW = Math.max(100, screenW - safeMargin * 2);
+      const availableH = Math.max(100, screenH - safe.top - safe.bottom);
+      
+      // 16:9 で画面中央に最大化
+      let mainW = availableW;
+      let mainH = mainW * 9 / 16;
+      if (mainH > availableH) {
+        mainH = availableH;
+        mainW = mainH * 16 / 9;
+      }
+
+      const mainTop = Math.round(safe.top + (availableH - mainH) / 2);
+      const mainBottom = Math.round(mainTop + mainH);
+      const mainLeft = Math.round(safeMargin + (availableW - mainW) / 2);
+      
       return {
-        screenW,
-        screenH,
+        screenW, screenH,
         mainW: Math.round(mainW),
         mainH: Math.round(mainH),
-        mainTop,
-        mainBottom,
-        mainLeft: safeMargin,
-        mainRight: safeMargin
+        mainTop, mainBottom, mainLeft,
+        mainRight: Math.round(screenW - mainLeft - mainW),
+        safeTop: safe.top,
+        safeBottom: safe.bottom
       };
     }
 
@@ -582,33 +734,24 @@
       const main = document.getElementById('app-main');
       const footer = document.getElementById('app-footer');
 
-      // ヘッダー
       header.style.top = '0';
       header.style.left = '0';
       header.style.right = '0';
       header.style.height = L.mainTop + 'px';
+      header.style.paddingTop = L.safeTop + 'px';
 
-      // メイン
       main.style.top = L.mainTop + 'px';
       main.style.left = L.mainLeft + 'px';
       main.style.right = L.mainRight + 'px';
-      main.style.height = L.mainH + 'px';
-      main.style.bottom = 'auto';
+      main.style.bottom = (L.screenH - L.mainBottom) + 'px';
 
-      // フッター
       footer.style.top = L.mainBottom + 'px';
       footer.style.left = '0';
       footer.style.right = '0';
       footer.style.bottom = '0';
+      footer.style.paddingBottom = L.safeBottom + 'px';
 
-      // キャンバスリサイズ
-      if (colorCanvas && blackCanvas) {
-        resizeCanvas();
-      }
-
-      // 画面調整用オーバーレイの更新
       updateSafeFrameOverlay(L);
-
       return L;
     }
 
@@ -623,12 +766,25 @@
       }
     }
 
-    function updateSafeMargin(value) {
-      safeMargin = parseInt(value, 10) || 0;
-      const L = applyLayout();
-
+    function updateSafeMarginDisplay(safeMarginValue) {
       const marginValueEl = document.getElementById('safe-margin-value');
-      if (marginValueEl) marginValueEl.innerText = safeMargin + 'px';
+      if (marginValueEl) marginValueEl.innerText = safeMarginValue + 'px';
+    }
+
+    function previewSafeMargin(value) {
+      safeMargin = parseInt(value, 10) || 0;
+      updateSafeMarginDisplay(safeMargin);
+      const L = calculateLayout();
+      updateSafeFrameOverlay(L);
+      // ここではcanvasをリサイズしない（スライダー操作の重さ解消）
+    }
+
+    function commitSafeMargin(value) {
+      safeMargin = parseInt(value, 10) || 0;
+      updateSafeMarginDisplay(safeMargin);
+      const L = applyLayout();
+      if (colorCanvas && blackCanvas) resizeCanvas();
+      
       const topEl = document.getElementById('calc-safe-top');
       if (topEl) topEl.innerText = L.mainTop + 'px';
       const bottomEl = document.getElementById('calc-safe-bottom');
@@ -639,7 +795,7 @@
       if (rightEl) rightEl.innerText = L.mainRight + 'px';
       const visibleEl = document.getElementById('calc-visible-area');
       if (visibleEl) visibleEl.innerText = L.mainW + ' × ' + L.mainH + ' px';
-
+      
       localStorage.setItem(STORAGE_KEY_SAFE_MARGIN, String(safeMargin));
     }
 
@@ -749,83 +905,46 @@
       start: [
         (artist) => `よーい、スタート！${artist}画伯、魂の一作をお願いします！`,
         (artist) => `お絵描きタイム、スタート〜！アーティスト${artist}さんの登場です！`,
-        (artist) => `${artist}さん、ペンを持ってスタート！最高の一枚を描いてね！`,
-        (artist) => `さあ ${artist}さん、気合を入れてお絵描き開始です！`,
-        (artist) => `${artist}さん、本気出しちゃってください。例のアレ、期待してます！`,
-        (artist) => `次は${artist}画伯！みんなをあっと驚かせる絵、待ってます！`,
-        (artist) => `${artist}さん、焦らずゆっくり。ただし時間は60秒！`,
-        (artist) => `${artist}さんの右手に注目！いや左手かも？スタート！`
+        (artist) => `${artist}さん、ペンを持ってスタート！最高の一枚を描いてね！`
       ],
       selectArtistManual: [
         (artist) => `${artist}さんがアーティストに選ばれました！よろしくね！`,
-        (artist) => `次のお絵描きは${artist}さん！頑張ってください！`,
-        (artist) => `${artist}画伯の登場です！どんな名作を描くかな？`,
-        (artist) => `${artist}さんに決定！勝手に期待値が上がります！`,
-        (artist) => `${artist}さん、今日の主役です。プレッシャー？気にしない！`
+        (artist) => `次のお絵描きは${artist}さん！頑張ってください！`
       ],
       correctAnswerOpen: [
         (word) => `正解は${word}でした！お見事！`,
-        (word) => `答えはこちら、${word}でした！分かったかな？`,
-        (word) => `正解発表！${word}でした！ナイス推理！`,
-        (word) => `見事に描けていましたね！正解は${word}です！`,
-        (word) => `正解は${word}！当てた人、物凄い洞察力！`,
-        (word) => `答えは${word}。外した人もドンマイ！`
+        (word) => `答えはこちら、${word}でした！分かったかな？`
       ],
       afterCorrectWinner: [
         (name) => `${name}さん大正解！鋭い洞察力に拍手！`,
-        (name) => `${name}さんお見事！次のお題もこの調子でいきましょう！`,
-        (name) => `${name}さんナイス推理！次は何が飛び出すかな？`,
-        (name) => `素晴らしいヒラメキです！${name}さん大正解！`,
-        (name) => `${name}さん、天才かよ！おめでとう！`,
-        (name) => `${name}さん、答えを当てる才能がすごい！また次も！`
+        (name) => `${name}さんお見事！次のお題もこの調子でいきましょう！`
       ],
       pass: [
         (artist) => `パス！${artist}さん、次のお題へいくよ〜！`,
-        (artist) => `うーん難しかった！${artist}さん、次いってみよう！`,
-        (artist) => `パス！どんどん描いていこう${artist}さん！`,
-        (artist) => `パス！気持ちを切り替えて次の問題！`,
-        (artist) => `${artist}さん、ドンマイ！次のお題は簡単かも？`
+        (artist) => `うーん難しかった！${artist}さん、次いってみよう！`
       ],
       time30: [
         (artist) => `残り、30秒だよ！${artist}さん急いで！`,
-        (artist) => `折り返し！あと30秒です${artist}さん！`,
-        (artist) => `30秒切った！${artist}さん、ラストスパート！`,
-        (artist) => `半分！${artist}さん、もう少し！`
+        (artist) => `折り返し！あと30秒です${artist}さん！`
       ],
       time10: [
-        (artist) => `残り10秒！${artist}さん急いで急いで！`,
-        (artist) => `ラスト10秒！${artist}さんラストスパート！`,
-        (artist) => `10秒前！${artist}さん、手が止まってますよ！`,
-        (artist) => `あと10秒！${artist}さん、フィニッシュ！`
+        (artist) => `残り10秒！${artist}さん急いで急いで！`
       ],
       finishRound: [
         (name, score) => `${name}さん、${score}ポイント獲得って凄いですね！素晴らしい作品集です！`,
-        (name, score) => `${name}さん、${score}ポイント獲得！画伯の才能が光っていましたね！`,
-        (name, score) => `${name}さん、${score}ポイント獲得！見事なキャンバスさばきでした！`,
-        (name, score) => `${name}さん、${score}ポイント獲得！芸術が爆発しましたね！`,
-        (name, score) => `${name}さん、${score}ポイント獲得！まさにアーティスト！`
+        (name, score) => `${name}さん、${score}ポイント獲得！見事なキャンバスさばきでした！`
       ],
       nextArtist: [
         (name) => `次のアーティストは${name}さん。頑張ってね！`,
-        (name) => `次は${name}さんのターンです！名作を期待しています！`,
-        (name) => `さあ、アーティスト${name}さんの登場です！楽しんで描いてね！`,
-        (name) => `${name}さん、いよいよあなたの番ですよ！`,
-        (name) => `次は${name}さん。ドキドキしますね！`
+        (name) => `次は${name}さんのターンです！名作を期待しています！`
       ],
       drawingTimeComment: [
         (name, sec) => `${name}のイラスト、わずか${sec}秒で完成！スピード違反レベルです！`,
-        (name, sec) => `${name}のイラストは${sec}秒かかりましたが大健闘です！`,
-        (name, sec) => `${name}は${sec}秒のスピード作成！お見事です！`,
-        (name, sec) => `${name}のイラスト！時間をじっくりかけて見事に仕上げましたね！`,
-        (name, sec) => `${name}の作品、${sec}秒の芸術！記録更新！`,
-        (name, sec) => `${name}さん、${sec}秒でこれ？天才でしょ！`
+        (name, sec) => `${name}のイラストは${sec}秒かかりましたが大健闘です！`
       ],
       unfinishedComment: [
         (name) => `${name}のイラスト！途中の描画ですが${name}画伯の情熱がひしひしと伝わります！`,
-        (name) => `${name}の作品！タイムアップとなりましたが個性あふれる一枚ですね！`,
-        (name) => `${name}のイラスト！途中の状態も味わい深くて素敵です！`,
-        (name) => `${name}さん、時間切れ！でもここからが本番だったかも？`,
-        (name) => `${name}さんの未完の大作、想像力で補完しましょう！`
+        (name) => `${name}さん、時間切れ！でもここからが本番だったかも？`
       ]
     };
 
@@ -842,6 +961,11 @@
         const savedMargin = localStorage.getItem(STORAGE_KEY_SAFE_MARGIN);
         if (savedMargin !== null) safeMargin = parseInt(savedMargin, 10) || 0;
       } catch(e) { safeMargin = DEFAULT_SAFE_MARGIN; }
+
+      try {
+        const savedPassed = localStorage.getItem(STORAGE_KEY_PASSED);
+        if (savedPassed) passedWordCounts = JSON.parse(savedPassed) || {};
+      } catch(e) { passedWordCounts = {}; }
 
       let loadedPlayers = localStorage.getItem(STORAGE_KEY_PLAYERS);
       if (!loadedPlayers) {
@@ -867,9 +991,7 @@
           else wordGroups = [{ id: Date.now(), title: 'デフォルト', rawText: DEFAULT_WORDS_RAW }];
         } catch(e) { wordGroups = [{ id: Date.now(), title: 'デフォルト', rawText: DEFAULT_WORDS_RAW }]; }
       } else {
-        const oldWords = localStorage.getItem(STORAGE_KEY_WORDS);
-        if (oldWords) wordGroups = [{ id: Date.now(), title: '旧お題グループ', rawText: oldWords }];
-        else wordGroups = [{ id: Date.now(), title: 'デフォルト', rawText: DEFAULT_WORDS_RAW }];
+        wordGroups = [{ id: Date.now(), title: 'デフォルト', rawText: DEFAULT_WORDS_RAW }];
       }
 
       try {
@@ -894,6 +1016,7 @@
         localStorage.setItem(STORAGE_KEY_GROUPS, JSON.stringify(wordGroups));
         localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify({ enableSpeech, artistPointEnabled, currentGroupIndex }));
         localStorage.setItem(STORAGE_KEY_SAFE_MARGIN, String(safeMargin));
+        localStorage.setItem(STORAGE_KEY_PASSED, JSON.stringify(passedWordCounts));
       } catch(e) { console.error("Storage save failed:", e); }
     }
 
@@ -905,12 +1028,17 @@
       if (wordGroups.length > 0 && wordGroups[currentGroupIndex]) parsedWordList = parseWordListFromRaw(wordGroups[currentGroupIndex].rawText);
       else parsedWordList = [];
     }
+    function parseLineToWord(line) {
+      const parts = line.trim().split(/\s+/);
+      if (parts.length >= 2) return { emoji: parts[0], name: parts.slice(1).join(' ') };
+      else if (parts.length === 1) return { emoji: null, name: parts[0] };
+      return null;
+    }
     function parseWordListFromRaw(rawText) {
       const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
       return lines.map(line => {
-        const parts = line.split(/\s+/);
-        if (parts.length >= 2) return { emoji: parts[0], name: parts.slice(1).join(' ') };
-        else return { emoji: null, name: line };
+        const parsed = parseLineToWord(line);
+        return parsed || { emoji: null, name: line };
       });
     }
     function renderWordGroups() {
@@ -927,8 +1055,8 @@
               <input type="text" value="${group.title}" oninput="updateGroupTitle(${group.id}, this.value)" class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-xs focus:outline-none focus:border-indigo-500" placeholder="グループ名">
               ${isCurrent ? '<span class="text-[10px] font-bold text-amber-400 bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 rounded-full">使用中</span>' : ''}
             </div>
-            <button onclick="setCurrentGroupWithSE(${group.id})" class="text-[10px] font-bold px-2 py-1 rounded bg-indigo-700 hover:bg-indigo-600 text-white touch-action-none">使う</button>
-            <button onclick="deleteWordGroupWithSE(${group.id})" class="text-[10px] font-bold px-2 py-1 rounded bg-rose-900/70 hover:bg-rose-800 text-rose-200 border border-rose-700 touch-action-none">✕</button>
+            <button onclick="setCurrentGroupWithSE(${group.id})" class="text-[10px] font-bold px-3 py-1.5 rounded bg-indigo-700 hover:bg-indigo-600 text-white touch-action-none">使う</button>
+            <button onclick="deleteWordGroupWithSE(${group.id})" class="text-[10px] font-bold px-3 py-1.5 rounded bg-rose-900/70 hover:bg-rose-800 text-rose-200 border border-rose-700 touch-action-none">✕</button>
           </div>
           <textarea rows="5" oninput="updateGroupRaw(${group.id}, this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-white font-mono text-xs focus:outline-none focus:border-indigo-500 leading-relaxed">${group.rawText}</textarea>
           <div class="flex items-center justify-between">
@@ -950,16 +1078,16 @@
       }
     }
     function addWordGroupWithSE() { playButtonSE(); wordGroups.push({ id: Date.now(), title: '新しいグループ', rawText: '' }); renderWordGroups(); }
-    function deleteWordGroupWithSE(id) {
+    async function deleteWordGroupWithSE(id) {
       playButtonSE();
-      if (wordGroups.length <= 1) { alert('グループは最低1つ必要です。'); return; }
-      if (confirm('このグループを削除しますか？')) {
-        const idx = wordGroups.findIndex(g => g.id === id);
-        if (idx !== -1) {
-          wordGroups.splice(idx, 1);
-          if (currentGroupIndex >= wordGroups.length) currentGroupIndex = wordGroups.length - 1;
-          renderWordGroups(); updateParsedWordList(); updateStartGroupDisplay(); saveStorageData();
-        }
+      if (wordGroups.length <= 1) { await customAlert('グループは最低1つ必要です。'); return; }
+      const ok = await customConfirm('このグループを削除しますか？');
+      if (!ok) return;
+      const idx = wordGroups.findIndex(g => g.id === id);
+      if (idx !== -1) {
+        wordGroups.splice(idx, 1);
+        if (currentGroupIndex >= wordGroups.length) currentGroupIndex = wordGroups.length - 1;
+        renderWordGroups(); updateParsedWordList(); updateStartGroupDisplay(); saveStorageData();
       }
     }
     function setCurrentGroupWithSE(id) { playButtonSE(); const idx = wordGroups.findIndex(g => g.id === id); if (idx !== -1) { currentGroupIndex = idx; renderWordGroups(); updateParsedWordList(); updateStartGroupDisplay(); saveStorageData(); } }
@@ -975,6 +1103,11 @@
       colorCtx = colorCanvas.getContext('2d');
       blackCtx = blackCanvas.getContext('2d');
       resizeCanvas();
+      
+      // タッチイベントでブラウザのスクロール・バウンスを完全に防止
+      blackCanvas.addEventListener('touchstart', (e) => { e.preventDefault(); }, { passive: false });
+      blackCanvas.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
+
       blackCanvas.addEventListener('pointerdown', startDrawing);
       blackCanvas.addEventListener('pointermove', draw);
       blackCanvas.addEventListener('pointerup', stopDrawing);
@@ -1002,6 +1135,7 @@
     }
 
     function startDrawing(e) {
+      if(e.cancelable) e.preventDefault();
       unlockAudioAndSpeech();
       isPointerDown = true;
       longPressTriggered = false;
@@ -1017,6 +1151,7 @@
       }, 500);
     }
     function draw(e) {
+      if(e.cancelable) e.preventDefault();
       if (!isPointerDown || longPressTriggered) return;
       const pos = getCanvasCoordinates(e);
       const dx = pos.x - startPos.x, dy = pos.y - startPos.y;
@@ -1033,7 +1168,8 @@
         });
       }
     }
-    function stopDrawing() {
+    function stopDrawing(e) {
+      if(e && e.cancelable) e.preventDefault();
       if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
       if (!longPressTriggered && !isDrawing) {
         beginDrawing(startPos);
@@ -1139,24 +1275,8 @@
       return result ? { r: parseInt(result[1],16), g: parseInt(result[2],16), b: parseInt(result[3],16) } : { r:0, g:0, b:0 };
     }
 
-    function getPastelColor(hex) {
-      const rgb = hexToRgb(hex);
-      const mix = 0.6;
-      const r = Math.round(rgb.r + (255 - rgb.r) * mix);
-      const g = Math.round(rgb.g + (255 - rgb.g) * mix);
-      const b = Math.round(rgb.b + (255 - rgb.b) * mix);
-      return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
-    }
     function getCurrentPaletteColor(hex) {
-      const colors = usePastelColors ? getPastelPalette() : BASE_PEN_COLORS;
-      return colors.find(c => c.id === hex);
-    }
-    function getPastelPalette() {
-      return BASE_PEN_COLORS.map(c => {
-        if (c.id === '#000000' || c.id === '#ffffff') return c;
-        const pastelHex = getPastelColor(c.id);
-        return { ...c, id: pastelHex, name: c.name, bg: c.bg };
-      });
+      return ALL_PEN_COLORS.find(c => c.id === hex);
     }
 
     function saveStateForUndo() {
@@ -1217,24 +1337,24 @@
       const btn = document.getElementById('header-main-btn');
       if (isGaming) {
         btn.innerHTML = '⏹ 中断';
-        btn.className = "bg-rose-600 hover:bg-rose-500 text-white border border-rose-400 px-3 py-1.5 rounded-xl text-xs font-bold shadow-lg active:scale-95 transition touch-action-none whitespace-nowrap";
+        btn.className = "bg-rose-600 hover:bg-rose-500 text-white border border-rose-400 px-5 py-3 rounded-xl text-base md:text-lg font-bold shadow-lg active:scale-95 transition touch-action-none whitespace-nowrap";
       } else {
         btn.innerHTML = '⚙️ 設定';
-        btn.className = "bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1.5 rounded-xl text-xs font-bold shadow-lg active:scale-95 transition touch-action-none whitespace-nowrap";
+        btn.className = "bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 px-5 py-3 rounded-xl text-base md:text-lg font-bold shadow-lg active:scale-95 transition touch-action-none whitespace-nowrap";
       }
     }
 
     // ===== ゲーム進行 =====
     function toggleGameWithSE() { playButtonSE(); toggleGame(); }
-    function toggleGame() {
+    async function toggleGame() {
       unlockAudioAndSpeech();
       if (isGaming) stopGame();
-      else startGame();
+      else await startGame();
     }
-    function startGame() {
-      if (parsedWordList.length === 0) { alert("お題が登録されていません。設定からお題を追加してください。"); return; }
+    async function startGame() {
+      if (parsedWordList.length === 0) { await customAlert("お題が登録されていません。設定からお題を追加してください。"); return; }
       const activePlayers = players.filter(p => p.active);
-      if (activePlayers.length < 1) { alert("ゲームに参加するプレイヤーを最低1名以上設定してください。"); return; }
+      if (activePlayers.length < 1) { await customAlert("ゲームに参加するプレイヤーを最低1名以上設定してください。"); return; }
       isGaming = true; isPaused = false; timerSeconds = 60; usedWordIndices.clear();
       roundScores = {}; roundDrawingsHistory = [];
       players.forEach(p => { roundScores[p.id] = 0; });
@@ -1322,10 +1442,23 @@
       clearCanvas();
       currentPenColor = '#000000';
       renderColorPalette();
+      
+      // ボーナスポイントの判定と演出
+      const bonusPoints = passedWordCounts[currentWordObj.name] || 0;
+      if (bonusPoints > 0) {
+        showBonusNotification(bonusPoints);
+        const activePlayers = players.filter(p => p.active);
+        const currentArtist = activePlayers[currentArtistIndex % activePlayers.length];
+        speakText(`このお題はポイントアップ中です！正解すると追加で${bonusPoints}ポイント入ります！お題が難しいですか？${currentArtist ? currentArtist.name : 'アーティスト'}さんなら大丈夫ですよ。`);
+      }
     }
     function skipWordWithSE() { playButtonSE(); skipWord(); }
     function skipWord() {
       if (!isGaming) return;
+      // パスされた回数を記録
+      passedWordCounts[currentWordObj.name] = (passedWordCounts[currentWordObj.name] || 0) + 1;
+      saveStorageData();
+      
       saveCurrentCanvasToHistory(null, true);
       const activePlayers = players.filter(p => p.active);
       const art = activePlayers[currentArtistIndex % activePlayers.length];
@@ -1342,10 +1475,10 @@
       const displayContainer = document.getElementById('modal-word-display');
       if (currentWordObj.emoji) {
         displayContainer.innerHTML = `
-          <span class="text-9xl md:text-[14rem] leading-none block my-2 drop-shadow-2xl shrink-0 animate-periodic-jump">${currentWordObj.emoji}</span>
-          <span class="text-3xl md:text-5xl font-black text-amber-200 block drop-shadow">${currentWordObj.name}</span>`;
+          <span class="text-9xl md:text-[12rem] leading-none block my-2 drop-shadow-2xl shrink-0 animate-periodic-jump">${currentWordObj.emoji}</span>
+          <span class="text-3xl md:text-5xl font-black text-amber-200 block drop-shadow mt-4">${currentWordObj.name}</span>`;
       } else {
-        displayContainer.innerHTML = `<span class="text-5xl md:text-7xl font-black text-amber-200 drop-shadow">${currentWordObj.name}</span>`;
+        displayContainer.innerHTML = `<span class="text-5xl md:text-7xl font-black text-amber-200 drop-shadow mt-4">${currentWordObj.name}</span>`;
       }
       renderAnswerModalGrid();
       document.getElementById('answer-modal').classList.remove('modal-hidden');
@@ -1378,10 +1511,13 @@
         const btn = document.createElement('button');
         btn.onclick = () => submitCorrectWinner(player.id);
         btn.className = `p-2 rounded-2xl border-2 flex flex-col items-center justify-between transition active:scale-95 shadow-lg relative ${colorStyle.bg} ${colorStyle.border} ${isArtist ? 'ring-4 ring-amber-400 font-black' : ''} touch-action-none`;
+        // バッジが絵文字に重ならないように構造を修正
         btn.innerHTML = `
-          ${isArtist ? '<span class="absolute top-2 left-2 bg-amber-400 text-black text-[9px] font-black px-2 py-0.5 rounded-full shadow z-30">アーティスト</span>' : ''}
-          <span class="text-4xl md:text-5xl my-1 shrink-0 drop-shadow">${player.emoji}</span>
-          <span class="text-xs md:text-sm font-extrabold text-white truncate w-full text-center px-1">${player.name}</span>
+          <div class="w-full flex justify-center items-center h-6 mb-1 relative">
+            ${isArtist ? '<span class="absolute top-0 text-[10px] bg-amber-400 text-black font-black px-2 py-0.5 rounded-full shadow">アーティスト</span>' : ''}
+          </div>
+          <span class="text-4xl md:text-5xl shrink-0 drop-shadow">${player.emoji}</span>
+          <span class="text-xs md:text-sm font-extrabold text-white truncate w-full text-center px-1 mt-1">${player.name}</span>
           <span class="mt-1 text-[11px] font-mono font-bold text-amber-300 bg-black/40 px-2 py-0.5 rounded-full border border-white/20">+${currentRoundPt} pt</span>`;
         grid.appendChild(btn);
       });
@@ -1390,15 +1526,26 @@
       if (!isGaming) return;
       const activePlayers = players.filter(p => p.active);
       const artist = activePlayers[currentArtistIndex % activePlayers.length];
+      const bonusPoints = passedWordCounts[currentWordObj.name] || 0;
+      
       if (artist && artistPointEnabled) {
         artist.score += 1;
         roundScores[artist.id] = (roundScores[artist.id] || 0) + 1;
       }
+      
       const winner = players.find(p => p.id === winnerPlayerId);
-      if (winner && winner.id !== artist.id) {
-        winner.score += 1;
-        roundScores[winner.id] = (roundScores[winner.id] || 0) + 1;
+      if (winner) {
+        const totalWinnerPoints = 1 + bonusPoints;
+        if (winner.id !== artist.id) {
+          winner.score += totalWinnerPoints;
+          roundScores[winner.id] = (roundScores[winner.id] || 0) + totalWinnerPoints;
+        } else {
+          winner.score += totalWinnerPoints;
+          roundScores[winner.id] = (roundScores[winner.id] || 0) + totalWinnerPoints;
+        }
       }
+      
+      passedWordCounts[currentWordObj.name] = 0; // 正解したのでボーナスリセット
       saveCurrentCanvasToHistory(winner, false);
       if (winner) speakText(getRandomPhrase('afterCorrectWinner', winner.name));
       saveStorageData();
@@ -1415,7 +1562,7 @@
           card.classList.add('animate-score-pop');
           const floatEl = document.createElement('div');
           floatEl.className = 'absolute inset-0 flex items-center justify-center font-black text-amber-300 text-xl md:text-2xl drop-shadow-lg float-score-text z-30';
-          floatEl.innerText = '+1 pt!';
+          floatEl.innerText = '+pt!';
           card.appendChild(floatEl);
           setTimeout(() => {
             card.classList.remove('animate-score-pop');
@@ -1472,14 +1619,14 @@
         if (rank === 2) rankBadge = `<span class="text-sm font-black w-6 text-center">🥈</span>`;
         if (rank === 3) rankBadge = `<span class="text-sm font-black w-6 text-center">🥉</span>`;
         card.innerHTML = `
-          ${isArtist ? '<span class="absolute top-0 right-0 bg-amber-400 text-black text-[8px] font-black px-1.5 py-0.2 rounded-bl-md shadow z-30">アーティスト</span>' : ''}
-          <div class="flex items-center space-x-1.5 truncate flex-1 min-w-0 pr-1">
+          ${isArtist ? '<span class="absolute top-0 right-0 bg-amber-400 text-black text-[9px] font-black px-1.5 py-0.5 rounded-bl-md shadow z-30">アーティスト</span>' : ''}
+          <div class="flex items-center space-x-2 truncate flex-1 min-w-0 pr-1">
             ${rankBadge}
             <span class="text-xl md:text-2xl leading-none shrink-0 drop-shadow-sm">${player.emoji}</span>
-            <span class="text-xs md:text-sm font-extrabold text-white truncate">${player.name}</span>
+            <span class="text-sm md:text-base font-extrabold text-white truncate">${player.name}</span>
           </div>
           <div class="text-right shrink-0">
-            <span class="text-sm md:text-base font-black text-white font-mono bg-black/30 px-1.5 py-0.5 rounded border border-white/20">${player.score} <span class="text-[9px]">pt</span></span>
+            <span class="text-base md:text-lg font-black text-white font-mono bg-black/30 px-1.5 py-0.5 rounded border border-white/20">${player.score} <span class="text-[10px]">pt</span></span>
           </div>`;
         container.appendChild(card);
       });
@@ -1519,16 +1666,16 @@
       updateStartGroupDisplay();
       const marginSlider = document.getElementById('safe-margin-slider');
       if (marginSlider) marginSlider.value = safeMargin;
-      updateSafeMargin(safeMargin);
+      updateSafeMarginDisplay(safeMargin);
       document.getElementById('settings-modal').classList.remove('modal-hidden');
     }
     function closeSettings() {
       document.getElementById('settings-modal').classList.add('modal-hidden');
       document.getElementById('safe-frame-overlay').classList.remove('visible');
     }
-    function saveAndCloseSettings() {
-      if (wordGroups.length === 0) { alert('お題グループがありません。'); return; }
-      if (wordGroups[currentGroupIndex] && parseWordListFromRaw(wordGroups[currentGroupIndex].rawText).length === 0) { alert('現在選択中のお題グループにお題がありません。'); return; }
+    async function saveAndCloseSettings() {
+      if (wordGroups.length === 0) { await customAlert('お題グループがありません。'); return; }
+      if (wordGroups[currentGroupIndex] && parseWordListFromRaw(wordGroups[currentGroupIndex].rawText).length === 0) { await customAlert('現在選択中のお題グループにお題がありません。'); return; }
       updateParsedWordList();
       saveStorageData();
       renderTvRankings();
@@ -1562,7 +1709,8 @@
         btnSafeArea.className = "px-4 py-2 rounded-lg font-bold bg-indigo-600 text-white touch-action-none whitespace-nowrap";
         const marginSlider = document.getElementById('safe-margin-slider');
         if (marginSlider) marginSlider.value = safeMargin;
-        updateSafeMargin(safeMargin);
+        updateSafeMarginDisplay(safeMargin);
+        applyLayout(); // 現在の領域を計算して表示
         document.getElementById('safe-frame-overlay').classList.add('visible');
       }
     }
@@ -1607,7 +1755,15 @@
     function updatePlayerEmoji(playerId, emoji) { playButtonSE(); const p = players.find(x => x.id === playerId); if (p) { p.emoji = emoji; saveStorageData(); } }
     function updatePlayerColor(playerId, colorIdx) { playButtonSE(); const p = players.find(x => x.id === playerId); if (p) { p.colorIdx = colorIdx; saveStorageData(); renderPlayersSettingsList(); } }
     function setArtistByPlayerId(playerId) { playButtonSE(); const activePlayers = players.filter(p => p.active); const idx = activePlayers.findIndex(p => p.id === playerId); if (idx !== -1) { currentArtistIndex = idx; renderPlayersSettingsList(); } }
-    function resetScores() { if (confirm("全員のスコアを 0 pt にリセットしますか？")) { players.forEach(p => p.score = 0); roundScores = {}; saveStorageData(); renderPlayersSettingsList(); renderTvRankings(); } }
+    async function resetScores() {
+      const ok = await customConfirm('全員のスコアを 0 pt にリセットしますか？');
+      if (!ok) return;
+      players.forEach(p => p.score = 0);
+      roundScores = {};
+      saveStorageData();
+      renderPlayersSettingsList();
+      renderTvRankings();
+    }
 
     // ===== 結果モーダル =====
     function saveDrawingAsImage(dataUrl, wordName, artistName, timeTaken) {
@@ -1621,7 +1777,7 @@
         grad.addColorStop(0,'#0f172a'); grad.addColorStop(1,'#1e1b4b');
         cx.fillStyle = grad; cx.fillRect(0,0,1080,1080);
         cx.fillStyle = '#fef3c7'; cx.font = 'bold 48px sans-serif'; cx.textAlign = 'center'; cx.fillText(`${wordName}`, 540, 85);
-        cx.fillStyle = '#ffffff'; cx.roundRect(90,110,900,780,24); cx.fill();
+        cx.fillStyle = '#ffffff'; cx.beginPath(); cx.roundRect(90,110,900,780,24); cx.fill();
         const maxW = 860, maxH = 740;
         let drawW = img.naturalWidth, drawH = img.naturalHeight;
         const scale = Math.min(maxW / drawW, maxH / drawH);
@@ -1668,7 +1824,7 @@
           <div class="flex items-center space-x-1.5 truncate">
             ${rankBadge}
             <span class="text-lg">${player.emoji}</span>
-            <span class="text-white font-bold text-xs truncate max-w-[80px]">${player.name}</span>
+            <span class="text-white font-bold text-xs truncate max-w-[100px]">${player.name}</span>
           </div>
           <div class="text-right font-mono font-black ${isZero ? 'text-slate-500' : 'text-amber-300'} text-xs shrink-0">+${player.roundScore} <span class="text-[9px] text-slate-400">(累計${player.score}pt)</span></div>`;
         list.appendChild(item);
@@ -1678,13 +1834,15 @@
       } else {
         roundDrawingsHistory.forEach((item, index) => {
           const card = document.createElement('div');
-          card.className = "bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/30 rounded-xl p-2 flex flex-col items-center space-y-1.5 text-center shadow-lg relative";
+          card.className = "gallery-card bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/30 rounded-xl p-2 flex flex-col items-center space-y-1.5 text-center shadow-lg relative";
           const safeWordName = item.wordName.replace(/'/g, "\\'");
+          const encodedName = encodeURIComponent(item.wordName);
+          const encodedEmoji = encodeURIComponent(item.wordEmoji || '');
           card.innerHTML = `
             <div class="w-full h-24 md:h-28 bg-white rounded-lg overflow-hidden border-2 border-slate-800 shadow-inner flex items-center justify-center p-1 relative">
               <img src="${item.dataUrl}" class="max-w-full max-h-full object-contain">
             </div>
-            <div class="w-full flex items-center justify-between px-1">
+            <div class="w-full flex items-center justify-between px-1 mt-1">
               <div class="text-xs font-black text-amber-300 truncate flex items-center space-x-1">
                 ${item.wordEmoji ? `<span class="text-sm">${item.wordEmoji}</span>` : ''}
                 <span>${item.wordName}</span>
@@ -1695,9 +1853,11 @@
                 <button onclick="imageSearchByWordWithSE('${safeWordName}')" class="bg-slate-600 hover:bg-slate-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow border border-slate-400 active:scale-95 transition touch-action-none">🔍</button>
               </div>
             </div>
-            <div class="text-[10px] text-slate-400 truncate w-full text-center border-t border-slate-800/80 pt-1">
+            <div class="text-[10px] text-slate-400 truncate w-full text-center border-t border-slate-800/80 pt-1 mt-1">
               ${item.winnerName ? `<span class="text-emerald-400 font-bold">🎉 正解: ${item.winnerEmoji || ''}${item.winnerName}</span>` : '<span class="text-slate-500">（途中作品 / 未完成）</span>'}
-            </div>`;
+            </div>
+            ${item.isUnfinished ? `<button onclick="deletePassedWord(this)" data-name="${encodedName}" data-emoji="${encodedEmoji}" class="mt-1 bg-rose-900/70 hover:bg-rose-800 text-rose-200 text-[10px] font-bold px-3 py-1.5 w-full rounded border border-rose-600 active:scale-95 transition touch-action-none">🗑️ お題から削除</button>` : ''}
+          `;
           gallery.appendChild(card);
           if (index === roundDrawingsHistory.length - 1 && item.isUnfinished) speakText(getRandomPhrase('unfinishedComment', artistName));
           else speakText(getRandomPhrase('drawingTimeComment', artistName, item.timeTaken));
@@ -1717,38 +1877,47 @@
       if (nextArtist) speakText(getRandomPhrase('nextArtist', nextArtist.name));
     }
 
-    // ===== パレット・カラー =====
-    function togglePaletteWithSE() {
+    async function deletePassedWord(btn) {
       playButtonSE();
-      usePastelColors = !usePastelColors;
-      currentPenColor = '#000000';
-      renderColorPalette();
-      updatePaletteToggleButton();
+      const ok = await customConfirm('このお題を現在のグループから削除しますか？\n次回以降出題されなくなります。');
+      if (!ok) return;
+
+      const name = decodeURIComponent(btn.dataset.name || '');
+      const emoji = decodeURIComponent(btn.dataset.emoji || '');
+      const group = wordGroups[currentGroupIndex];
+      if (!group) return;
+      const lines = group.rawText.split('\n');
+      const newLines = lines.filter(line => {
+        const parsed = parseLineToWord(line);
+        if (!parsed) return true;
+        return !(parsed.name === name && (parsed.emoji || '') === emoji);
+      });
+      group.rawText = newLines.join('\n');
+      saveStorageData();
+      updateParsedWordList();
+      renderWordGroups();
+      
+      // 履歴からも削除
+      roundDrawingsHistory = roundDrawingsHistory.filter(h => !(h.wordName === name && (h.wordEmoji || '') === emoji));
+      const card = btn.closest('.gallery-card');
+      if (card) card.remove();
+      
+      await customAlert('お題を削除しました。');
     }
-    function updatePaletteToggleButton() {
-      const btn = document.getElementById('palette-toggle-btn');
-      if (btn) {
-        btn.innerText = 'パステル';
-        if (usePastelColors) {
-          btn.className = 'px-2 py-1.5 rounded-lg font-bold text-xs border bg-pink-300 text-pink-900 border-pink-400 active:scale-95 transition touch-action-none whitespace-nowrap';
-        } else {
-          btn.className = 'px-2 py-1.5 rounded-lg font-bold text-xs border bg-slate-800 text-slate-300 border-slate-600 active:scale-95 transition touch-action-none whitespace-nowrap';
-        }
-      }
-    }
+
+    // ===== パレット =====
     function renderColorPalette() {
       const container = document.getElementById('color-palette');
       container.innerHTML = '';
-      const colors = usePastelColors ? getPastelPalette() : BASE_PEN_COLORS;
-      colors.forEach(c => {
+      ALL_PEN_COLORS.forEach(c => {
         const btn = document.createElement('button');
         btn.onclick = () => { playButtonSE(); selectPenColor(c.id); };
         const isSelected = currentPenColor === c.id;
-        btn.className = `w-5 h-5 rounded-full ${c.bg} border-2 transition ${isSelected ? 'scale-125 border-white ring-2 ring-indigo-400 z-10' : 'border-transparent hover:scale-110 opacity-80'} touch-action-none flex-shrink-0`;
-        if (c.id.startsWith('#')) {
-          btn.style.backgroundColor = c.id;
-          if (c.id === '#ffffff') btn.style.borderColor = '#d1d5db';
-        }
+        
+        btn.className = `color-btn ${c.bg} ${isSelected ? 'selected' : 'opacity-80'}`;
+        if (!c.bg) btn.style.backgroundColor = c.id; // bgクラスがない場合は直接指定
+        if (c.id === '#ffffff') btn.style.border = '1px solid #d1d5db';
+        
         container.appendChild(btn);
       });
     }
@@ -1757,13 +1926,78 @@
       renderColorPalette();
     }
 
+    // ===== ボーナス通知 =====
+    function showBonusNotification(points) {
+      const notif = document.getElementById('bonus-notification');
+      if (!notif) return;
+      notif.innerHTML = `<div class="bonus-card">🔥 ボーナスお題！正解で +${points+1} pt！</div>`;
+      notif.classList.remove('modal-hidden');
+      setTimeout(() => {
+        notif.classList.add('modal-hidden');
+      }, 3500);
+    }
+
+    // ===== バックアップ・復元 =====
+    function backupDataWithSE() { playButtonSE(); exportData(); }
+    function restoreDataWithSE() { playButtonSE(); document.getElementById('restore-file-input').click(); }
+    function exportData() {
+      const data = {
+        version: 1,
+        players,
+        wordGroups,
+        settings: { enableSpeech, artistPointEnabled, currentGroupIndex, passedWordCounts },
+        safeMargin
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `atete_backup_${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+    function handleRestoreFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (data.players && data.wordGroups) {
+            players = data.players;
+            wordGroups = data.wordGroups;
+            if (data.settings) {
+              enableSpeech = data.settings.enableSpeech ?? true;
+              artistPointEnabled = data.settings.artistPointEnabled ?? true;
+              currentGroupIndex = data.settings.currentGroupIndex ?? 0;
+              passedWordCounts = data.settings.passedWordCounts || {};
+            }
+            if (data.safeMargin !== undefined) safeMargin = data.safeMargin;
+            saveStorageData();
+            updateParsedWordList();
+            renderWordGroups();
+            updateStartGroupDisplay();
+            renderTvRankings();
+            updateSafeMarginDisplay(safeMargin);
+            closeSettings();
+            customAlert('データを復元しました。');
+          } else {
+            customAlert('ファイル形式が正しくありません。');
+          }
+        } catch (err) {
+          customAlert('JSONの解析に失敗しました。');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
     // ===== 初期化 =====
     window.addEventListener('DOMContentLoaded', () => {
       loadStorageData();
       applyLayout();
       initCanvas();
       renderColorPalette();
-      updatePaletteToggleButton();
       renderTvRankings();
       updateStartGroupDisplay();
       updateHeaderButton();
@@ -1775,3 +2009,4 @@
   </script>
 </body>
 </html>
+
